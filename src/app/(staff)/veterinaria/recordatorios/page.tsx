@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { EnlaceOTexto } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual } from "@/lib/negocio/actual";
@@ -8,6 +7,7 @@ import { cuandoEs, mensajeRecordatorio } from "@/lib/veterinaria/carnet";
 import { Alert } from "@/components/ui/alert";
 import { AccionesRecordatorio } from "./acciones";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 type Fila = {
   id: string; perro_id: string; perro_nombre: string; cliente_nombre: string; cliente_telefono: string | null;
@@ -35,7 +35,7 @@ export default async function Recordatorios() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">← Veterinaria</Link>
+        <Enlace href="/veterinaria" className="text-sm">← Veterinaria</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Recordatorios de próxima dosis</h1>
         <p className="mt-1 max-w-3xl text-n-600">
           Las vacunas y desparasitaciones cuya próxima dosis cae en los próximos {a.dias_anticipacion ?? 7} días (o venció hace poco). Salen solos por WhatsApp 7 días antes si prendes «Próxima vacuna o desparasitación» en{" "}
@@ -63,7 +63,7 @@ export default async function Recordatorios() {
                 <li key={f.id} className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-bold text-n-900">
-                      <Link href={`/veterinaria/carnet/${f.perro_id}`} className="hover:underline">{f.perro_nombre}</Link>
+                      <Enlace href={`/veterinaria/carnet/${f.perro_id}`}>{f.perro_nombre}</Enlace>
                       <span className="font-normal text-n-600"> · {f.origen_tipo === "vacuna" ? "vacuna" : "desparasitación"}: {f.detalle}</span>
                     </p>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ESTADO[f.estado]?.estilo}`}>{ESTADO[f.estado]?.texto}</span>

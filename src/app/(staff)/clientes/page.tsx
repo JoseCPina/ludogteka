@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -7,6 +6,7 @@ import { leerTodo } from "@/lib/supabase/paginar";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { usaVeterinaria } from "@/lib/plan/modulos";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function ClientesPage() {
   // QA S39 (N137): con Veterinaria, «mascotas».
@@ -48,14 +48,10 @@ export default async function ClientesPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link href="/clientes/invitaciones">
-            <Button type="button">Mandar link de alta</Button>
-          </Link>
-          <Link href="/clientes/nuevo">
-            <Button type="button" variante="secundario">
+          <Enlace href="/clientes/invitaciones">Mandar link de alta</Enlace>
+          <Enlace href="/clientes/nuevo">
               Capturar a mano
-            </Button>
-          </Link>
+            </Enlace>
         </div>
       </div>
 

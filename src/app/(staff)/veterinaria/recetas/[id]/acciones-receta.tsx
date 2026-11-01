@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { BotonImprimirPagina } from "@/components/boton-imprimir";
 import { FormularioAccion, Desplegable, BotonAccion } from "@/components/formulario-accion";
 import { anularReceta, archivarReceta, enviarReceta } from "../actions";
+import { Enlace } from "@/components/ui/enlace";
 
 /** Imprimir, mandar al dueño por WhatsApp, anular y archivar una receta. */
 export function AccionesReceta({
@@ -47,9 +48,9 @@ export function AccionesReceta({
           <p className="text-sm text-n-700">Esta liga muestra la receta al dueño. Solo se puede ver con ella; si la generas otra vez, la anterior deja de servir.</p>
           <CampoCopiable valor={url} etiqueta="Liga de la receta" />
           {digitos.length === 10 ? (
-            <a className="w-fit text-sm font-semibold text-morado hover:underline" href={`https://wa.me/52${digitos}?text=${encodeURIComponent(texto(url))}`} target="_blank" rel="noreferrer">
+            <Enlace className="w-fit text-sm" href={`https://wa.me/52${digitos}?text=${encodeURIComponent(texto(url))}`} target="_blank" rel="noreferrer">
               Abrir WhatsApp con el mensaje listo
-            </a>
+            </Enlace>
           ) : (
             <p className="text-sm text-ambar-oscuro">El dueño no tiene un teléfono de 10 dígitos: copia la liga y mándala por el medio que prefieras.</p>
           )}

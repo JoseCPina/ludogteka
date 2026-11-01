@@ -53,6 +53,7 @@ Cada negocio tiene su propia dirección: <su-nombre>.peludesk.mx.
 - Página web del negocio con sus servicios, precios, fotos, horario y WhatsApp.
 - Permisos: el admin le puede dar a una persona de recepción permisos extra (costos e inventario, tarifas, reportes, personal, configuración, gastos, nómina, entre otros) en Permisos (en el menú). Cada persona ve solo los botones y enlaces de las pantallas que puede abrir: sin el permiso, el botón no aparece (estética, por ejemplo, no ve «Nuevo cliente» ni Caja).
 - Roles: admin (dueño), recepción, estética y cliente (dueño del perro).
+- Botones y enlaces: lo que hace algo es un botón (morado relleno la acción principal, blanco con borde las demás, coral lo que borra o cancela) y lo que lleva a otra pantalla es un enlace morado. Al tocar, responden al momento: el botón se pone gris con un círculo girando y dice «Guardando…» (a los 3 segundos, «Sigue trabajando…»), el enlace se pone pálido y sale una barra morada arriba mientras carga. Un segundo toque no guarda dos veces ni abre la pantalla dos veces.
 - Módulos: el admin prende y apaga los módulos de su plan en Módulos y plan (en el menú). Apagar un módulo nunca borra nada.
 
 # Herramientas gratuitas de peludesk.mx (sin cuenta)

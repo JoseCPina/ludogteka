@@ -1,5 +1,4 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -8,6 +7,7 @@ import { crearInsumo } from "../actions";
 import { cargarAreas } from "../comun";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { usaVeterinaria } from "@/lib/plan/modulos";
+import { Enlace } from "@/components/ui/enlace";
 
 // Alta rápida de un consumible: admin y recepción, sin proveedor y sin
 // costo (el costo lo completa después quien tenga el permiso de costos).
@@ -23,9 +23,9 @@ export default async function NuevoConsumiblePage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/inventario" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/inventario" className="text-sm">
           ← Inventario
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Nuevo consumible</h1>
         <p className="mt-1 max-w-2xl text-n-600">
           Algo que se gasta y se repone. No hace falta proveedor ni costo: el costo lo completa admin

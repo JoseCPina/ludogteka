@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { Alert } from "@/components/ui/alert";
@@ -10,6 +9,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { NOMBRE_TIPO_MOVIMIENTO, type Libro } from "@/lib/veterinaria/recetas";
 import { NavRecetas } from "../recetas/nav";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 // El libro de control se deriva de los movimientos de lote de los productos que la plataforma marca
 // (Grupo I y, por omisión, estupefacientes y psicotrópicos de la fracción II). No hay nada que editar:
@@ -36,7 +36,7 @@ export default async function LibroControl({ searchParams }: { searchParams: Pro
   return (
     <div className="flex flex-col gap-5">
       <div className="print:hidden">
-        <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">← Veterinaria</Link>
+        <Enlace href="/veterinaria" className="text-sm">← Veterinaria</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Libro de control</h1>
         <p className="mt-1 max-w-3xl text-n-600">Cada entrada y salida de los productos controlados, con el folio de la receta, el lote, el paciente o el uso hospitalario y el médico. Se arma solo de los movimientos de lote: no se edita.</p>
       </div>
@@ -63,7 +63,7 @@ export default async function LibroControl({ searchParams }: { searchParams: Pro
           </form>
           <div className="flex flex-wrap gap-3 print:hidden">
             <BotonImprimirPagina texto="Imprimir o guardar PDF" />
-            <a href={excel} className="inline-flex min-h-12 items-center rounded-md border-[1.5px] border-morado px-4 font-semibold text-morado hover:bg-morado-suave">Descargar Excel</a>
+            <Enlace href={excel}>Descargar Excel</Enlace>
           </div>
           <p className="hidden text-sm print:block">Libro de control del {formatearFechaCalendario(desde)} al {formatearFechaCalendario(hasta)}</p>
           {porProducto.size === 0 ? (

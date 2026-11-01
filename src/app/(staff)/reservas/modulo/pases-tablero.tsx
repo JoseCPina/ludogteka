@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { describirBono, diasParaVencer } from "@/lib/bonos/descripcion";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 type Fila = {
   id: string;
@@ -36,16 +36,13 @@ function Lista({ titulo, items, vacio }: { titulo: string; items: Fila[]; vacio:
         <ul className="flex flex-col gap-2">
           {items.map((f) => (
             <li key={f.id}>
-              <Link
-                href={`/guarderia/pases?cliente=${f.cliente_id}${f.perro_id ? `&perro=${f.perro_id}` : ""}`}
-                className="flex flex-col rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
-              >
+              <Enlace href={`/guarderia/pases?cliente=${f.cliente_id}${f.perro_id ? `&perro=${f.perro_id}` : ""}`} className="flex flex-col rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
                 <span className="font-semibold text-n-900">
                   {f.perro_nombre ?? "—"} <span className="font-normal text-n-600">({f.cliente_nombre})</span> ·{" "}
                   {f.servicio_nombre}
                 </span>
                 <span className="text-xs text-n-600">{describirBono(f)}</span>
-              </Link>
+              </Enlace>
             </li>
           ))}
         </ul>
@@ -83,11 +80,9 @@ export async function PasesTablero({ hoy }: { hoy: string }) {
     <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-n-50 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Day pass y mensualidad</h2>
-        <Link href="/guarderia/pases">
-          <Button type="button" variante="secundario">
+        <Enlace href="/guarderia/pases">
             Vender o consultar pases
-          </Button>
-        </Link>
+          </Enlace>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Lista

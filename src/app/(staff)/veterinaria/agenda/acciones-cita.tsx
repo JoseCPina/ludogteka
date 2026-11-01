@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { BotonAccion, Desplegable, FormularioAccion } from "@/components/formulario-accion";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import type { MedicoVet } from "@/lib/veterinaria/expediente";
 import { estadoCita, iniciarDesdeCita, reprogramarCita } from "../expediente/actions";
+import { Enlace } from "@/components/ui/enlace";
 
 /** Lo que se puede hacer con una cita de la agenda clínica, según su estado y quién mira. */
 export function AccionesCita({
@@ -30,9 +30,9 @@ export function AccionesCita({
   return (
     <div className="mt-2 flex flex-wrap items-start gap-2">
       {consultaId && puedeLeer && (
-        <Link href={`/veterinaria/consulta/${consultaId}`} className="inline-flex min-h-10 items-center rounded-md border border-n-200 bg-white px-3 text-sm font-semibold text-morado hover:bg-morado-suave">
+        <Enlace href={`/veterinaria/consulta/${consultaId}`} className="text-sm">
           {estado === "en_curso" ? "Abrir la consulta" : "Ver la consulta"}
-        </Link>
+        </Enlace>
       )}
       {abierta && puedeAtender && <BotonAccion texto="Iniciar consulta" accion={() => iniciarDesdeCita(id)} navegacionCompleta />}
       {estado === "programada" && <BotonAccion texto="Confirmar" variante="secundario" accion={(c) => estadoCita(id, "confirmada", c)} textoExito="Confirmada" versiones={versiones} registro="esta cita" />}

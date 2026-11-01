@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { EnlacePestana } from "@/components/ui/enlace-pestana";
 
 // Pestañas de la sección. Nómina y comisiones solo con el permiso.
 export function SubnavEmpleados({
@@ -23,18 +23,12 @@ export function SubnavEmpleados({
   return (
     <nav className="flex flex-wrap gap-1 border-b border-n-200" aria-label="Secciones de empleados">
       {pestanas.map((p) => (
-        <Link
-          key={p.clave}
-          href={p.href}
-          className={`whitespace-nowrap rounded-t-md border-b-[3px] px-4 py-2 font-semibold ${
-            activa === p.clave ? "border-morado text-morado" : "border-transparent text-n-600 hover:text-n-900"
-          }`}
-        >
+        <EnlacePestana key={p.clave} href={p.href} className="whitespace-nowrap" forma="pestana" activo={activa === p.clave}>
           {p.etiqueta}
           {"aviso" in p && p.aviso ? (
             <span className="ml-2 rounded-full bg-ambar-suave px-2 py-0.5 text-xs text-ambar-oscuro">{p.aviso}</span>
           ) : null}
-        </Link>
+        </EnlacePestana>
       ))}
     </nav>
   );

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -7,6 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { Chip, type TonoChip } from "@/components/ui/chip";
 import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { ETIQUETA_ESTADO, type EstadoReporte } from "@/lib/reporte/tipos";
+import { Enlace } from "@/components/ui/enlace";
 
 type Fila = { perroId: string; nombre: string; estado: EstadoReporte | "sin_reporte"; enviadoAt: string | null; llenadoPor: string | null };
 
@@ -18,9 +18,9 @@ export default async function ReportesDelDiaPage() {
   if (!tienePermiso(sesion, "reportes_guarderia")) {
     return (
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-        <Link href="/guarderia" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/guarderia" className="text-sm">
           ← Guardería
-        </Link>
+        </Enlace>
         <Alert variante="advertencia" titulo="No tienes el permiso «Reportes de guardería»">
           Pídele a quien administra el negocio que te lo dé en Permisos.
         </Alert>
@@ -62,9 +62,9 @@ export default async function ReportesDelDiaPage() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5">
       <header className="flex flex-col gap-1">
-        <Link href="/guarderia" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/guarderia" className="text-sm">
           ← Guardería
-        </Link>
+        </Enlace>
         <h1 className="text-2xl font-bold tracking-tight text-n-900">Reportes del día</h1>
         <p className="text-n-600">
           {formatearFecha(`${hoy}T12:00:00Z`, "UTC")}. Cada reporte se llena y se envía uno por uno; nada sale solo.
@@ -96,10 +96,7 @@ export default async function ReportesDelDiaPage() {
           <ul className="flex flex-col gap-2.5">
             {filas.map((f) => (
               <li key={f.perroId}>
-                <Link
-                  href={`/guarderia/reportes/${f.perroId}`}
-                  className="flex min-h-[4.5rem] items-center justify-between gap-3 rounded-xl border border-n-200 bg-white px-4 py-3 transition-colors hover:border-morado/40 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
-                >
+                <Enlace href={`/guarderia/reportes/${f.perroId}`} className="flex min-h-[4.5rem] items-center justify-between gap-3 rounded-xl border border-n-200 bg-white px-4 py-3 transition-colors hover:border-morado/40 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado" forma="bloque">
                   <span className="flex min-w-0 flex-col">
                     <span className="truncate text-lg font-bold text-n-900">{f.nombre}</span>
                     <span className="text-sm text-n-600">
@@ -118,7 +115,7 @@ export default async function ReportesDelDiaPage() {
                       ›
                     </span>
                   </span>
-                </Link>
+                </Enlace>
               </li>
             ))}
           </ul>

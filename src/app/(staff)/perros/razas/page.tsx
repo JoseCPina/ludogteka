@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
@@ -12,6 +11,7 @@ import { hoyNegocio } from "@/lib/formato";
 import { NormalizarRazas, type PerroSinRaza } from "./normalizar-razas";
 import { FueraDeCatalogo, type Asignacion, type GrupoFuera } from "./fuera-catalogo";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 /**
  * Normalización en bloque de las razas escritas a mano.
@@ -86,9 +86,9 @@ export default async function NormalizarRazasPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/estetica" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/estetica" className="text-sm">
           ← Estética
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Razas sin catalogar</h1>
         <p className="mt-1 text-n-600">
           Estos perros tienen la raza escrita a mano, de antes de que existiera el catálogo.
@@ -99,7 +99,7 @@ export default async function NormalizarRazasPage() {
       {razasSinGrupo.length > 0 && (
         <Alert variante="advertencia" titulo={razasSinGrupo.length === 1 ? "1 raza nueva sin grupo de precio" : `${razasSinGrupo.length} razas nuevas sin grupo de precio`}>
           {razasSinGrupo.map((r) => r.nombre).join(", ")}: mientras no tengan grupo, la app no les adivina precio y no deja agendarles estética sin asignarlo.{" "}
-          <Link href="/perros/razas/grupos" className="font-semibold underline">Asignar grupo de precio</Link>
+          <Enlace href="/perros/razas/grupos" enTexto>Asignar grupo de precio</Enlace>
         </Alert>
       )}
 

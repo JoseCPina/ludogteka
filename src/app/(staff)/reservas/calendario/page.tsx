@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { zonaActual } from "@/lib/negocio/actual";
@@ -16,6 +15,9 @@ import {
   type NivelOcupacion,
 } from "@/lib/reservas/calendario";
 import { FilaReserva, type ReservaCalendario } from "./fila-reserva";
+import { Enlace } from "@/components/ui/enlace";
+import { EnlacePestana } from "@/components/ui/enlace-pestana";
+import { Button } from "@/components/ui/button";
 
 // Calendario de reservas de guardería y hotel (QA externa B17): ocupación por día contra el cupo, en
 // semana o mes; al tocar un día, sus reservas; y la lista de próximas reservas con filtros. El cupo
@@ -110,9 +112,9 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/reservas" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/reservas" className="text-sm">
           ← Reservas
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Calendario de reservas</h1>
         <p className="mt-1 max-w-2xl text-n-600">
           Cuántos perros hay cada día contra el cupo. Guardería y hotel comparten el mismo espacio, así que el cupo es el de toda la casa. Toca un día para ver sus reservas.
@@ -123,22 +125,22 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-bold capitalize text-n-900">{titulo}</h2>
           <nav aria-label="Vista del calendario" className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-            <Link href={enlace({ vista: "semana", dia: f.dia ?? undefined })} className={`rounded-md border-[1.5px] px-3 py-2 ${f.vista === "semana" ? "border-morado bg-morado-suave text-morado" : "border-borde bg-white text-n-800"}`} data-vista="semana">
+            <EnlacePestana href={enlace({ vista: "semana", dia: f.dia ?? undefined })} data-vista="semana" activo={f.vista === "semana"}>
               Semana
-            </Link>
-            <Link href={enlace({ vista: "mes", dia: f.dia ?? undefined })} className={`rounded-md border-[1.5px] px-3 py-2 ${f.vista === "mes" ? "border-morado bg-morado-suave text-morado" : "border-borde bg-white text-n-800"}`} data-vista="mes">
+            </EnlacePestana>
+            <EnlacePestana href={enlace({ vista: "mes", dia: f.dia ?? undefined })} data-vista="mes" activo={f.vista === "mes"}>
               Mes
-            </Link>
+            </EnlacePestana>
             <span className="mx-1 hidden h-6 w-px bg-n-200 sm:inline-block" aria-hidden="true" />
-            <Link href={enlace({ fecha: moverAncla(f.vista, f.fecha, -1), dia: f.dia ?? undefined })} className="rounded-md border-[1.5px] border-borde bg-white px-3 py-2 text-n-800" aria-label="Anterior">
+            <Enlace href={enlace({ fecha: moverAncla(f.vista, f.fecha, -1), dia: f.dia ?? undefined })}   aria-label="Anterior">
               ←
-            </Link>
-            <Link href={enlace({ fecha: hoy, dia: f.dia ?? undefined })} className="rounded-md border-[1.5px] border-borde bg-white px-3 py-2 text-n-800">
+            </Enlace>
+            <Enlace href={enlace({ fecha: hoy, dia: f.dia ?? undefined })}  >
               Hoy
-            </Link>
-            <Link href={enlace({ fecha: moverAncla(f.vista, f.fecha, 1), dia: f.dia ?? undefined })} className="rounded-md border-[1.5px] border-borde bg-white px-3 py-2 text-n-800" aria-label="Siguiente">
+            </Enlace>
+            <Enlace href={enlace({ fecha: moverAncla(f.vista, f.fecha, 1), dia: f.dia ?? undefined })}   aria-label="Siguiente">
               →
-            </Link>
+            </Enlace>
           </nav>
         </div>
 
@@ -159,14 +161,7 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
                 const elegido = d === f.dia;
                 return (
                   <li key={d}>
-                    <Link
-                      href={enlace({ dia: d }) + "#reservas-del-dia"}
-                      scroll={false}
-                      data-dia={d}
-                      aria-current={elegido ? "date" : undefined}
-                      aria-label={`${NOMBRE_DIA_LARGO.format(aFecha(d))}: ${o?.ocupado_diurno ?? 0} de ${o?.cupo_diurno ?? "—"}`}
-                      className={`flex h-full flex-col gap-1 rounded-lg border-[1.5px] p-2 transition-colors hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave ${ESTILO_NIVEL[nivel]} ${fuera ? "opacity-50" : ""} ${elegido ? "ring-[3px] ring-morado" : ""}`}
-                    >
+                    <Enlace href={enlace({ dia: d }) + "#reservas-del-dia"} scroll={false} data-dia={d} aria-current={elegido ? "date" : undefined} aria-label={`${NOMBRE_DIA_LARGO.format(aFecha(d))}: ${o?.ocupado_diurno ?? 0} de ${o?.cupo_diurno ?? "—"}`} className={`flex h-full flex-col gap-1 rounded-lg border-[1.5px] p-2 transition-colors hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave ${ESTILO_NIVEL[nivel]} ${fuera ? "opacity-50" : ""} ${elegido ? "ring-[3px] ring-morado" : ""}`} forma="bloque">
                       <span className={`flex items-center gap-1 text-xs font-semibold text-n-600 ${f.vista === "semana" ? "" : "justify-between"}`}>
                         {f.vista === "semana" && <span className="capitalize">{NOMBRE_DIA.format(aFecha(d))}</span>}
                         <span className={`text-sm font-bold ${esHoy ? "rounded-full bg-morado px-1.5 text-white" : "text-n-900"}`}>{Number(d.slice(8))}</span>
@@ -185,7 +180,7 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
                           </span>
                         )}
                       </span>
-                    </Link>
+                    </Enlace>
                   </li>
                 );
               })}
@@ -205,18 +200,18 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
               <div className="flex flex-wrap items-center gap-3 text-sm font-semibold">
                 {/* N121: la reserva nueva arranca en el día elegido (si ya pasó, en hoy). */}
                 {f.dia >= hoy && conHotel && (
-                  <Link href={`/hotel/nueva?fecha=${f.dia}`} className="text-morado hover:underline" data-nueva-reserva-dia="hotel">
+                  <Enlace href={`/hotel/nueva?fecha=${f.dia}`} data-nueva-reserva-dia="hotel">
                     + Reserva de hotel este día
-                  </Link>
+                  </Enlace>
                 )}
                 {f.dia >= hoy && conGuarderia && (
-                  <Link href={`/guarderia/nueva?fecha=${f.dia}`} className="text-morado hover:underline" data-nueva-reserva-dia="guarderia">
+                  <Enlace href={`/guarderia/nueva?fecha=${f.dia}`} data-nueva-reserva-dia="guarderia">
                     + Reserva de guardería este día
-                  </Link>
+                  </Enlace>
                 )}
-                <Link href={enlace({ dia: undefined })} className="text-morado hover:underline">
+                <Enlace href={enlace({ dia: undefined })}>
                   Cerrar el día
-                </Link>
+                </Enlace>
               </div>
             </div>
             {dia?.error ? (
@@ -269,12 +264,12 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
             Desde
             <input type="date" name="desde" defaultValue={f.desde} className="min-h-12 rounded-md border-[1.5px] border-borde bg-white px-3 text-base text-n-900" />
           </label>
-          <button type="submit" className="min-h-12 rounded-md bg-morado px-5 text-base font-semibold text-white hover:bg-morado-oscuro focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado focus-visible:ring-offset-2">
+          <Button type="submit" sinBloqueo>
             Filtrar
-          </button>
-          <Link href={enlaceCalendario({ vista: f.vista, fecha: f.fecha, dia: f.dia ?? undefined })} className="text-center text-sm font-semibold text-morado hover:underline sm:pb-3">
+          </Button>
+          <Enlace href={enlaceCalendario({ vista: f.vista, fecha: f.fecha, dia: f.dia ?? undefined })} className="text-center text-sm sm:pb-3">
             Quitar filtros
-          </Link>
+          </Enlace>
         </form>
 
         {proximas.error ? (
@@ -292,16 +287,16 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
         )}
         <div className="flex items-center justify-between gap-3 text-sm font-semibold">
           {f.pagina > 0 ? (
-            <Link href={enlace({ pagina: f.pagina - 1, dia: f.dia ?? undefined })} className="text-morado hover:underline">
+            <Enlace href={enlace({ pagina: f.pagina - 1, dia: f.dia ?? undefined })}>
               ← Anteriores
-            </Link>
+            </Enlace>
           ) : (
             <span />
           )}
           {proximas.hayMas && (
-            <Link href={enlace({ pagina: f.pagina + 1, dia: f.dia ?? undefined })} className="text-morado hover:underline">
+            <Enlace href={enlace({ pagina: f.pagina + 1, dia: f.dia ?? undefined })}>
               Siguientes →
-            </Link>
+            </Enlace>
           )}
         </div>
       </section>

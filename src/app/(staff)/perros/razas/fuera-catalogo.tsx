@@ -137,7 +137,7 @@ export function FueraDeCatalogo({
                       {puedeProponer && (
                         <Button
                           type="button"
-                          variante="exito"
+                          variante="primario"
                           onClick={() => {
                             setNueva(abierta ? null : g.texto_norm);
                             setForm({ nombre: primeraMayuscula(g.textos[0] ?? ""), variantes: g.textos.slice(1).join(", "), tamanoId: "", pelajeId: "" });

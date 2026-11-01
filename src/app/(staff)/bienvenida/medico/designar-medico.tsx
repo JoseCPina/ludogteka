@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { designarmeMedico, designarMedico } from "../acciones";
+import { Enlace } from "@/components/ui/enlace";
 
 const valida = (c: string) => /^[0-9]{7,8}$/.test(c.replace(/[\s.-]/g, ""));
 
@@ -70,9 +70,9 @@ export function DesignarMedico({ soyMedico, candidatos }: { soyMedico: boolean; 
         {candidatos.length === 0 ? (
           <p className="text-sm text-n-600">
             Primero invítalo con su correo en{" "}
-            <Link href="/bienvenida/equipo" className="font-semibold text-morado hover:underline">
+            <Enlace href="/bienvenida/equipo" enTexto>
               Tu equipo
-            </Link>{" "}
+            </Enlace>{" "}
             (marca «Es médico veterinario» y escribe su cédula ahí mismo).
           </p>
         ) : (

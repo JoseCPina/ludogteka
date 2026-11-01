@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cargarOpcionesCobroManual } from "@/lib/cobro/opciones-manual";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -7,6 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { BonosCliente, type BonoCatalogo, type BonoFila } from "@/app/(staff)/clientes/bonos-cliente";
 import { BuscadorCliente } from "./buscador-cliente";
 import { cargarClientesBuscables } from "@/lib/clientes/buscables";
+import { Enlace } from "@/components/ui/enlace";
 
 // Vender y consultar day pass desde Guardería, sin salirse a Clientes ni a
 // Caja. El paquete es de UN perro (bonos_clientes.perro_id): se busca al
@@ -80,9 +80,9 @@ export default async function PasesGuarderiaPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/guarderia" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/guarderia" className="text-sm">
           ← Guardería
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Day pass y mensualidad</h1>
         <p className="mt-1 text-n-600">
           Vende un paquete y consulta el saldo. Cada paquete es de un perro: solo ese perro lo usa (un
@@ -93,9 +93,9 @@ export default async function PasesGuarderiaPage({
       {!hayTurno && (
         <Alert variante="advertencia" titulo="No hay turno de caja abierto">
           Puedes consultar saldos, pero para vender un paquete primero{" "}
-          <Link href="/caja" className="font-semibold underline">
+          <Enlace href="/caja" enTexto>
             abre el turno
-          </Link>
+          </Enlace>
           .
         </Alert>
       )}
@@ -110,12 +110,12 @@ export default async function PasesGuarderiaPage({
               <p className="font-bold text-n-900">{clienteElegido.nombre}</p>
             </div>
             <div className="flex gap-3 text-sm font-semibold">
-              <Link href={`/clientes/${clienteElegido.id}`} className="text-morado hover:underline">
+              <Enlace href={`/clientes/${clienteElegido.id}`}>
                 Ver ficha
-              </Link>
-              <Link href="/guarderia/pases" className="text-morado hover:underline">
+              </Enlace>
+              <Enlace href="/guarderia/pases">
                 Cambiar cliente
-              </Link>
+              </Enlace>
             </div>
           </div>
           <BonosCliente

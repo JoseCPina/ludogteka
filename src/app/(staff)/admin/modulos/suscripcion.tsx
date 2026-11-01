@@ -12,6 +12,8 @@ import { tipoDeCambio } from "@/lib/cobro/cambio";
 import { AVISO_COBRO_MENTEO, diasDePrueba, primerCobro, trialEndAlContratar } from "@/lib/cobro/prueba";
 import type { MiCobro, ModuloQueSeApaga, PlanOferta, Seleccion } from "@/lib/cobro/tipos";
 import { abrirPortalPagos, cambiarPlanSuscripcion, cancelarCambioProgramado, contratar, impactoDeCambio } from "./cobro-actions";
+import { Enlace } from "@/components/ui/enlace";
+import { Alternar } from "@/components/ui/alternar";
 
 const POR = { mensual: "al mes", anual: "al año" } as const;
 
@@ -165,16 +167,9 @@ export function Suscripcion({
         <h2 className="text-lg font-bold text-n-900">{tieneSub ? "Cambiar de plan" : "Contratar PeluDesk"}</h2>
         <div role="radiogroup" aria-label="Periodicidad" className="inline-flex rounded-full bg-n-100 p-1 text-sm font-semibold">
           {(["mensual", "anual"] as const).map((p) => (
-            <button
-              key={p}
-              type="button"
-              role="radio"
-              aria-checked={sel.periodicidad === p}
-              onClick={() => setSel({ ...sel, periodicidad: p })}
-              className={`rounded-full px-4 py-1.5 ${sel.periodicidad === p ? "bg-white text-n-900 shadow-sm" : "text-n-600"}`}
-            >
+            <Alternar key={p} type="button" role="radio" aria-checked={sel.periodicidad === p} onClick={() => setSel({ ...sel, periodicidad: p })} className={`rounded-full px-4 py-1.5 ${sel.periodicidad === p ? "bg-white text-n-900 shadow-sm" : "text-n-600"}`}>
               {p === "mensual" ? "Mensual" : "Anual · 2 meses gratis"}
-            </button>
+            </Alternar>
           ))}
         </div>
       </div>
@@ -184,14 +179,7 @@ export function Suscripcion({
           const d = conIva(netoDe(p.precio_mensual, sel.periodicidad));
           const escogido = sel.plan === p.clave;
           return (
-            <button
-              key={p.id}
-              type="button"
-              role="radio"
-              aria-checked={escogido}
-              onClick={() => setSel({ ...sel, plan: p.clave })}
-              className={`flex flex-col gap-2 rounded-lg border p-4 text-left ${escogido ? "border-morado ring-2 ring-morado" : "border-n-200 hover:border-n-400"}`}
-            >
+            <Alternar key={p.id} type="button" role="radio" aria-checked={escogido} onClick={() => setSel({ ...sel, plan: p.clave })} className={`flex flex-col gap-2 rounded-lg border p-4 text-left ${escogido ? "border-morado ring-2 ring-morado" : "border-n-200 hover:border-n-400"}`}>
               <span className="flex items-center justify-between gap-2 font-semibold text-n-900">
                 {p.nombre}
                 {tieneSub && contratado?.id === p.id && <span className="rounded-full bg-menta-suave px-2 py-0.5 text-xs text-menta-oscuro">Tu plan</span>}
@@ -199,7 +187,7 @@ export function Suscripcion({
               <Precio neto={d.neto} periodicidad={sel.periodicidad} />
               {p.descripcion && <span className="text-sm text-n-700">{p.descripcion}</span>}
               <span className="text-xs text-n-600">{p.modulos.map((m) => nombresModulos[m] ?? m).join(" · ")}</span>
-            </button>
+            </Alternar>
           );
         })}
       </div>
@@ -386,9 +374,9 @@ function EstadoActual({
       <h2 className="text-lg font-bold text-n-900">Tu suscripción</h2>
       {texto && <p className={`rounded-md px-3 py-2 text-sm ${tono}`}>{texto}</p>}
       {(cobro.estado === "gracia" || cobro.estado === "solo_lectura") && cobro.factura_pendiente_url && (
-        <a href={cobro.factura_pendiente_url} className="self-start rounded-md bg-morado px-4 py-2 text-sm font-semibold text-white hover:bg-menta-oscuro">
+        <Enlace href={cobro.factura_pendiente_url} className="self-start text-sm">
           Pagar la factura pendiente
-        </a>
+        </Enlace>
       )}
       {cambio && (
         <p className="rounded-md bg-n-50 px-3 py-2 text-sm text-n-800">

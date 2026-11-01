@@ -99,13 +99,9 @@ export function RecetaConsumo({
                       {f.insumo_nombre} — {f.cantidad_consumo} {unidadSegunCantidad(f.cantidad_consumo, f.unidad_etiqueta)}
                     </span>
                     {esAdmin && (
-                      <button
-                        type="button"
-                        onClick={() => quitar(f.id)}
-                        className="text-xs font-semibold text-coral-oscuro hover:underline"
-                      >
+                      <Button type="button" onClick={() => quitar(f.id)} variante="secundario" tamano="compacto">
                         Quitar
-                      </button>
+                      </Button>
                     )}
                   </li>
                 ))}

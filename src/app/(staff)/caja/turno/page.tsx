@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
@@ -10,6 +9,7 @@ import { MovimientosTurno, type MovimientoTurno } from "./movimientos-turno";
 import { zonaActual, negocioActual } from "@/lib/negocio/actual";
 import { nombresDePersonal } from "@/lib/personal/nombres";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 // El turno de caja: apertura, movimientos en curso, retiros, arqueo ciego e historial. El cobro en sí vive en /caja
 // (mostrador). Corte ciego (Fase 5; QA R59, N148): con el turno abierto, ni el acumulado por método, ni los totales,
@@ -182,9 +182,9 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/caja" className="text-sm">
           ← Caja
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Turno de caja</h1>
         <p className="mt-1 text-n-600">Apertura, movimientos del turno, retiros y arqueo de cierre.</p>
       </div>

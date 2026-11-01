@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { Enlace } from "@/components/ui/enlace";
 
 // El aviso de arriba cuando PeluDesk contestó un ticket tuyo y no lo has
 // visto (se apaga al abrir el ticket).
@@ -14,16 +14,16 @@ export async function AvisoTickets() {
       {lista.length === 1 ? (
         <>
           PeluDesk contestó tu ticket #{t.numero} «{t.asunto}».{" "}
-          <Link href={`/ayuda/tickets/${t.id}`} className="font-semibold text-morado underline">
+          <Enlace href={`/ayuda/tickets/${t.id}`} enTexto>
             Ver la respuesta
-          </Link>
+          </Enlace>
         </>
       ) : (
         <>
           PeluDesk contestó {lista.length} tickets tuyos.{" "}
-          <Link href="/ayuda" className="font-semibold text-morado underline">
+          <Enlace href="/ayuda" enTexto>
             Verlos en Ayuda
-          </Link>
+          </Enlace>
         </>
       )}
     </div>

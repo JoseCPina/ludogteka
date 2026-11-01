@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -6,6 +5,7 @@ import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { hoyNegocio } from "@/lib/formato";
 import { cargarExtras } from "@/lib/extras/servidor";
 import { ListaExtras } from "./lista-extras";
+import { Enlace } from "@/components/ui/enlace";
 
 /**
  * Los servicios extra del día en el tablero de recepción: la tarea que el personal
@@ -24,9 +24,9 @@ export async function ExtrasTablero() {
     <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4" data-extras-tablero>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-lg font-bold text-n-900">Servicios extra de hoy</h2>
-        <Link href="/extras" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/extras" className="text-sm">
           {pendientes === 0 ? "Todo hecho · ver detalle" : `${pendientes} por hacer · ver todo`}
-        </Link>
+        </Enlace>
       </div>
       <ListaExtras filas={filas} negocio={negocio.nombre} puedeAgregar={tienePermiso(sesion, "agregar_servicios_extra")} />
     </section>

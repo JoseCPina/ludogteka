@@ -1,8 +1,8 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
-import Link from "next/link";
 import { puedeAbrir, type Acceso } from "@/lib/auth/acceso";
+import { Enlace } from "@/components/ui/enlace";
 
 // QA N127: quién es la persona en este negocio (rol, permisos, módulos, Veterinaria), para que un componente de
 // cliente esconda todo enlace o botón que lleve a una página que no puede abrir. Es la misma función con la que el
@@ -30,9 +30,9 @@ export function SiPuedeAbrir({ href, children, sino = null }: { href: string; ch
  */
 export function EnlaceOTexto({ href, className, children }: { href: string; className?: string; children: ReactNode }) {
   return usePuedeAbrir()(href) ? (
-    <Link href={href} className={className}>
+    <Enlace href={href} className={className} enTexto>
       {children}
-    </Link>
+    </Enlace>
   ) : (
     <span>{children}</span>
   );

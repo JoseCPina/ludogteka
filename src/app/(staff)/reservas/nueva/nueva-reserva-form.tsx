@@ -6,7 +6,6 @@ import { useEspera } from "@/hooks/use-espera";
 import { useModulos } from "@/components/modulos-contexto";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { conTope, mensajeDeFallo } from "@/lib/ui/espera";
-import Link from "next/link";
 import { EnlaceConEspera } from "@/components/ui/enlace-con-espera";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -36,6 +35,7 @@ import {
   type LineaReserva,
   type ResultadoLinea,
 } from "../reserva-actions";
+import { Enlace } from "@/components/ui/enlace";
 
 type Perro = { id: string; cliente_id: string; nombre: string; evaluado: boolean };
 type Servicio = ServicioOfrecible;
@@ -368,7 +368,7 @@ export function NuevaReservaForm({
                 {r.exito && r.estanciaId && (
                   <EnlaceConEspera
                     href={`/reservas/estancias/${r.estanciaId}/checkin`}
-                    className="mt-1 inline-block text-sm font-semibold text-menta-oscuro hover:underline"
+                    className="mt-1 text-sm"
                     textoCargando="Abriendo el check-in…"
                   >
                     Hacer check-in ahora →
@@ -464,15 +464,11 @@ export function NuevaReservaForm({
         </ul>
         <div className="flex flex-wrap gap-3">
           {reservaId && (
-            <Link href={`/reservas/${reservaId}`}>
-              <Button type="button">Ver reserva</Button>
-            </Link>
+            <Enlace href={`/reservas/${reservaId}`}>Ver reserva</Enlace>
           )}
-          <Link href={`${base}/nueva`}>
-            <Button type="button" variante="secundario">
+          <Enlace href={`${base}/nueva`}>
               Nueva reserva
-            </Button>
-          </Link>
+            </Enlace>
         </div>
       </div>
     );
@@ -528,9 +524,9 @@ export function NuevaReservaForm({
                     <p className="font-semibold">{perro.nombre} no tiene evaluación de comportamiento.</p>
                     <p className="mt-1">
                       Sin ella no se puede reservar guardería ni hotel.{" "}
-                      <Link href={`/perros/${perro.id}`} className="font-semibold text-morado hover:underline">
+                      <Enlace href={`/perros/${perro.id}`} enTexto>
                         Completar la evaluación en su expediente →
-                      </Link>
+                      </Enlace>
                     </p>
                     {esAdmin && (
                       <div className="mt-3 flex flex-col gap-2 border-t border-ambar pt-3">
@@ -558,9 +554,9 @@ export function NuevaReservaForm({
                 {linea && (recomendados[perro.id]?.length ?? 0) > 0 && (
                   <p className="mt-3 rounded-md bg-n-50 px-3 py-2 text-sm text-n-700" data-datos-recomendados>
                     Recomendado para hotel y guardería: a {perro.nombre} le faltan {recomendados[perro.id].join(", ")}. No impide reservar.{" "}
-                    <Link href={`/perros/${perro.id}`} className="font-semibold text-morado hover:underline">
+                    <Enlace href={`/perros/${perro.id}`} enTexto>
                       Completarlos en su expediente →
-                    </Link>
+                    </Enlace>
                   </p>
                 )}
 
@@ -578,9 +574,9 @@ export function NuevaReservaForm({
                     <p className="font-semibold">A {perro.nombre} le falta: {sanitarios[perro.id].join(", ")}.</p>
                     <p className="mt-1">
                       Sin eso no se puede reservar guardería ni hotel.{" "}
-                      <Link href={`/perros/${perro.id}#sanitarios`} className="font-semibold text-morado hover:underline">
+                      <Enlace href={`/perros/${perro.id}#sanitarios`} enTexto>
                         Registrar las vacunas en su expediente →
-                      </Link>
+                      </Enlace>
                     </p>
                     {esAdmin && (
                       <div className="mt-3 flex flex-col gap-2 border-t border-ambar pt-3">

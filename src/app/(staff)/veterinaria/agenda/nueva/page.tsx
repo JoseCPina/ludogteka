@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import { CamposCitaVet } from "./campos-cita";
 import type { CitaVet, MedicoVet, TipoCitaConfig } from "@/lib/veterinaria/expediente";
 import { agendarCita } from "../../expediente/actions";
 import { EnlaceOTexto, SiPuedeAbrir } from "@/components/acceso-contexto";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function NuevaCitaVet({ searchParams }: { searchParams: Promise<{ q?: string; perro?: string; fecha?: string; cliente?: string }> }) {
   const { q: qParam, perro, fecha, cliente } = await searchParams;
@@ -33,7 +33,7 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
     return (
       <div className="flex flex-col gap-5">
         <div>
-          <Link href="/veterinaria/agenda" className="text-sm font-semibold text-morado hover:underline">← Agenda clínica</Link>
+          <Enlace href="/veterinaria/agenda" className="text-sm">← Agenda clínica</Enlace>
           <h1 className="mt-1 text-2xl font-bold text-n-900">Agendar una cita</h1>
           <p className="mt-1 text-n-600">Primero elige a la mascota: busca por su nombre, el de su dueño o su teléfono.</p>
         </div>
@@ -44,20 +44,20 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
         </form>
         {/* QA S27: el alta del dueño sigue a la de su mascota y regresa aquí con ella elegida (?perro=). */}
         <SiPuedeAbrir href="/clientes/nuevo">
-          <Link href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} className="self-start text-sm font-semibold text-morado hover:underline" data-nuevo-cliente-vet>
+          <Enlace href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} className="self-start text-sm" data-nuevo-cliente-vet>
             + Nuevo cliente y su mascota
-          </Link>
+          </Enlace>
         </SiPuedeAbrir>
         {filas.length === 0 ? (
-          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No encontramos a nadie con eso.<SiPuedeAbrir href="/clientes/nuevo"> Da de alta al dueño y a su mascota con <Link href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} className="font-semibold text-morado underline">Nuevo cliente</Link>.</SiPuedeAbrir></p>
+          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No encontramos a nadie con eso.<SiPuedeAbrir href="/clientes/nuevo"> Da de alta al dueño y a su mascota con <Enlace href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} enTexto>Nuevo cliente</Enlace>.</SiPuedeAbrir></p>
         ) : (
           <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
             {filas.map((f) => (
               <li key={f.id}>
-                <Link href={`/veterinaria/agenda/nueva?perro=${f.id}${fecha ? `&fecha=${fecha}` : ""}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50">
+                <Enlace href={`/veterinaria/agenda/nueva?perro=${f.id}${fecha ? `&fecha=${fecha}` : ""}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
                   <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
                   <span className="text-sm text-n-600">{f.dueno}{f.telefono ? ` · ${f.telefono}` : ""}</span>
-                </Link>
+                </Enlace>
               </li>
             ))}
           </ul>
@@ -93,7 +93,7 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
   return (
     <div className="flex max-w-2xl flex-col gap-5">
       <div>
-        <Link href="/veterinaria/agenda/nueva" className="text-sm font-semibold text-morado hover:underline">← Elegir otra mascota</Link>
+        <Enlace href="/veterinaria/agenda/nueva" className="text-sm">← Elegir otra mascota</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Agendar una cita</h1>
         {mascota && <p className="mt-1 text-n-700">{mascota.nombre} · {etiquetaEspecie(mascota.especie as string | null)} · de {dueno?.nombre ?? "—"}</p>}
       </div>

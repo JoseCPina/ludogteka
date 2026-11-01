@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { ProductoYLoteEspejo } from "./producto-lote";
@@ -14,6 +13,7 @@ import { hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import type { ProductoReceta } from "../../nueva/editor-receta";
 import { registrarEspejo } from "../../actions";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function NuevoEspejo({ searchParams }: { searchParams: Promise<{ q?: string; perro?: string; uso?: string }> }) {
   const { q, perro, uso } = await searchParams;
@@ -21,7 +21,7 @@ export default async function NuevoEspejo({ searchParams }: { searchParams: Prom
   const puede = (await vetPuede(supabase, "registrar_recetas_sitpv")) && Boolean(await miMedico(supabase));
   const cabecera = (
     <div>
-      <Link href="/veterinaria/recetas/sitpv" className="text-sm font-semibold text-morado hover:underline">← Registro SITPV</Link>
+      <Enlace href="/veterinaria/recetas/sitpv" className="text-sm">← Registro SITPV</Enlace>
       <h1 className="mt-1 text-2xl font-bold text-n-900">Registrar una receta del SITPV</h1>
     </div>
   );
@@ -41,7 +41,7 @@ export default async function NuevoEspejo({ searchParams }: { searchParams: Prom
       <div className="flex flex-col gap-5">
         {cabecera}
         <p className="max-w-3xl text-n-600">Primero emite la receta cuantificada en el SITPV. Después regístrala aquí: elige a la mascota, o usa «Uso hospitalario» si el producto se va a ocupar en la clínica en varias aplicaciones.</p>
-        <Link href="/veterinaria/recetas/sitpv/nuevo?uso=hospitalario" className="w-fit"><Button type="button" variante="secundario">Es de uso hospitalario (sin paciente)</Button></Link>
+        <Enlace href="/veterinaria/recetas/sitpv/nuevo?uso=hospitalario">Es de uso hospitalario (sin paciente)</Enlace>
         <form method="get" className="flex max-w-xl items-end gap-3">
           <div className="flex-1"><Field label="Buscar mascota o dueño" name="q" defaultValue={q ?? ""} placeholder="Motita, Ana, 444…" /></div>
           <Button type="submit">Buscar</Button>
@@ -49,10 +49,10 @@ export default async function NuevoEspejo({ searchParams }: { searchParams: Prom
         <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
           {filas.map((f) => (
             <li key={f.id}>
-              <Link href={`/veterinaria/recetas/sitpv/nuevo?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50">
+              <Enlace href={`/veterinaria/recetas/sitpv/nuevo?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
                 <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
                 <span className="text-sm text-n-600">{f.dueno}{f.telefono ? ` · ${f.telefono}` : ""}</span>
-              </Link>
+              </Enlace>
             </li>
           ))}
         </ul>

@@ -1,5 +1,4 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -9,6 +8,8 @@ import { Chip } from "@/components/ui/chip";
 import type { Progreso } from "../actions";
 import { AccionesImportacion } from "./acciones";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
+import { EnlacePestana } from "@/components/ui/enlace-pestana";
 
 export const dynamic = "force-dynamic";
 
@@ -69,9 +70,9 @@ export default async function ImportacionPage({
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
-      <Link href="/admin/importar" className="text-sm font-semibold text-morado underline">
+      <Enlace href="/admin/importar" className="text-sm" enTexto>
         ← Importar
-      </Link>
+      </Enlace>
       <header>
         <h1 className="text-2xl font-bold tracking-tight text-n-900">{p.nombre_archivo}</h1>
         <p className="mt-1 text-n-700">
@@ -100,9 +101,9 @@ export default async function ImportacionPage({
           <h2 className="font-bold text-morado">Razas que quedaron como texto</h2>
           <p className="mt-1 text-n-800">
             {p.razas_sin_catalogo.map((r) => `${r.texto} (${r.cuenta})`).join(", ")}. Asígnalas al catálogo en{" "}
-            <Link className="font-semibold underline" href="/perros/razas">
+            <Enlace href="/perros/razas" enTexto>
               Razas sin catalogar
-            </Link>
+            </Enlace>
             .
           </p>
         </section>
@@ -113,16 +114,9 @@ export default async function ImportacionPage({
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar filas">
           {tabs.map((t) => (
-            <Link
-              key={t.clave}
-              href={t.clave ? `/admin/importar/${id}?ver=${t.clave}` : `/admin/importar/${id}`}
-              aria-current={(ver ?? "") === t.clave ? "true" : undefined}
-              className={`min-h-10 rounded-full border px-3 py-2 text-sm font-semibold ${
-                (ver ?? "") === t.clave ? "border-morado bg-morado text-white" : "border-borde bg-white text-n-800"
-              }`}
-            >
+            <EnlacePestana key={t.clave} href={t.clave ? `/admin/importar/${id}?ver=${t.clave}` : `/admin/importar/${id}`} activo={(ver ?? "") === t.clave}>
               {t.texto} ({t.n.toLocaleString("es-MX")})
-            </Link>
+            </EnlacePestana>
           ))}
         </div>
         <div className="overflow-x-auto">

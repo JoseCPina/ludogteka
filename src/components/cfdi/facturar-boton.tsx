@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
@@ -10,6 +9,7 @@ import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { facturarCobros, facturarGrupo, type ReceptorManual } from "@/app/(staff)/caja/facturacion-actions";
 import { ReceptorForm } from "./receptor-form";
 import type { ItemCatalogo } from "./textos";
+import { Enlace } from "@/components/ui/enlace";
 
 // «Facturar»: arma y timbra la factura de uno o varios cobros. Si el cliente
 // tiene sus datos fiscales se timbra con ellos; si no (o es «Público en
@@ -42,9 +42,9 @@ export function FacturarBoton({
         Ya está en la {yaFacturado.etiqueta}
         <SiPuedeAbrir href="/caja/facturas">
           {" · "}
-          <Link href="/caja/facturas" className="font-semibold text-morado hover:underline">
+          <Enlace href="/caja/facturas">
             Ver facturas
-          </Link>
+          </Enlace>
         </SiPuedeAbrir>
       </span>
     );
@@ -67,9 +67,9 @@ export function FacturarBoton({
     return (
       <AccionesFormulario exito={exito}>
         <SiPuedeAbrir href="/caja/facturas">
-          <Link href="/caja/facturas" className="text-sm font-semibold text-morado hover:underline">
+          <Enlace href="/caja/facturas" className="text-sm">
             Ver facturas
-          </Link>
+          </Enlace>
         </SiPuedeAbrir>
       </AccionesFormulario>
     );

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import { useModulos } from "@/components/modulos-contexto";
 import { registrarPagosMpPendientes } from "./cobro-integrado-actions";
 import { dinero } from "@/lib/dinero";
 import { CancelarCuenta } from "@/components/cuentas/cancelar-cuenta";
+import { Enlace } from "@/components/ui/enlace";
 
 export type CuentaAbierta = {
   reservaId: string;
@@ -122,10 +122,7 @@ export function MostradorCaja({
             />
           </label>
         )}
-        <Link
-          href={`/caja/cobrar/${c.reservaId}`}
-          className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:border-morado hover:bg-n-50"
-        >
+        <Enlace href={`/caja/cobrar/${c.reservaId}`} className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:border-morado hover:bg-n-50" forma="bloque">
           <span className="flex min-w-0 flex-col">
             <span className="font-semibold text-n-900">
               {c.clienteNombre}
@@ -145,7 +142,7 @@ export function MostradorCaja({
               </span>
             )}
           </span>
-        </Link>
+        </Enlace>
         </div>
         {puedeCancelar && (
           <CancelarCuenta reservaId={c.reservaId} descripcion={c.descripcion} saldo={c.saldo} esAdmin={esAdmin} compacto />
@@ -178,9 +175,7 @@ export function MostradorCaja({
               <ul className="flex flex-col gap-2">
                 {g.cuentas.map((c) => filaCuenta(c))}
               </ul>
-              <Link href={hrefJunto(g.cuentas.map((c) => c.reservaId))} className="self-start">
-                <Button type="button" data-cobrar-todo-junto>Cobrar todo junto</Button>
-              </Link>
+              <Enlace href={hrefJunto(g.cuentas.map((c) => c.reservaId))} data-cobrar-todo-junto>Cobrar todo junto</Enlace>
             </li>
           );
         })}
@@ -201,9 +196,7 @@ export function MostradorCaja({
           </p>
           <div className="flex flex-wrap gap-2">
             {seleccionadas.length >= 2 ? (
-              <Link href={hrefJunto(seleccionadas.map((c) => c.reservaId))}>
-                <Button type="button" data-cobrar-seleccion>Cobrar las marcadas juntas</Button>
-              </Link>
+              <Enlace href={hrefJunto(seleccionadas.map((c) => c.reservaId))} data-cobrar-seleccion>Cobrar las marcadas juntas</Enlace>
             ) : (
               <span className="self-center text-xs text-n-500">Marca otra cuenta de esta persona para cobrarlas juntas.</span>
             )}
@@ -286,20 +279,12 @@ export function MostradorCaja({
             )}
 
             <div className="flex flex-wrap gap-2">
-              <Link href={`/caja/cargo?cliente=${cliente.id}`}>
-                <Button type="button">Cargo suelto</Button>
-              </Link>
-              <Link href={`/caja/venta?cliente=${cliente.id}`}>
-                <Button type="button" variante="secundario">Venta rápida</Button>
-              </Link>
+              <Enlace href={`/caja/cargo?cliente=${cliente.id}`}>Cargo suelto</Enlace>
+              <Enlace href={`/caja/venta?cliente=${cliente.id}`}>Venta rápida</Enlace>
               {tieneBonos && (
-                <Link href={`/caja/pases?cliente=${cliente.id}`}>
-                  <Button type="button" variante="secundario">Vender pase o mensualidad</Button>
-                </Link>
+                <Enlace href={`/caja/pases?cliente=${cliente.id}`}>Vender pase o mensualidad</Enlace>
               )}
-              <Link href={`/clientes/${cliente.id}`}>
-                <Button type="button" variante="secundario">Ver expediente</Button>
-              </Link>
+              <Enlace href={`/clientes/${cliente.id}`}>Ver expediente</Enlace>
             </div>
           </div>
         ) : (

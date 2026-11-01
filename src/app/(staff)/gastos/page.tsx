@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
@@ -20,6 +19,7 @@ import { CampoComprobante } from "./campo-comprobante";
 import { adjuntarComprobante, cancelarGasto, corregirGasto, pagarGastoEsperado, registrarGasto } from "./gastos-actions";
 import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 type PorAtender = { id: string; concepto: string; categoria: string; monto_estimado: number | null; vencimiento: string; dias: number; vencido: boolean };
 
@@ -102,13 +102,9 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/gastos/recurrentes">
-            <Button type="button" variante="secundario">Gastos recurrentes</Button>
-          </Link>
+          <Enlace href="/gastos/recurrentes">Gastos recurrentes</Enlace>
           {esAdmin && (
-            <Link href="/gastos/categorias">
-              <Button type="button" variante="secundario">Categorías</Button>
-            </Link>
+            <Enlace href="/gastos/categorias">Categorías</Enlace>
           )}
         </div>
       </div>
@@ -148,7 +144,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Desplegable texto="Marcar pagado" variante="primario">
-                      <FormularioAccion accion={pagarGastoEsperado.bind(null, p.id)} textoBoton="Marcar pagado" variante="exito" textoExito="Marcado como pagado">
+                      <FormularioAccion accion={pagarGastoEsperado.bind(null, p.id)} textoBoton="Marcar pagado" variante="primario" textoExito="Marcado como pagado">
                         <CamposPago
                           hoy={hoy}
                           proveedores={provs}
@@ -281,9 +277,9 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                         {cancelado && <p className="text-xs font-semibold text-coral-oscuro">Cancelado: {g.motivo_cancelacion}</p>}
                         {g.notas && !cancelado && <p className="text-xs text-n-500">{g.notas}</p>}
                         {url && (
-                          <a href={url} target="_blank" rel="noopener noreferrer" className="w-fit text-sm font-semibold text-morado hover:underline">
+                          <Enlace href={url} target="_blank" rel="noopener noreferrer" className="w-fit text-sm">
                             Ver comprobante
-                          </a>
+                          </Enlace>
                         )}
                       </div>
                       <span className={`text-lg font-bold tabular-nums ${cancelado ? "text-n-400" : "text-n-900"}`}>{moneda(vigente)}</span>

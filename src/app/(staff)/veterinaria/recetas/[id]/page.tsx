@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
@@ -10,6 +9,7 @@ import { DOCUMENTOS, type RecetaDetalle, indicacionesAdicionales } from "@/lib/v
 import { AccionesReceta } from "./acciones-receta";
 import { SurtirDocumento } from "../surtir";
 import { unirFrases } from "@/lib/texto/frases";
+import { Enlace } from "@/components/ui/enlace";
 
 const ETIQUETAS_COPIA = ["ORIGINAL", "COPIA 1", "COPIA 2", "COPIA 3", "COPIA 4"];
 
@@ -85,7 +85,7 @@ export default async function Receta({ params }: { params: Promise<{ id: string 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       <div className="print:hidden">
-        <Link href="/veterinaria/recetas" className="text-sm font-semibold text-morado hover:underline">← Recetas</Link>
+        <Enlace href="/veterinaria/recetas" className="text-sm">← Recetas</Enlace>
       </div>
       {anulada && <Alert variante="error" titulo="Receta ANULADA">{unirFrases(d.anulada_motivo, "Ya no tiene validez.")}</Alert>}
       {!d.integra && <Alert variante="error" titulo="El contenido no coincide con su huella">Esta receta cambió después de emitirse. No la uses y avisa al equipo técnico.</Alert>}

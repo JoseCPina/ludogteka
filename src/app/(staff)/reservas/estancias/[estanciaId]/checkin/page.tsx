@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AlertaCriticaBanner } from "@/app/(staff)/perros/alerta-critica-banner";
 import { ResumenSanitario, type EstadoRequisitoItem } from "@/app/(staff)/perros/resumen-sanitario";
@@ -20,6 +19,7 @@ import { SeccionServiciosExtra } from "@/components/extras/seccion-servicios-ext
 import { cuentasPorEstancia } from "@/lib/cuentas/cuenta-estancia";
 import { EstadoVivo } from "@/components/concurrencia/estado-vivo";
 import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function CheckinEstanciaPage({
   params,
@@ -159,12 +159,9 @@ export default async function CheckinEstanciaPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <Link
-        href={modulo ? `${modulo.base}/checkin` : "/reservas"}
-        className="text-sm font-semibold text-morado hover:underline"
-      >
+      <Enlace href={modulo ? `${modulo.base}/checkin` : "/reservas"} className="text-sm">
         ← Check-in{modulo ? ` de ${modulo.etiqueta.toLowerCase()}` : ""}
-      </Link>
+      </Enlace>
 
       <div>
         {/* QA R59 (N146): el estado de la estancia junto al título, con la insignia del calendario. */}

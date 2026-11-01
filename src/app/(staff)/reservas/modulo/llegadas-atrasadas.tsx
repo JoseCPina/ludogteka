@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -8,6 +7,7 @@ import { useEspera } from "@/hooks/use-espera";
 import { useControlVersion, AvisoVersion } from "@/components/concurrencia/use-control-version";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { marcarNoLlego } from "../reserva-actions";
+import { Enlace } from "@/components/ui/enlace";
 
 export type LlegadaAtrasada = {
   id: string;
@@ -50,12 +50,8 @@ function Fila({ f }: { f: LlegadaAtrasada }) {
           <AvisoVersion ctl={ctl} registro="esta reserva" cargando={envio.cargando} onRecargar={() => setConfirmando(false)} />
           {error && <Alert variante="error" titulo="No se pudo marcar">{error}</Alert>}
           <div className="flex flex-wrap gap-2">
-            <Link href={`/reservas/estancias/${f.id}/checkin`}>
-              <Button type="button" variante="secundario">Check-in tardío</Button>
-            </Link>
-            <Link href={`/reservas/${f.reservaId}`}>
-              <Button type="button" variante="secundario">Reprogramar</Button>
-            </Link>
+            <Enlace href={`/reservas/estancias/${f.id}/checkin`}>Check-in tardío</Enlace>
+            <Enlace href={`/reservas/${f.reservaId}`}>Reprogramar</Enlace>
             {confirmando ? (
               <>
                 <Button type="button" variante="peligro" cargando={envio.cargando} onClick={() => noLlego()} data-confirmar-no-llego>
@@ -94,7 +90,7 @@ export function LlegadasAtrasadas({ filas, hayMas }: { filas: LlegadaAtrasada[];
       </ul>
       {hayMas && (
         <p className="text-sm text-n-600">
-          Hay más. Las ves en el <Link href="/reservas/calendario" className="font-semibold underline underline-offset-2">calendario de reservas</Link>.
+          Hay más. Las ves en el <Enlace href="/reservas/calendario" enTexto>calendario de reservas</Enlace>.
         </p>
       )}
     </section>

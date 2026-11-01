@@ -366,13 +366,9 @@ export function CargosSeccion({
             </div>
           )}
           {esRecoleccion && distanciaClienteKm != null && (
-            <button
-              type="button"
-              onClick={() => setCantidad(String(Math.round(distanciaClienteKm)))}
-              className="mb-[1px] text-sm font-semibold text-morado hover:underline"
-            >
+            <Button type="button" onClick={() => setCantidad(String(Math.round(distanciaClienteKm)))} className="mb-[1px]" variante="secundario" tamano="compacto">
               Usar distancia guardada ({distanciaClienteKm} km)
-            </button>
+            </Button>
           )}
           {/* N113: en el celular, Notas ocupa toda la fila y «Aplicar» va debajo. */}
           <div className="w-full sm:w-auto sm:min-w-[200px] sm:flex-1">

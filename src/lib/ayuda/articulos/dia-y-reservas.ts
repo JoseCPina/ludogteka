@@ -368,7 +368,7 @@ Cómo se cuenta cada día (igual aquí, en el tablero de Guardería y de Hotel, 
 - **Salió antes**: el check-out libera en ese momento todos los días que le quedaban; ya no cuenta en ninguno de los que siguen.
 - **Se quedó de más**: un perro que sigue adentro después de su salida prevista cuenta hoy; en los días que vienen, solo hasta su salida prevista.
 - Las canceladas y las de «No llegó» nunca cuentan.
-- **Llegadas atrasadas**: una reserva cuya fecha de entrada ya pasó sin check-in deja de contar desde el día siguiente a su entrada, pero sigue viva. El tablero de Guardería y el de Hotel la enseñan arriba, en **Llegadas atrasadas**, con tres botones: **No llegó** (te pide confirmar), **Check-in tardío** (desde ese momento vuelve a contar como adentro; si con él la casa rebasa el cupo, te lo dice y pide confirmar) y **Reprogramar** (abre la reserva para mover sus fechas; con la entrada nueva, vuelve a contar).
+- **Llegadas atrasadas**: una reserva cuya fecha de entrada ya pasó sin check-in deja de contar desde el día siguiente a su entrada, pero sigue viva. El tablero de Guardería y el de Hotel la enseñan arriba, en **Llegadas atrasadas**, con el botón **No llegó** (te pide confirmar) y los enlaces **Check-in tardío** (desde ese momento vuelve a contar como adentro; si con él la casa rebasa el cupo, te lo dice y pide confirmar) y **Reprogramar** (abre la reserva para mover sus fechas; con la entrada nueva, vuelve a contar).
 
 ## Ver las reservas de un día
 
@@ -566,6 +566,37 @@ Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y despué
 - «Falta ubicar la dirección del negocio en el mapa…»: el admin escribe la dirección en [Perfil y página web](/admin/perfil) y aprieta **Ubicar en el mapa** en Configuración, en la sección «Ubicación para recolección». Mientras, pon la distancia a mano.
 - La ruta sale de la dirección del negocio. Si la camioneta sale de otro lado, el admin escribe ese **Punto de salida de recolección (solo si es distinto a la dirección del negocio)** en Ubicación para recolección.
 - «Tu negocio ya usó las … consultas de Google Maps de este mes.»: captura los kilómetros a mano; el mes que entra vuelve a calcularse solo.`,
+  },
+  {
+    slug: "botones-y-enlaces",
+    titulo: "Cómo distinguir un botón de un enlace y saber que la app está trabajando",
+    resumen: "Lo que hace algo es un botón; lo que te lleva a otra pantalla es un enlace morado. Al tocar, los dos responden al momento.",
+    grupo: "inicio",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: [],
+    palabras: ["botón", "enlace", "link", "no hace nada", "se quedó pensando", "cargando", "guardando", "sigue trabajando", "doble clic", "dos veces", "barra de arriba", "lento"],
+    cuerpo: `En todas las pantallas del negocio hay tres tipos de botón y un solo tipo de enlace, siempre con el mismo aspecto.
+
+## Botones: hacen algo
+
+- **Relleno morado**: la acción principal de la pantalla o del formulario (**Guardar**, **Registrar check-in**, **Cobrar**).
+- **Blanco con borde**: lo demás que hace algo ahí mismo (**Cancelar**, **Quitar**, **Copiar**, abrir un formulario).
+- **Relleno coral**: lo que borra, anula o cancela algo. Casi siempre te pide confirmar antes.
+
+Al tocar un botón que guarda, en ese instante se pone gris con un círculo girando y dice **Guardando…** (o lo que esté haciendo). No lo vuelvas a tocar: mientras espera no recibe otro toque, así que no se guarda dos veces. Si tarda más de 3 segundos dice **Sigue trabajando…**: la conexión va lenta, pero sigue. Cuando termina, el aviso de lo que pasó sale junto al botón. Si al guardar la app te manda a otra pantalla, el botón dice **Abriendo…** hasta que llega.
+
+## Enlaces: te llevan a otra pantalla
+
+Un enlace es texto **morado** que se subraya al pasar el mouse (dentro de un párrafo, siempre subrayado): **Check-in**, **Nueva reserva**, **Ver agenda →**, el nombre de un cliente. Las tarjetas y renglones que abren algo (un perro en **Llegan hoy**, una cita de la agenda) también son enlaces. Las opciones de arriba como **Día** y **Semana**, o los filtros por estado, son pestañas: la que estás viendo va en morado relleno.
+
+Al tocar un enlace, se pone pálido con un círculo girando y aparece una barra morada delgada arriba de la página mientras la pantalla siguiente carga; en las pantallas más pesadas (Recepción, Hotel, Guardería, Estética, Clientes, Caja y Reportes) además ves de inmediato el acomodo de la pantalla en gris. Tocarlo otra vez no abre la pantalla dos veces.
+
+## Si algo no sale
+
+- «Ya toqué y no pasa nada»: si el botón o el enlace no cambió de aspecto, es que el toque no llegó (quizá tocaste fuera); vuelve a tocar. Si ya está gris con el círculo, espera: está trabajando.
+- Se queda en **Sigue trabajando…** mucho tiempo: revisa tu internet. Cuando la app se rinde dice que no se pudo y el botón vuelve a quedar listo para intentar otra vez.
+- Un botón se ve deshabilitado sin círculo: le falta algo al formulario o tu negocio está en solo lectura (lo dice la franja de arriba).`,
   },
   {
     slug: "alguien-mas-cambio-lo-que-editabas",

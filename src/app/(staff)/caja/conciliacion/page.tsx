@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { negocioActual } from "@/lib/negocio/actual";
@@ -11,6 +10,7 @@ import { RevisarHasta } from "./revisar-hasta";
 import { RevisarTarjetaManual } from "@/components/cobro/revisar-tarjeta-manual";
 import { ETIQUETA_TARJETA_MANUAL, etiquetaMotivo } from "@/lib/cobro/tarjeta-manual";
 import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 type TarjetaFila = {
   id: string;
@@ -90,7 +90,7 @@ export default async function ConciliacionPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">← Caja</Link>
+        <Enlace href="/caja" className="text-sm">← Caja</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Conciliación</h1>
         <p className="mt-1 text-n-600">
           Cada hora la app compara los cobros con terminal contra los pagos de Mercado Pago que salieron de una orden o link de PeluDesk. Aquí salen las
@@ -111,9 +111,9 @@ export default async function ConciliacionPage() {
                   <Antiguedad dias={diasDesde(o.created_at as string, hoy, zona)} />
                 </p>
                 <p className="text-n-700">{(o.detalle_error as string | null) ?? "Mercado Pago no pudo confirmar el pago."}</p>
-                <Link href={`/caja/cobrar/${o.reserva_id}`} className="font-semibold text-morado hover:underline">
+                <Enlace href={`/caja/cobrar/${o.reserva_id}`}>
                   Abrir la cuenta y «Revisar con Mercado Pago» →
-                </Link>
+                </Enlace>
               </li>
             ))}
           </ul>
@@ -150,9 +150,9 @@ export default async function ConciliacionPage() {
                   )}
                   {t.devuelto > 0 && <p className="text-sm text-coral-oscuro">Ya tiene una devolución manual de ${Number(t.devuelto).toFixed(2)}.</p>}
                   <div className="flex flex-wrap items-start gap-3">
-                    <Link href={`/caja/cobrar/${t.reserva_id}`} className="font-semibold text-morado hover:underline">
+                    <Enlace href={`/caja/cobrar/${t.reserva_id}`}>
                       Abrir la cuenta →
-                    </Link>
+                    </Enlace>
                   </div>
                   <RevisarTarjetaManual tarjetaId={t.id} monto={Number(t.monto)} reservaId={t.reserva_id} cuentas={t.cuentas} />
                 </li>
@@ -203,9 +203,9 @@ export default async function ConciliacionPage() {
                   </p>
                   <div className="flex flex-wrap items-start gap-3">
                     {reserva && (
-                      <Link href={`/caja/cobrar/${reserva}`} className="font-semibold text-morado hover:underline">
+                      <Enlace href={`/caja/cobrar/${reserva}`}>
                         Abrir la cuenta →
-                      </Link>
+                      </Enlace>
                     )}
                     {esAdmin && <DarPorRevisada id={f.id} />}
                   </div>

@@ -20,6 +20,7 @@ import { A, URL, env } from "./sesiones-dev.mjs";
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { desbordesDePantalla } from "./lib/ancho-pantalla.mjs";
 import { designarMedicoTemporal, quitarMedicoTemporal } from "./lib/medico-dev.mjs";
+import { sellar } from "./lib/sello-pantalla.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
@@ -154,4 +155,6 @@ try {
 console.log("\nPor rol:");
 for (const [rol, r] of Object.entries(porRol)) console.log(`  ${rol.padEnd(10)} ${String(r.pantallas).padStart(4)} pantallas · ${r.tablas} tablas · ${r.malas} con desborde`);
 console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s) a 390 px.` : "\n✔ A 390 px nada es más ancho que la pantalla, toda tabla es tarjetas y el menú se cierra con su botón.");
+// La corrida completa deja su sello para `npm run desplegar` (scripts/auditoria/lib/sello-pantalla.mjs).
+if (!hallazgos.length && ["admin", "recepcion", "estetica", "medico"].every((r) => ROLES.includes(r))) sellar("celular-390-dev", { porRol });
 process.exit(hallazgos.length ? 1 : 0);

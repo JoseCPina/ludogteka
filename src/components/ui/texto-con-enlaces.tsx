@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { Enlace } from "@/components/ui/enlace";
 
 // Los mensajes de la base que dicen QUÉ falta terminan con la ruta de la
 // pantalla donde se resuelve (describir_precio_faltante: "Captúralo en
@@ -27,9 +27,9 @@ export function TextoConEnlaces({ texto }: { texto: string }) {
     if (!mejor || mejor.m.index === undefined) break;
     partes.push(resto.slice(0, mejor.m.index));
     partes.push(
-      <Link key={partes.length} href={mejor.m[0]} className="font-semibold underline">
+      <Enlace key={partes.length} href={mejor.m[0]} enTexto>
         {mejor.etiqueta}
-      </Link>
+      </Enlace>
     );
     resto = resto.slice(mejor.m.index + mejor.m[0].length);
   }

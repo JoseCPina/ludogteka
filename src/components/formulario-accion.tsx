@@ -1,13 +1,14 @@
 "use client";
 
-import { createContext, Fragment, useContext, useRef, useState, type ReactNode } from "react";
+import { createContext, Fragment, useContext, useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
-import { Button } from "@/components/ui/button";
+import { Button, type VarianteBoton } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import type { ResultadoAccion } from "@/lib/empleados/tipos";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import { publicarRegistros } from "@/components/concurrencia/registro-vivo";
+import { empezarNavegacion, terminarNavegacion } from "@/lib/ui/navegacion-pendiente";
 import { versionesConRegistros, type Conflicto, type ControlVersion, type RegistroFinal, type VersionLeida } from "@/lib/concurrencia/tipos";
 
 /**
@@ -18,6 +19,29 @@ export const CierreDesplegable = createContext<((mensaje: string) => void) | nul
 
 // La versión que la pantalla leyó (QA N43): se toma al montar y se pone al día cuando la página se recarga o cuando el
 // guardado devuelve cómo quedó el registro (QA S39, N138: también al guardar encima).
+/**
+ * UX (1 de noviembre de 2026): cuando el guardado manda a otra pantalla (`ir`), el botón sigue ocupado hasta que esa
+ * pantalla llega (antes volvía a su texto en cuanto respondía el servidor y, mientras la siguiente cargaba, parecía que
+ * no había pasado nada) y la barra de arriba lo acompaña.
+ */
+function useIrA() {
+  const router = useRouter();
+  const [navegando, iniciar] = useTransition();
+  const id = useRef<number | null>(null);
+  useEffect(() => {
+    if (!navegando && id.current !== null) {
+      terminarNavegacion(id.current);
+      id.current = null;
+    }
+  }, [navegando]);
+  const ir = (destino: string) => {
+    terminarNavegacion(id.current);
+    id.current = empezarNavegacion();
+    iniciar(() => router.push(destino));
+  };
+  return { navegando, ir, router };
+}
+
 function useVersiones(versiones: VersionLeida[] | undefined) {
   const clave = JSON.stringify(versiones ?? []);
   const [leidas, setLeidas] = useState(versiones ?? []);
@@ -41,6 +65,7 @@ function useVersiones(versiones: VersionLeida[] | undefined) {
 export function FormularioAccion({
   accion,
   textoBoton,
+  textoCargando = "Guardando…",
   textoExito = "Guardado",
   variante = "primario",
   reiniciar = false,
@@ -56,14 +81,16 @@ export function FormularioAccion({
   /** «esta cita», «este empleado»… para el aviso de conflicto. */
   registro?: string;
   textoBoton: string;
+  /** Lo que dice el botón mientras espera (desde el toque). */
+  textoCargando?: string;
   textoExito?: string;
-  variante?: "primario" | "secundario" | "peligro" | "exito";
+  variante?: VarianteBoton;
   reiniciar?: boolean;
   children?: ReactNode;
   className?: string;
   otrosBotones?: ReactNode;
 }) {
-  const router = useRouter();
+  const { navegando, ir, router } = useIrA();
   const envio = useEspera();
   const cerrarDesplegable = useContext(CierreDesplegable);
   const form = useRef<HTMLFormElement>(null);
@@ -94,7 +121,7 @@ export function FormularioAccion({
     if (res.ir) {
       // QA S19: lo que se guardó se dice junto al botón mientras se abre la pantalla siguiente.
       if (res.exito) setExito(res.exito);
-      router.push(res.ir);
+      ir(res.ir);
       return;
     }
     setExito(res.exito ?? textoExito);
@@ -126,7 +153,7 @@ export function FormularioAccion({
         />
       )}
       <AccionesFormulario error={error} exito={exito}>
-        <Button type="submit" variante={variante} cargando={envio.cargando}>
+        <Button type="submit" variante={variante} cargando={envio.cargando || navegando} textoCargando={navegando ? "Abriendo…" : textoCargando}>
           {textoBoton}
         </Button>
         {otrosBotones}
@@ -139,6 +166,7 @@ export function FormularioAccion({
 export function BotonAccion({
   accion,
   texto,
+  textoCargando = "Guardando…",
   variante = "primario",
   textoExito,
   versiones,
@@ -149,12 +177,14 @@ export function BotonAccion({
   /** QA S19: abre `ir` con una carga completa DESPUÉS de la respuesta (si la pantalla actual se refresca a la vez, no se queda en ella). */
   navegacionCompleta?: boolean;
   texto: string;
-  variante?: "primario" | "secundario" | "peligro" | "exito";
+  /** Lo que dice el botón mientras espera (desde el toque). */
+  textoCargando?: string;
+  variante?: VarianteBoton;
   textoExito?: string;
   versiones?: VersionLeida[];
   registro?: string;
 }) {
-  const router = useRouter();
+  const { navegando, ir, router } = useIrA();
   const envio = useEspera();
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
@@ -178,7 +208,7 @@ export function BotonAccion({
       if (navegacionCompleta) {
         setExito(res.exito ?? "Listo. Abriendo…");
         window.location.assign(res.ir);
-      } else router.push(res.ir);
+      } else ir(res.ir);
       return;
     }
     setExito(res.exito ?? textoExito ?? "Listo");
@@ -190,7 +220,7 @@ export function BotonAccion({
         <AvisoConflicto conflicto={conflicto} registro={registro} cargando={envio.cargando} onRecargar={() => setConflicto(null)} onGuardarEncima={() => correr(true)} />
       )}
       <AccionesFormulario error={error} exito={exito}>
-        <Button type="button" variante={variante} cargando={envio.cargando} onClick={() => correr(false)}>
+        <Button type="button" variante={variante} cargando={envio.cargando || navegando} textoCargando={navegando ? "Abriendo…" : textoCargando} onClick={() => correr(false)}>
           {texto}
         </Button>
       </AccionesFormulario>
@@ -227,9 +257,9 @@ export function Desplegable({
   const contenido = (
     <div className="flex w-full flex-col gap-2 rounded-md border border-n-200 bg-n-50 p-3">
       {children}
-      <button type="button" className="w-fit text-sm font-semibold text-n-600 hover:underline" onClick={() => setAbierto(false)}>
+      <Button type="button" onClick={() => setAbierto(false)} className="w-fit" variante="secundario" tamano="compacto">
         Cerrar
-      </button>
+      </Button>
     </div>
   );
   if (!cerrarAlGuardar) return contenido;

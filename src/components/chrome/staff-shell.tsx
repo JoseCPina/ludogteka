@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cerrarSesion } from "@/lib/auth/actions";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,11 @@ import { IconoSeccion } from "@/components/iconos-nav";
 import { HechoConPeluDesk } from "@/components/marca/peludesk";
 import { BotonInstalar } from "@/components/pwa/instalar";
 import { articuloDeRuta } from "@/lib/ayuda/rutas";
+import { BotonEnviar } from "@/components/ui/boton-enviar";
+import { BarraNavegacion } from "@/components/ui/barra-navegacion";
 import { SelectorNegocio, type NegocioDelSelector } from "./selector-negocio";
+import { Enlace } from "@/components/ui/enlace";
+import { Alternar } from "@/components/ui/alternar";
 
 // El «?» de cada pantalla: el artículo de la ruta más específica (o el
 // índice de Ayuda si esa pantalla no tiene uno).
@@ -96,18 +99,13 @@ export function StaffShell({
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
+      <BarraNavegacion />
       {aviso}
       {/* QA S27: a 390 px el nombre del negocio quedaba en «PRU…». Menú, logo, ayuda y Salir son fijos; el nombre toma
           todo el ancho que sobra (menos aire entre botones en el celular) y solo entonces se trunca. */}
       <header className="flex h-16 flex-none items-center justify-between gap-1.5 overflow-hidden border-b border-n-200 bg-white px-3 sm:gap-2 sm:px-4 md:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
-          <button
-            type="button"
-            onClick={() => setMenuAbierto((valor) => !valor)}
-            aria-expanded={menuAbierto}
-            aria-controls="menu-lateral-staff"
-            className="-ml-1 grid h-11 w-10 flex-none place-items-center rounded-md text-n-700 hover:bg-n-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado sm:ml-0 sm:w-11 md:hidden"
-          >
+          <Alternar type="button" onClick={() => setMenuAbierto((valor) => !valor)} aria-expanded={menuAbierto} aria-controls="menu-lateral-staff" className="-ml-1 grid h-11 w-11 flex-none place-items-center rounded-md text-n-700 hover:bg-n-100 sm:ml-0 md:hidden">
             <span className="sr-only">{menuAbierto ? "Cerrar menú" : "Abrir menú"}</span>
             <svg
               width="22"
@@ -123,10 +121,10 @@ export function StaffShell({
               <line x1="3" y1="12" x2="21" y2="12" />
               <line x1="3" y1="18" x2="21" y2="18" />
             </svg>
-          </button>
-          <Link href={items[0]?.href ?? "/"} className="block min-w-0 flex-1 rounded-md md:flex-none focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado">
+          </Alternar>
+          <Enlace href={items[0]?.href ?? "/"} className="block min-w-0 flex-1 rounded-md md:flex-none" forma="bloque" data-ui="marca">
             {marca}
-          </Link>
+          </Enlace>
           <span className="hidden flex-none text-n-500 md:inline" aria-hidden="true">/</span>
           <span className="hidden flex-none font-semibold text-n-800 md:inline">
             {activo?.etiqueta ?? "Inicio"}
@@ -144,9 +142,9 @@ export function StaffShell({
             </p>
           </div>
           <form action={cerrarSesion}>
-            <Button type="submit" variante="secundario" className="min-h-11 px-3 sm:px-4">
+            <BotonEnviar variante="secundario" className="px-3 sm:px-4" tamano="compacto" textoCargando="Saliendo…" sinBloqueo>
               Salir
-            </Button>
+            </BotonEnviar>
           </form>
         </div>
       </header>
@@ -166,12 +164,7 @@ export function StaffShell({
 
         {menuAbierto && (
           <div className="fixed inset-0 z-40 md:hidden">
-            <button
-              type="button"
-              aria-label="Cerrar menú"
-              className="absolute inset-0 bg-n-900/40"
-              onClick={() => setMenuAbierto(false)}
-            />
+            <Alternar type="button" aria-label="Cerrar menú" onClick={() => setMenuAbierto(false)} className="absolute inset-0 bg-n-900/40" />
             <nav
               id="menu-lateral-staff"
               aria-label="Secciones"
@@ -180,18 +173,13 @@ export function StaffShell({
               {/* QA S49: un botón visible para cerrar (tocar fuera también cierra, pero no se adivina). */}
               <div className="mb-2 flex items-center justify-between border-b border-n-200 pb-2">
                 <span className="px-2 text-sm font-semibold uppercase tracking-wide text-n-500">Menú</span>
-                <button
-                  type="button"
-                  onClick={() => setMenuAbierto(false)}
-                  data-cerrar-menu
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-md border-[1.5px] border-borde px-3 text-sm font-semibold text-n-800 hover:bg-n-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
-                >
+                <Button type="button" onClick={() => setMenuAbierto(false)} data-cerrar-menu variante="secundario" tamano="compacto">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
                     <line x1="6" y1="6" x2="18" y2="18" />
                     <line x1="18" y1="6" x2="6" y2="18" />
                   </svg>
                   Cerrar
-                </button>
+                </Button>
               </div>
               <ListaNav items={items} rol={rol} pathname={pathname} onNavegar={() => setMenuAbierto(false)} />
               <SelectorNegocio negocios={negocios} className="mt-4" />
@@ -251,6 +239,7 @@ function ListaNav({
               href={item.href}
               automatica={principales.includes(item.href)}
               onClick={onNavegar}
+              data-ui="menu"
               aria-current={esActivo ? "page" : undefined}
               className={`flex min-h-11 items-center gap-3 rounded-md px-3 font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado ${
                 esActivo ? "bg-morado-suave text-morado" : "text-n-700 hover:bg-n-100"

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { formatearFechaCalendario } from "@/lib/formato";
 import { enlaceWhatsAppExtra, etiquetaEstadoExtra, mensajeTraslado, type ExtraFila } from "@/lib/extras/tipos";
 import { avisoTrasladoEnviado, cancelarExtra, marcarExtraHecho, salirTraslado } from "@/app/(staff)/extras/actions";
 import { dinero } from "@/lib/dinero";
+import { Enlace } from "@/components/ui/enlace";
 
 const ESTILO: Record<string, string> = {
   pendiente: "bg-ambar-suave text-ambar-oscuro",
@@ -99,9 +99,9 @@ export function ListaExtras({
                     {f.zona_nombre ? ` · ${f.zona_nombre}` : ""}
                   </p>
                   <p className="text-sm text-n-600">
-                    <Link href={`/perros/${f.perro_id}`} className="font-semibold text-morado hover:underline">
+                    <Enlace href={`/perros/${f.perro_id}`}>
                       {f.perro_nombre}
-                    </Link>{" "}
+                    </Enlace>{" "}
                     · {f.cliente_nombre}
                     {conFecha || f.atrasada ? ` · ${formatearFechaCalendario(f.fecha)}` : ""}
                   </p>

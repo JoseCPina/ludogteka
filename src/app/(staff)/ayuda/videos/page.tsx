@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { AREAS_TUTORIALES, cargarTutorialesVisibles, duracionTexto, urlArchivoTutorial } from "@/lib/tutoriales";
+import { Enlace } from "@/components/ui/enlace";
 
 // Los videos tutoriales que esta persona puede ver, por área. Solo lo
 // publicado y de los módulos prendidos del negocio.
@@ -14,7 +14,7 @@ export default async function VideosPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <Link href="/ayuda" className="text-sm font-semibold text-morado hover:underline">← Ayuda</Link>
+        <Enlace href="/ayuda" className="text-sm">← Ayuda</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Videos</h1>
         <p className="mt-1 text-n-600">Cómo se hace cada cosa, paso a paso, con la app de verdad. Con subtítulos y a la velocidad que quieras.</p>
       </div>
@@ -22,7 +22,7 @@ export default async function VideosPage() {
       {videos.length === 0 ? (
         <div data-sin-videos className="rounded-lg border border-n-200 bg-n-50 p-6">
           <p className="font-semibold text-n-900">Estamos preparando los videos.</p>
-          <p className="mt-1 text-n-600">Mientras tanto, los artículos de <Link href="/ayuda" className="font-semibold text-morado hover:underline">Ayuda</Link> te explican cada pantalla paso a paso.</p>
+          <p className="mt-1 text-n-600">Mientras tanto, los artículos de <Enlace href="/ayuda" enTexto>Ayuda</Enlace> te explican cada pantalla paso a paso.</p>
         </div>
       ) : (
         areas.map((a) => (
@@ -31,7 +31,7 @@ export default async function VideosPage() {
             <ul className="grid gap-3 sm:grid-cols-2">
               {a.videos.map((v) => (
                 <li key={v.slug}>
-                  <Link href={`/ayuda/videos/${v.slug}`} className="flex h-full gap-3 rounded-lg border border-n-200 bg-white p-3 hover:border-morado" data-video={v.numero}>
+                  <Enlace href={`/ayuda/videos/${v.slug}`} className="flex h-full gap-3 rounded-lg border border-n-200 bg-white p-3 hover:border-morado" data-video={v.numero} forma="bloque">
                     <span className="grid h-16 w-28 flex-none place-items-center overflow-hidden rounded-md bg-n-100">
                       {v.poster_path ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -45,7 +45,7 @@ export default async function VideosPage() {
                       <span className="text-sm text-n-600">{v.resumen}</span>
                       {v.duracion_s ? <span className="text-xs text-n-500">{duracionTexto(v.duracion_s)}</span> : null}
                     </span>
-                  </Link>
+                  </Enlace>
                 </li>
               ))}
             </ul>

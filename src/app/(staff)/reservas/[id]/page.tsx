@@ -1,6 +1,5 @@
 import { cuentaPorCobrar } from "@/lib/caja/cuenta-por-cobrar";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ import { describirEstancia, formatearFecha, formatearHoraNegocio } from "@/lib/f
 import { unirNombres } from "@/lib/texto/frases";
 import { diasEntre, hora12 } from "@/lib/web-negocio/horario";
 import { cuentasPorEstancia } from "@/lib/cuentas/cuenta-estancia";
+import { Enlace } from "@/components/ui/enlace";
 
 const fechaLarga = (iso: string) => new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
 
@@ -177,12 +177,9 @@ export default async function DetalleReservaPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link
-          href={moduloUnico ? moduloUnico.base : "/reservas"}
-          className="text-sm font-semibold text-morado hover:underline"
-        >
+        <Enlace href={moduloUnico ? moduloUnico.base : "/reservas"} className="text-sm">
           ← {moduloUnico ? moduloUnico.etiqueta : "Reservas"}
-        </Link>
+        </Enlace>
         <div className="mt-1 flex flex-wrap items-start justify-between gap-3">
           <div>
             {/* QA R59 (N146): la reserva no tiene estado propio, es el de sus estancias: con una, su insignia (cambia con la
@@ -267,12 +264,10 @@ export default async function DetalleReservaPage({
             )}
             <div className="flex gap-2">
               {(!todaCancelada || hayQueCobrar || saldo < -0.005) && (
-                <Link href={`/reservas/${id}/cobrar`}>
-                  <Button type="button" data-cobrar-reserva>
+                <Enlace href={`/reservas/${id}/cobrar`} data-cobrar-reserva>
                     {/* N129: sin saldo por cobrar no se ofrece «Cobrar»: la cuenta pagada se abre para ver sus cobros. */}
                     {todaCancelada ? (hayQueCobrar ? `Cobrar $${saldo.toFixed(2)}` : "Ver la cuenta") : hayQueCobrar ? "Cobrar" : "Ver cobros"}
-                  </Button>
-                </Link>
+                  </Enlace>
               )}
               {cancelables > 0 && (
                 <CancelarReservaBoton reservaId={reserva.id} cancelables={cancelables} detalle={(() => { const v = filas.filter((f) => f.estado === "reservada" || f.estado === "confirmada"); return v.length === 0 ? null : v.length === 1 ? describirEstancia(v[0].servicioNombre, v[0].perroNombre, v[0].fechaEntrada, v[0].fechaSalida, v[0].categoria) : describirEstancia(unirNombres([...new Set(v.map((f) => f.servicioNombre))]), unirNombres(v.map((f) => f.perroNombre)), v[0].fechaEntrada, v[0].fechaSalida, v[0].categoria); })()} nombres={filas.filter((f) => f.estado === "reservada" || f.estado === "confirmada").map((f) => f.perroNombre)} versiones={filas.map((f) => ({ t: "estancias", i: f.id, v: f.version }))} />

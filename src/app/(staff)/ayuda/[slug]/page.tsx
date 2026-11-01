@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { articulosDelNegocio } from "@/lib/ayuda";
@@ -7,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarTutorialesVisibles } from "@/lib/tutoriales";
 import { videosParaArticulo } from "@/components/ayuda/videos-del-articulo";
+import { Enlace } from "@/components/ui/enlace";
 
 // Un artículo, dentro de la app: solo si es de un módulo activo del negocio.
 export default async function ArticuloEnApp({ params, searchParams }: { params: Promise<{ slug: string }>; searchParams: Promise<{ desde?: string }> }) {
@@ -23,13 +23,13 @@ export default async function ArticuloEnApp({ params, searchParams }: { params: 
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap gap-4 text-sm font-semibold">
         {pantalla && (
-          <Link href={pantalla} className="text-morado hover:underline">
+          <Enlace href={pantalla}>
             ← Regresar a donde estabas
-          </Link>
+          </Enlace>
         )}
-        <Link href="/ayuda" className="text-morado hover:underline">
+        <Enlace href="/ayuda">
           Todos los artículos
-        </Link>
+        </Enlace>
       </div>
       <ArticuloAyuda articulo={a} videos={videos} />
       {sesion?.rol === "recepcion" && !a.roles.includes("recepcion") && (
@@ -37,12 +37,8 @@ export default async function ArticuloEnApp({ params, searchParams }: { params: 
       )}
       <div className="flex max-w-3xl flex-wrap items-center gap-3 border-t border-n-200 pt-4">
         <span className="text-n-700">¿No se resolvió?</span>
-        <Link href={`/ayuda${pantalla ? `?desde=${encodeURIComponent(pantalla)}` : ""}`}>
-          <Button type="button" variante="secundario">Pregúntale al asistente</Button>
-        </Link>
-        <Link href={`/ayuda/tickets/nuevo?${new URLSearchParams({ ...(pantalla ? { desde: pantalla } : {}), asunto: a.titulo }).toString()}`}>
-          <Button type="button" variante="secundario">Crear ticket</Button>
-        </Link>
+        <Enlace href={`/ayuda${pantalla ? `?desde=${encodeURIComponent(pantalla)}` : ""}`}>Pregúntale al asistente</Enlace>
+        <Enlace href={`/ayuda/tickets/nuevo?${new URLSearchParams({ ...(pantalla ? { desde: pantalla } : {}), asunto: a.titulo }).toString()}`}>Crear ticket</Enlace>
       </div>
     </div>
   );

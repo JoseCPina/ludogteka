@@ -45,7 +45,7 @@ export default async function ResumenPlataforma() {
         <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
           <h2 className="text-lg font-bold text-n-900">Enviar</h2>
           <FormularioPlataforma accion={enviarAhora} textoBoton="Enviar ahora" />
-          <FormularioPlataforma accion={pausarResumen.bind(null, !ajustes.pausa)} textoBoton={ajustes.pausa ? "Reanudar el resumen" : "Pausar el resumen"} variante={ajustes.pausa ? "exito" : "peligro"} />
+          <FormularioPlataforma accion={pausarResumen.bind(null, !ajustes.pausa)} textoBoton={ajustes.pausa ? "Reanudar el resumen" : "Pausar el resumen"} variante={ajustes.pausa ? "primario" : "peligro"} />
         </div>
         <div className="rounded-lg border border-n-200 bg-white p-5">
           <h2 className="text-lg font-bold text-n-900">Ajustes</h2>

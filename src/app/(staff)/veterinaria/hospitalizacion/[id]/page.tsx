@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -12,6 +11,7 @@ import { ETIQUETA_CONSENTIMIENTO, TURNOS_MONITOREO } from "@/lib/veterinaria/car
 import type { EspejoAbierto } from "./paneles";
 import { AccionesDosis, FormularioAlta, FormularioCargo, FormularioMedicacion, FormularioMonitoreo, NuevoConsentimiento, SuspenderMedicacion } from "./paneles";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 type Dosis = { id: string; programada_at: string; estado: string; aplicada_at: string | null; aplicada_por: string | null; lote: string | null; motivo_omision: string | null; nota: string | null; atrasada: boolean };
 type Medicacion = { id: string; producto: string; insumo_id: string | null; dosis: string; via: string | null; frecuencia_horas: number | null; precio_dosis: number | null; indicaciones: string | null; suspendida: boolean; suspendida_motivo: string | null; indico: string; dosis_lista: Dosis[] };
@@ -72,7 +72,7 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <Link href="/veterinaria/hospitalizacion" className="text-sm font-semibold text-morado hover:underline">← Hospitalización</Link>
+        <Enlace href="/veterinaria/hospitalizacion" className="text-sm">← Hospitalización</Enlace>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-n-900">
@@ -91,13 +91,13 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
           <div className="flex flex-wrap gap-2">
             {/* La cuenta se abre en Caja: solo para quien puede abrirla (un médico de estética no). */}
             <SiPuedeAbrir href={`/caja/cobrar/${d.reserva_id}`}>
-              <Link href={`/caja/cobrar/${d.reserva_id}`} className="inline-flex min-h-10 items-center rounded-md bg-menta px-4 text-sm font-semibold text-morado hover:bg-menta-hover">
+              <Enlace href={`/caja/cobrar/${d.reserva_id}`} className="text-sm">
                 Ver cuenta / cobrar
-              </Link>
+              </Enlace>
             </SiPuedeAbrir>
-            <Link href={`/veterinaria/carnet/${d.perro_id}`} className="inline-flex min-h-10 items-center rounded-md border-[1.5px] border-borde bg-white px-4 text-sm font-semibold text-n-900 hover:bg-n-100">
+            <Enlace href={`/veterinaria/carnet/${d.perro_id}`} className="text-sm">
               Carnet
-            </Link>
+            </Enlace>
           </div>
         </div>
       </div>
@@ -247,9 +247,9 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
           <ul className="flex flex-col divide-y divide-n-200 text-sm">
             {d.consentimientos.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <Link href={`/veterinaria/consentimientos/${c.id}`} className="font-semibold text-morado hover:underline">
+                <Enlace href={`/veterinaria/consentimientos/${c.id}`}>
                   {ETIQUETA_CONSENTIMIENTO[c.tipo]}{c.procedimiento ? ` — ${c.procedimiento}` : ""}
-                </Link>
+                </Enlace>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${c.estado === "firmado" ? "bg-menta-suave text-menta-oscuro" : c.estado === "cancelado" ? "bg-n-100 text-n-600" : "bg-ambar-suave text-ambar-oscuro"}`}>
                   {c.estado === "firmado" ? `Firmado${c.firmado_at ? ` el ${formatearDiaDeInstante(c.firmado_at, zona)}` : ""}` : c.estado === "cancelado" ? "Cancelado" : "Pendiente de firma"}
                 </span>

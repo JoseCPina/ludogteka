@@ -320,6 +320,22 @@ if (sucio) {
   );
 }
 
+// UX (1 de noviembre de 2026): las auditorías de pantalla con navegador (celular-390-dev, ux-jerarquia-dev,
+// ux-respuesta-dev) necesitan `npm run build` + `next start` y no corren aquí: cada una deja un sello con la huella del
+// src/ con el que pasó completa (scripts/auditoria/lib/sello-pantalla.mjs). Sin el sello de ESTE src/, no se despliega.
+if (!EN_NUBE) {
+  const { sellosFaltantes } = await import("./auditoria/lib/sello-pantalla.mjs");
+  const faltan = sellosFaltantes();
+  if (faltan.length) {
+    abortar(
+      "faltan auditorías de pantalla para este código",
+      faltan.map((x) => `  · ${x.nombre}: ${x.tiene ? `pasó con otro src/ (${x.tiene}), este es ${x.falta}` : "no ha pasado"}`).join("\n") +
+        "\nCompila (npm run build), levanta next start -p 3001 y corre cada una completa: node scripts/auditoria/<nombre>.mjs"
+    );
+  }
+  console.log("   auditorías de pantalla: celular-390-dev, ux-jerarquia-dev y ux-respuesta-dev pasaron con este src/.");
+}
+
 git("fetch", "origin", RAMA);
 const local = git("rev-parse", "HEAD");
 const remoto = git("rev-parse", `origin/${RAMA}`);

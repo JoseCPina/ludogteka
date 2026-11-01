@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { urlDesglose } from "@/lib/reportes/desglose";
 import { TEXTO_CORTE_CIEGO, turnoAbiertoEnPeriodo } from "@/lib/caja/corte-ciego";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 function formatearMoneda(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
@@ -16,9 +16,9 @@ function formatearMoneda(n: number): string {
 // Una cifra que se toca: abre el desglose de las operaciones que la forman, en el mismo periodo.
 function Toque({ href, etiqueta, className, children }: { href: string; etiqueta: string; className?: string; children: React.ReactNode }) {
   return (
-    <Link href={href} aria-label={etiqueta} data-desglose-enlace className={`${className ?? ""} hover:underline`}>
+    <Enlace href={href} aria-label={etiqueta} data-desglose-enlace className={className}>
       {children}
-    </Link>
+    </Enlace>
   );
 }
 
@@ -224,12 +224,12 @@ export default async function ReportesPage({
         </div>
         <Button type="submit">Actualizar</Button>
         <div className="flex flex-wrap gap-3 pb-3 text-sm font-semibold">
-          <Link href={`/reportes?desde=${ultimoMes.desde}&hasta=${ultimoMes.hasta}`} className="text-morado hover:underline">
+          <Enlace href={`/reportes?desde=${ultimoMes.desde}&hasta=${ultimoMes.hasta}`}>
             Último mes completo ({nombreMes(ultimoMes.desde)})
-          </Link>
-          <Link href={`/reportes?desde=${mesEnCurso.desde}&hasta=${mesEnCurso.hasta}`} className="text-morado hover:underline">
+          </Enlace>
+          <Enlace href={`/reportes?desde=${mesEnCurso.desde}&hasta=${mesEnCurso.hasta}`}>
             Mes en curso
-          </Link>
+          </Enlace>
         </div>
       </form>
 
@@ -490,21 +490,21 @@ export default async function ReportesPage({
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Link href={D("bonos_vendidos")} aria-label="Ver los bonos vendidos" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            <Enlace href={D("bonos_vendidos")} aria-label="Ver los bonos vendidos" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Bonos vendidos</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(reporte.bonos_vendidos)}</p>
               <p className="mt-1 text-xs text-n-500">Ingreso diferido, ya cobrado</p>
-            </Link>
-            <Link href={D("bonos_consumidos")} aria-label="Ver los bonos consumidos" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            </Enlace>
+            <Enlace href={D("bonos_consumidos")} aria-label="Ver los bonos consumidos" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Bonos consumidos</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(reporte.bonos_consumidos)}</p>
               <p className="mt-1 text-xs text-n-500">Ingreso reconocido este periodo</p>
-            </Link>
-            <Link href={D("descuentos")} aria-label="Ver los descuentos otorgados" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            </Enlace>
+            <Enlace href={D("descuentos")} aria-label="Ver los descuentos otorgados" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Descuentos otorgados</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(reporte.descuentos_otorgados)}</p>
               <p className="mt-1 text-xs text-n-500">Ya restados del cobro, solo informativo</p>
-            </Link>
+            </Enlace>
           </div>
         </div>
       )}
@@ -519,25 +519,25 @@ export default async function ReportesPage({
             </p>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-            <Link href={D("ventas_vendido")} aria-label="Ver las ventas de mostrador" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            <Enlace href={D("ventas_vendido")} aria-label="Ver las ventas de mostrador" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Vendido</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.total_vendido))}</p>
               <p className="mt-1 text-xs text-n-500">{Number(ventas.ventas)} {Number(ventas.ventas) === 1 ? "venta" : "ventas"}</p>
-            </Link>
-            <Link href={D("ventas_productos")} aria-label="Ver los productos vendidos" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            </Enlace>
+            <Enlace href={D("ventas_productos")} aria-label="Ver los productos vendidos" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Productos</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.productos))}</p>
               <p className="mt-1 text-xs text-n-500">Costo {formatearMoneda(Number(ventas.costo_productos))}</p>
-            </Link>
-            <Link href={D("ventas_conceptos")} aria-label="Ver los conceptos libres" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            </Enlace>
+            <Enlace href={D("ventas_conceptos")} aria-label="Ver los conceptos libres" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Conceptos libres</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.conceptos))}</p>
-            </Link>
-            <Link href={D("ventas_cobrado")} aria-label="Ver lo cobrado de las ventas de mostrador" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            </Enlace>
+            <Enlace href={D("ventas_cobrado")} aria-label="Ver lo cobrado de las ventas de mostrador" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Cobrado (neto)</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.cobrado))}</p>
               <p className="mt-1 text-xs text-n-500">Menos devoluciones</p>
-            </Link>
+            </Enlace>
           </div>
         </div>
       )}
@@ -581,10 +581,10 @@ export default async function ReportesPage({
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Link href={D("estetica_ingreso")} aria-label="Ver las citas que forman el ingreso de estética" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+              <Enlace href={D("estetica_ingreso")} aria-label="Ver las citas que forman el ingreso de estética" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
                 <p className="text-xs font-bold uppercase tracking-wide text-n-600">Ingreso de estética</p>
                 <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(costos.ingreso_estetica)}</p>
-              </Link>
+              </Enlace>
               <div className="rounded-lg border border-n-200 bg-white p-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-n-600">Costo de consumo (estética)</p>
                 <p className="mt-1 text-xl font-bold text-n-900">
@@ -674,26 +674,26 @@ export default async function ReportesPage({
           </Alert>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-            <Link href={D("op_guarderia")} aria-label="Ver los días de guardería" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            <Enlace href={D("op_guarderia")} aria-label="Ver los días de guardería" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Días de guardería</p>
               <p className="mt-1 text-xl font-bold text-n-900">{operativo.dias_guarderia}</p>
-            </Link>
-            <Link href={D("op_hotel")} aria-label="Ver las noches de hotel" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            </Enlace>
+            <Enlace href={D("op_hotel")} aria-label="Ver las noches de hotel" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Noches de hotel</p>
               <p className="mt-1 text-xl font-bold text-n-900">{operativo.noches_hotel}</p>
-            </Link>
-            <Link href={D("op_estetica")} aria-label="Ver las citas de estética finalizadas" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            </Enlace>
+            <Enlace href={D("op_estetica")} aria-label="Ver las citas de estética finalizadas" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Citas de estética</p>
               <p className="mt-1 text-xl font-bold text-n-900">{operativo.citas_estetica_finalizadas}</p>
-            </Link>
-            <Link href={D("op_canceladas")} aria-label="Ver las estancias canceladas" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            </Enlace>
+            <Enlace href={D("op_canceladas")} aria-label="Ver las estancias canceladas" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Estancias canceladas</p>
               <p className="mt-1 text-xl font-bold text-n-900">{operativo.estancias_canceladas}</p>
-            </Link>
-            <Link href={D("op_no_llego")} aria-label="Ver las citas en las que no llegó" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave">
+            </Enlace>
+            <Enlace href={D("op_no_llego")} aria-label="Ver las citas en las que no llegó" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Citas no llegó</p>
               <p className="mt-1 text-xl font-bold text-n-900">{operativo.citas_no_llego}</p>
-            </Link>
+            </Enlace>
           </div>
         )}
       </div>

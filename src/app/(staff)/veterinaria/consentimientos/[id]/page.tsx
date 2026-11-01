@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
@@ -11,6 +10,7 @@ import { ETIQUETA_CONSENTIMIENTO, llenarConsentimiento } from "@/lib/veterinaria
 import { cancelarConsentimiento } from "../actions";
 import { FirmaConsentimiento, VerFirmado } from "./firma";
 import { unirFrases } from "@/lib/texto/frases";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function Consentimiento({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -30,7 +30,7 @@ export default async function Consentimiento({ params }: { params: Promise<{ id:
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
-      <Link href={c.hospitalizacion_id ? `/veterinaria/hospitalizacion/${c.hospitalizacion_id}` : "/veterinaria/consentimientos"} className="text-sm font-semibold text-morado hover:underline">← Volver</Link>
+      <Enlace href={c.hospitalizacion_id ? `/veterinaria/hospitalizacion/${c.hospitalizacion_id}` : "/veterinaria/consentimientos"} className="text-sm">← Volver</Enlace>
       {c.estado === "firmado" && (
         <Alert variante="exito" titulo="Firmado">
           {unirFrases(`Lo firmó ${c.firmante_nombre as string} el ${formatearFecha(c.firmado_at as string, zona)} ${horaLocalDeInstante(c.firmado_at as string, zona)}`, "El PDF quedó sellado con la hora, la IP y un hash.")}

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/ui/field";
@@ -43,6 +42,7 @@ import { useZonaNegocio } from "@/components/zona-negocio";
 import { dinero } from "@/lib/dinero";
 import { unirFrases } from "@/lib/texto/frases";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 export type LineaCuenta = {
   tipo: string;
@@ -1172,9 +1172,9 @@ export function CuentaCobro({
                         Un solo pago de {dinero(c.grupo.total + c.grupo.propina)} por {c.grupo.cuentas.length} cuentas
                         {c.grupo.propina > 0 ? `, con ${dinero(c.grupo.propina)} de propina` : ""}. A esta cuenta le tocaron {dinero(totalCobro)}.
                       </p>
-                      <Link href={`/caja/recibo-junto/${c.grupo.id}`} className="font-semibold text-morado hover:underline">
+                      <Enlace href={`/caja/recibo-junto/${c.grupo.id}`}>
                         Ver el recibo del cobro junto ({c.grupo.recibo})
-                      </Link>
+                      </Enlace>
                     </div>
                   )}
 

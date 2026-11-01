@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { BotonImprimirPagina } from "@/components/boton-imprimir";
@@ -6,6 +5,7 @@ import { EncabezadoNegocio } from "@/components/marca/encabezado-negocio";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { ESTADOS_CARNET, TIPOS_DESPARASITACION, type CarnetCompleto } from "@/lib/veterinaria/carnet";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 // El carnet impreso: solo lo que sigue siendo válido (sin lo anulado), una hoja.
 export default async function ImprimirCarnet({ params }: { params: Promise<{ perroId: string }> }) {
@@ -27,7 +27,7 @@ export default async function ImprimirCarnet({ params }: { params: Promise<{ per
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2 print:hidden">
-        <Link href={`/veterinaria/carnet/${perroId}`} className="text-sm font-semibold text-morado hover:underline">← Carnet</Link>
+        <Enlace href={`/veterinaria/carnet/${perroId}`} className="text-sm">← Carnet</Enlace>
         <BotonImprimirPagina />
       </div>
       <article className="flex flex-col gap-5 rounded-lg border border-n-200 bg-white p-6 print:border-0 print:p-0">

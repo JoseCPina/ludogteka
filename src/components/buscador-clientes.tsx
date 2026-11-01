@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { usePuedeAbrir } from "@/components/acceso-contexto";
 import { usePathname, useRouter } from "next/navigation";
 import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
@@ -15,6 +14,8 @@ import {
   type ClienteBuscable,
   type CoincidenciaCliente,
 } from "@/lib/clientes/buscables";
+import { Enlace } from "@/components/ui/enlace";
+import { Alternar } from "@/components/ui/alternar";
 
 export const ETIQUETA_BUSCAR_CLIENTES = "Buscar por perro, dueño o teléfono";
 /** QA S39 (N137): con Veterinaria se busca por mascota (perros, gatos y otras especies). */
@@ -162,13 +163,13 @@ export function BuscadorClientes({
                 return (
                   <li key={c.id} data-cliente-id={c.id}>
                     {hrefDe ? (
-                      <Link href={hrefDe(c)} className={clases}>
+                      <Enlace href={hrefDe(c)} className={clases} forma="bloque">
                         {contenido}
-                      </Link>
+                      </Enlace>
                     ) : (
-                      <button type="button" className={clases}>
+                      <Alternar type="button" className={clases}>
                         {contenido}
-                      </button>
+                      </Alternar>
                     )}
                   </li>
                 );

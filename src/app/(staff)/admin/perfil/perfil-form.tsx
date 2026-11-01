@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -17,6 +16,7 @@ import { SubirLogo } from "./subir-logo";
 import { CampoVersion, conForzar } from "@/components/concurrencia/campo-version";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import { guardarPerfil, quitarFoto, subirFoto, type ResultadoPerfil } from "./actions";
+import { Enlace } from "@/components/ui/enlace";
 
 export type FotoPerfil = { id: string; url: string };
 
@@ -153,7 +153,7 @@ export function PerfilForm({
             maxLength={600}
             ayuda="Dos o tres líneas: qué ofreces y qué te hace distinto. Sale arriba en tu página."
           />
-          <Field label="Dirección" name="direccion" defaultValue={direccion} maxLength={200} ayuda={<>Calle, número y colonia. Es la única dirección del negocio: sale en tu página con un link al mapa y la ubicación para recolección la toma de aquí. El WhatsApp de recepción va en <Link href="/admin/configuracion" className="font-semibold text-morado underline" data-enlace-configuracion="">Configuración</Link>.</>} />
+          <Field label="Dirección" name="direccion" defaultValue={direccion} maxLength={200} ayuda={<>Calle, número y colonia. Es la única dirección del negocio: sale en tu página con un link al mapa y la ubicación para recolección la toma de aquí. El WhatsApp de recepción va en <Enlace href="/admin/configuracion" data-enlace-configuracion="" enTexto>Configuración</Enlace>.</>} />
           <Select label="Diseño de tu página" name="tema_web" defaultValue={temaWeb ?? ""} ayuda="Cambia la tipografía, los colores y cómo se acomoda tu página.">
             <option value="">Automático (según tus servicios)</option>
             <option value="veterinaria">Clínica veterinaria</option>
@@ -174,7 +174,7 @@ export function PerfilForm({
           <label className="flex items-start gap-3 rounded-md bg-n-100 p-3 text-sm text-n-800">
             <input type="checkbox" name="comparte_precios_mercado" defaultChecked={compartePrecios} className="mt-0.5 h-5 w-5 accent-morado" />
             <span>
-              <b>Compartir mis tarifas con el Índice PeluDesk de precios</b>, solo como promedio. Tus precios entran a los rangos públicos de tu ciudad (<Link href="https://peludesk.mx/precios-mercado" target="_blank" rel="noopener" className="font-semibold text-morado underline">peludesk.mx/precios-mercado</Link>) junto con los de otros negocios; nunca se publica el precio de tu negocio ni su nombre. Viene apagado.
+              <b>Compartir mis tarifas con el Índice PeluDesk de precios</b>, solo como promedio. Tus precios entran a los rangos públicos de tu ciudad (<Enlace href="https://peludesk.mx/precios-mercado" target="_blank" rel="noopener" enTexto>peludesk.mx/precios-mercado</Enlace>) junto con los de otros negocios; nunca se publica el precio de tu negocio ni su nombre. Viene apagado.
             </span>
           </label>
           <AccionesFormulario error={res?.error} exito={res && !res.error && !res.conflicto ? res.exito ?? true : null}>
@@ -201,18 +201,13 @@ export function PerfilForm({
               <li key={f.id} className="flex flex-col gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={f.url} alt="" className="aspect-[4/3] w-full rounded-md border border-n-200 object-cover" />
-                <button
-                  type="button"
-                  disabled={quitando.cargando}
-                  onClick={async () => {
+                <Button type="button" onClick={async () => {
                     const r = await quitando.ejecutar(() => quitarFoto(f.id));
                     if (r.error) setRes(r);
                     else router.refresh();
-                  }}
-                  className="self-start text-sm font-semibold text-coral-oscuro hover:underline disabled:opacity-50"
-                >
+                  }} className="self-start" variante="secundario" tamano="compacto" cargando={quitando.cargando}>
                   Quitar
-                </button>
+                </Button>
               </li>
             ))}
           </ul>

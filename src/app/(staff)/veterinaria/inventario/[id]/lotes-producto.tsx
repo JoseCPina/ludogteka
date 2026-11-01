@@ -126,7 +126,7 @@ export function LotesProducto({
                           key={a}
                           type="button"
                           variante={abierto?.lote === l.id && abierto.accion === a ? "primario" : "secundario"}
-                          className="min-h-10 px-3 text-sm"
+                          className="px-3 text-sm" tamano="compacto"
                           onClick={() => setAbierto(abierto?.lote === l.id && abierto.accion === a ? null : { lote: l.id, accion: a })}
                         >
                           {a === "surtido" ? "Surtir" : a === "merma" ? "Merma" : a === "caducado" ? "Caducado" : "Ajuste"}

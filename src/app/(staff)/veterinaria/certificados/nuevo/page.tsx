@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
@@ -10,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FormularioAccion } from "@/components/formulario-accion";
 import { MOTIVOS_CERTIFICADO } from "@/lib/veterinaria/carnet";
 import { emitirCertificado } from "../../carnet/actions";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function NuevoCertificado({ searchParams }: { searchParams: Promise<{ perro?: string }> }) {
   const { perro: perroId } = await searchParams;
@@ -29,7 +29,7 @@ export default async function NuevoCertificado({ searchParams }: { searchParams:
   return (
     <div className="flex max-w-2xl flex-col gap-5">
       <div>
-        <Link href={`/veterinaria/carnet/${perroId}`} className="text-sm font-semibold text-morado hover:underline">← Carnet de {perro.nombre as string}</Link>
+        <Enlace href={`/veterinaria/carnet/${perroId}`} className="text-sm">← Carnet de {perro.nombre as string}</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Certificado de salud de {perro.nombre as string}</h1>
         <p className="mt-1 text-n-600">Propietario: {dueno?.nombre ?? "—"}. El certificado lleva las vacunas y desparasitaciones vigentes del carnet, tal como están hoy.</p>
       </div>

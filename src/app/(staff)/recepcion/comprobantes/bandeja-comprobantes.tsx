@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { formatearFecha, formatearFechaCalendario } from "@/lib/formato";
 import { Antiguedad } from "@/components/ui/antiguedad";
 import { revisarComprobante } from "./comprobantes-actions";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { Enlace } from "@/components/ui/enlace";
 
 export type ComprobantePendiente = {
   id: string;
@@ -74,23 +74,18 @@ function Tarjeta({ item }: { item: ComprobantePendiente }) {
     <li className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4 md:flex-row md:gap-5">
       <div className="flex-none">
         {item.foto_url && item.es_pdf ? (
-          <a
-            href={item.foto_url}
-            target="_blank"
-            rel="noreferrer"
-            className="grid h-44 w-44 place-items-center rounded-md border border-n-200 bg-n-50 p-3 text-center text-sm font-semibold text-morado hover:underline"
-          >
+          <Enlace href={item.foto_url} target="_blank" rel="noreferrer" className="grid h-44 w-44 place-items-center rounded-md border border-n-200 bg-n-50 p-3 text-center text-sm font-semibold text-morado hover:underline" forma="bloque">
             Abrir el PDF del comprobante →
-          </a>
+          </Enlace>
         ) : item.foto_url ? (
-          <a href={item.foto_url} target="_blank" rel="noreferrer" title="Abrir la foto en grande">
+          <Enlace href={item.foto_url} target="_blank" rel="noreferrer" title="Abrir la foto en grande">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={item.foto_url}
               alt={`Comprobante de ${item.tipo_etiqueta} de ${item.perro_nombre}`}
               className="h-44 w-44 rounded-md border border-n-200 object-cover"
             />
-          </a>
+          </Enlace>
         ) : (
           <div className="grid h-44 w-44 place-items-center rounded-md border border-dashed border-n-300 text-xs text-n-500">
             Sin foto
@@ -106,13 +101,13 @@ function Tarjeta({ item }: { item: ComprobantePendiente }) {
           <Antiguedad dias={item.dias_esperando} prefijo="Esperando revisión" />
           <p className="text-sm text-n-600">
             Dueño:{" "}
-            <Link href={`/clientes/${item.cliente_id}`} className="font-semibold text-morado hover:underline">
+            <Enlace href={`/clientes/${item.cliente_id}`} enTexto>
               {item.cliente_nombre}
-            </Link>
+            </Enlace>
             {" · "}
-            <Link href={`/perros/${item.perro_id}`} className="font-semibold text-morado hover:underline">
+            <Enlace href={`/perros/${item.perro_id}`} enTexto>
               Ver expediente de {item.perro_nombre} →
-            </Link>
+            </Enlace>
           </p>
         </div>
 
@@ -170,7 +165,7 @@ function Tarjeta({ item }: { item: ComprobantePendiente }) {
           </div>
         ) : (
           <div className="flex flex-wrap gap-2">
-            <Button type="button" variante="exito" cargando={revisando.cargando} onClick={() => decidir(true)}>
+            <Button type="button" variante="primario" cargando={revisando.cargando} onClick={() => decidir(true)}>
               {revisando.cargando ? "Registrando…" : "Confirmar y registrar"}
             </Button>
             <Button type="button" variante="secundario" disabled={revisando.cargando} onClick={() => setRechazando(true)}>

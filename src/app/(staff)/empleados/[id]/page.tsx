@@ -1,5 +1,4 @@
 import { RestablecerPasswordPersonal } from "./restablecer-password";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -22,6 +21,7 @@ import { ajustarVacaciones } from "../ausencias-actions";
 import { cancelarAdelanto, guardarEsquema, registrarAdelanto } from "../nomina-actions";
 import { zonaActual } from "@/lib/negocio/actual";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
+import { Enlace } from "@/components/ui/enlace";
 
 type Esquema = {
   id: string;
@@ -120,9 +120,9 @@ export default async function EmpleadoPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/empleados" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/empleados" className="text-sm">
           ← Empleados
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">{e.nombre}</h1>
         <p className="mt-1 text-n-600">
           {e.puesto} · desde el {formatearFechaCalendario(e.fecha_ingreso)}
@@ -332,9 +332,7 @@ export default async function EmpleadoPage({
 
           <Seccion titulo="Pagos" sub="Para pagar un periodo, ve a la pestaña Nómina.">
             <SiPuedeAbrir href={`/empleados/nomina/${id}`}>
-              <Link href={`/empleados/nomina/${id}`} className="w-fit">
-                <Button type="button" variante="secundario">Calcular y pagar un periodo</Button>
-              </Link>
+              <Enlace href={`/empleados/nomina/${id}`}>Calcular y pagar un periodo</Enlace>
             </SiPuedeAbrir>
             <ListaPagos zona={zona} pagos={pagos} puedeRevertir={puedeNomina} />
           </Seccion>

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
@@ -27,6 +26,7 @@ import { AvisoFueraDeHorario, useAvisoTrasExito } from "@/components/aviso-fuera
 import type { HorarioSemana, PropuestaHorario } from "@/lib/estetica/aviso-horario";
 import { cerrarFrase } from "@/lib/texto/frases";
 import { usePuedeAbrir } from "@/components/acceso-contexto";
+import { Enlace } from "@/components/ui/enlace";
 
 type Perro = {
   id: string;
@@ -445,7 +445,7 @@ export function AgendarForm({
               <p className="text-sm text-n-800">
                 {cot.motivo === "pelaje" ? (
                   <>
-                    <Link href={`/perros/${perroId}`} className="font-semibold underline">Corrige su pelaje</Link> si está mal capturado, o registra una excepción solo para esta cita.
+                    <Enlace href={`/perros/${perroId}`} enTexto>Corrige su pelaje</Enlace> si está mal capturado, o registra una excepción solo para esta cita.
                   </>
                 ) : puedeAsignarGrupo || puedeExcepcion ? (
                   "Asigna el grupo ahora o registra una excepción con motivo solo para esta cita."
@@ -465,12 +465,9 @@ export function AgendarForm({
               )}
               <div className="flex flex-wrap gap-3">
                 {puedeAsignarGrupo && (
-                  <Link
-                    href={cot.rutaPrecios}
-                    className="inline-flex min-h-12 items-center justify-center rounded-md border-[1.5px] border-morado bg-white px-5 text-base font-semibold text-morado hover:bg-morado-suave"
-                  >
+                  <Enlace href={cot.rutaPrecios} className="text-base">
                     Agregar el precio en Servicios y precios
-                  </Link>
+                  </Enlace>
                 )}
                 {puedeExcepcion && !excepcion && (
                   <Button type="button" variante="secundario" onClick={() => setExcepcion(true)}>
@@ -545,9 +542,9 @@ export function AgendarForm({
           <ul className="flex flex-col gap-1 text-sm text-n-900">
             {agendadas.map((a) => (
               <li key={a.citaId}>
-                <Link href={`/estetica/${a.citaId}`} className="font-semibold text-morado hover:underline">
+                <Enlace href={`/estetica/${a.citaId}`} enTexto>
                   {a.perroNombre} — {a.servicio}
-                </Link>{" "}
+                </Enlace>{" "}
                 · ${a.precio.toFixed(2)}
                 {a.tarifa ? " (tarifa de guardería)" : ""} · su propia cuenta
               </li>
@@ -558,17 +555,13 @@ export function AgendarForm({
               Agregar otro perrito de {clienteElegido.nombre}
             </Button>
             {agendadas.length > 1 && puede("/caja/cobrar-junto") && (
-              <Link
-                href={`/caja/cobrar-junto?cuentas=${agendadas.map((a) => a.reservaId).join(",")}`}
-                data-cobrar-juntas
-                className="inline-flex min-h-12 items-center justify-center rounded-md border-[1.5px] border-morado bg-white px-5 text-base font-semibold text-morado hover:bg-morado-suave"
-              >
+              <Enlace href={`/caja/cobrar-junto?cuentas=${agendadas.map((a) => a.reservaId).join(",")}`} data-cobrar-juntas className="text-base">
                 Cobrar las {agendadas.length} cuentas juntas
-              </Link>
+              </Enlace>
             )}
-            <Link href="/estetica" data-ir-agenda className="inline-flex min-h-12 items-center justify-center rounded-md bg-morado px-5 text-base font-semibold text-white hover:bg-morado-oscuro">
+            <Enlace href="/estetica" data-ir-agenda className="text-base">
               Listo, ir a la agenda
-            </Link>
+            </Enlace>
           </div>
           <p className="text-sm text-n-700">Cada {vm.nombre} tiene su cita y su cuenta. Al cobrar puedes juntarlas en un solo pago (Caja → Cobrar todo junto).</p>
         </div>
@@ -717,9 +710,9 @@ export function AgendarForm({
               No hay ninguna cuenta con rol de estética (ni de admin) dada de alta. La cita necesita un responsable, así
               que no se puede agendar todavía.{" "}
               {puede("/admin") ? (
-                <Link href="/admin" className="font-semibold underline">
+                <Enlace href="/admin" enTexto>
                   Invita al personal de estética desde el panel de admin →
-                </Link>
+                </Enlace>
               ) : (
                 "Pídele a un admin que invite al personal de estética."
               )}

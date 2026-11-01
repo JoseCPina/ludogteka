@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -8,6 +7,7 @@ import { cargarCatalogoExtras, cargarExtras } from "@/lib/extras/servidor";
 import { dinero } from "@/lib/dinero";
 import { ListaExtras } from "@/components/extras/lista-extras";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
+import { Enlace } from "@/components/ui/enlace";
 
 // Los servicios extra del día: las tareas (paseo, baño de salida, medicamento…) y la
 // hoja de traslados (dirección, hora y estado). Se puede ver otro día con ?fecha=.
@@ -49,21 +49,21 @@ export default async function ExtrasPage({ searchParams }: { searchParams: Promi
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm font-semibold">
-          <Link href={`/extras?fecha=${shiftDia(fecha, -1)}`} className="text-morado hover:underline">
+          <Enlace href={`/extras?fecha=${shiftDia(fecha, -1)}`}>
             ← Día anterior
-          </Link>
+          </Enlace>
           {fecha !== hoy && (
-            <Link href="/extras" className="text-morado hover:underline">
+            <Enlace href="/extras">
               Hoy
-            </Link>
+            </Enlace>
           )}
-          <Link href={`/extras?fecha=${shiftDia(fecha, 1)}`} className="text-morado hover:underline">
+          <Enlace href={`/extras?fecha=${shiftDia(fecha, 1)}`}>
             Día siguiente →
-          </Link>
+          </Enlace>
           {puedeCatalogo && (
-            <Link href="/extras/catalogo" className="rounded-md border-[1.5px] border-borde bg-white px-3 py-2 text-n-900 hover:bg-n-100">
+            <Enlace href="/extras/catalogo"  >
               Catálogo de servicios extra
-            </Link>
+            </Enlace>
           )}
         </div>
       </div>
@@ -116,9 +116,9 @@ export default async function ExtrasPage({ searchParams }: { searchParams: Promi
               </span>{" "}
               {!c.monto_libre && (
                 <SiPuedeAbrir href={`/servicios/${c.id}/tarifas`}>
-                  <Link href={`/servicios/${c.id}/tarifas`} className="font-semibold text-morado hover:underline">
+                  <Enlace href={`/servicios/${c.id}/tarifas`}>
                     Ver cómo se cobra
-                  </Link>
+                  </Enlace>
                 </SiPuedeAbrir>
               )}
             </li>
@@ -127,9 +127,9 @@ export default async function ExtrasPage({ searchParams }: { searchParams: Promi
             <li className="rounded-md border border-dashed border-n-300 px-3 py-2 text-n-600" data-cobrable="sin-traslado">
               <strong className="text-n-800">Traslado a domicilio</strong> · todavía no lo tienes.{" "}
               {puedeCatalogo ? (
-                <Link href="/extras/catalogo" className="font-semibold text-morado hover:underline">
+                <Enlace href="/extras/catalogo">
                   Créalo en el catálogo con sus zonas y precios
-                </Link>
+                </Enlace>
               ) : (
                 "Pídele a un admin que lo cree en el catálogo con sus zonas y precios."
               )}

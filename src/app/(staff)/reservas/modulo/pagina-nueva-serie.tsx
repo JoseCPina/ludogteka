@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { armarClientesBuscables } from "@/lib/clientes/buscables";
@@ -10,6 +9,7 @@ import { NuevaSerieForm } from "../series/nueva/nueva-serie-form";
 import { cargarPaquetesDePerros } from "@/lib/bonos/cargar-paquetes";
 import { zonaActual } from "@/lib/negocio/actual";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
   const zona = await zonaActual();
@@ -53,9 +53,9 @@ export async function PaginaNuevaSerie({ modulo }: { modulo: ModuloEstancia }) {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href={`${modulo.base}/series`} className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href={`${modulo.base}/series`} className="text-sm">
           ← Series de {modulo.etiqueta.toLowerCase()}
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">
           Nueva serie recurrente — {modulo.etiqueta}
         </h1>

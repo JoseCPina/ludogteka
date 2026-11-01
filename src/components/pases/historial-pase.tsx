@@ -6,6 +6,7 @@ import { cargarHistorialPase } from "@/app/(staff)/reservas/pase-ajuste-actions"
 import { describirRenglon, type RenglonHistorialPase } from "@/lib/bonos/ajuste";
 import { formatearFecha } from "@/lib/formato";
 import { useZonaNegocio } from "@/components/zona-negocio";
+import { Alternar } from "@/components/ui/alternar";
 
 /** Los ajustes de un pase, del más nuevo al más viejo (nunca se editan). */
 export function HistorialPase({ bonoId }: { bonoId: string }) {
@@ -26,9 +27,10 @@ export function HistorialPase({ bonoId }: { bonoId: string }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <button type="button" className="min-h-11 self-start text-sm font-semibold text-morado hover:underline" onClick={alternar}>
+      <Alternar type="button" onClick={alternar} className="inline-flex self-start items-center gap-1.5 rounded-md text-sm font-semibold text-morado hover:text-morado-oscuro" aria-expanded={abierto}>
+        <span aria-hidden="true" className="text-xs">{abierto ? "▾" : "▸"}</span>
         {abierto ? "Ocultar historial de ajustes" : "Ver historial de ajustes"}
-      </button>
+      </Alternar>
       {abierto && carga.cargando && <p className="text-sm text-n-600">Cargando…</p>}
       {abierto && error && <p className="text-sm font-semibold text-coral-oscuro">{error}</p>}
       {abierto && renglones && renglones.length === 0 && (

@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { Field } from "@/components/ui/field";
 import { formatearFecha } from "@/lib/formato";
 import { formatearTelefono } from "@/lib/telefono";
@@ -11,6 +10,7 @@ import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { filtrarClientesBuscables, type ClienteBuscable } from "@/lib/clientes/buscables";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 export type ClienteFila = ClienteBuscable & {
   email: string | null;
@@ -76,12 +76,9 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
             {filtrados.map((cliente) => (
               <tr key={cliente.id} className="hover:bg-n-50">
                 <td className="border-b border-n-200 px-4 py-3">
-                  <Link
-                    href={`/clientes/${cliente.id}`}
-                    className="rounded font-semibold text-morado hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
-                  >
+                  <Enlace href={`/clientes/${cliente.id}`}>
                     {cliente.nombre}
-                  </Link>
+                  </Enlace>
                   {cliente.alta_por_cliente && !cliente.datos_revisados_at && (
                     <span
                       className="ml-2 whitespace-nowrap rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado-oscuro"

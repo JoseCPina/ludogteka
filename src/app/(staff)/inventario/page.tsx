@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -7,6 +6,8 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AVISOS_EQUIPO, ESTADOS_EQUIPO, abreviarUnidad, cargarAreas, puedeDarDeAlta } from "./comun";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
+import { EnlacePestana } from "@/components/ui/enlace-pestana";
 
 // Inventario en dos listas que no se mezclan: CONSUMIBLES (se gastan y se
 // reponen: existencia y stock mínimo) y EQUIPO (no se gasta: cuántos hay, en
@@ -51,17 +52,12 @@ export default async function InventarioPage({
   const cuantosSinCosto = ((sinCosto as unknown[] | null) ?? []).length;
 
   const pestana = (clave: "consumibles" | "equipo", etiqueta: string, avisos: number) => (
-    <Link
-      href={clave === "equipo" ? "/inventario?ver=equipo" : "/inventario"}
-      className={`rounded-t-md border-b-[3px] px-4 py-2 font-semibold ${
-        vista === clave ? "border-morado text-morado" : "border-transparent text-n-600 hover:text-n-900"
-      }`}
-    >
+    <EnlacePestana href={clave === "equipo" ? "/inventario?ver=equipo" : "/inventario"} forma="pestana" activo={vista === clave}>
       {etiqueta}
       {avisos > 0 && (
         <span className="ml-2 rounded-full bg-ambar-suave px-2 py-0.5 text-xs text-ambar-oscuro">{avisos}</span>
       )}
-    </Link>
+    </EnlacePestana>
   );
 
   return (
@@ -72,22 +68,16 @@ export default async function InventarioPage({
           <p className="mt-1 text-n-600">Lo que se gasta y lo que se usa, por área.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/inventario/proveedores">
-            <Button type="button" variante="secundario">
+          <Enlace href="/inventario/proveedores">
               Proveedores
-            </Button>
-          </Link>
+            </Enlace>
           {esAdmin && (
-            <Link href="/inventario/areas">
-              <Button type="button" variante="secundario">
+            <Enlace href="/inventario/areas">
                 Áreas
-              </Button>
-            </Link>
+              </Enlace>
           )}
           {puedeAlta && (
-            <Link href={vista === "equipo" ? "/inventario/equipo/nuevo" : "/inventario/nuevo"}>
-              <Button type="button">{vista === "equipo" ? "Nuevo equipo" : "Nuevo consumible"}</Button>
-            </Link>
+            <Enlace href={vista === "equipo" ? "/inventario/equipo/nuevo" : "/inventario/nuevo"}>{vista === "equipo" ? "Nuevo equipo" : "Nuevo consumible"}</Enlace>
           )}
         </div>
       </div>
@@ -98,9 +88,9 @@ export default async function InventarioPage({
       {puedeCostos && cuantosSinCosto > 0 && (
         <Alert variante="advertencia" titulo={`${cuantosSinCosto} ${cuantosSinCosto === 1 ? "consumible sin costo" : "consumibles sin costo"}`}>
           No tienen costo de referencia ni compras registradas, así que los reportes no los pueden costear.{" "}
-          <Link href="/inventario/sin-costo" className="font-semibold underline">
+          <Enlace href="/inventario/sin-costo" enTexto>
             Completarlos
-          </Link>
+          </Enlace>
         </Alert>
       )}
 
@@ -131,10 +121,7 @@ export default async function InventarioPage({
                     const caducidad = caducidadDe.get(i.id as string);
                     return (
                       <li key={i.id as string}>
-                        <Link
-                          href={`/inventario/${i.id}`}
-                          className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50"
-                        >
+                        <Enlace href={`/inventario/${i.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
                           <span className="font-semibold text-n-900">{i.nombre as string}</span>
                           <span className="flex flex-wrap items-center gap-2 text-sm">
                             <span className="tabular-nums text-n-700">
@@ -157,7 +144,7 @@ export default async function InventarioPage({
                               </span>
                             )}
                           </span>
-                        </Link>
+                        </Enlace>
                       </li>
                     );
                   })}
@@ -183,10 +170,7 @@ export default async function InventarioPage({
                   const aviso = e.aviso ? AVISOS_EQUIPO[e.aviso as string] : null;
                   return (
                     <li key={e.equipo_id as string}>
-                      <Link
-                        href={`/inventario/equipo/${e.equipo_id}`}
-                        className={`flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50 ${e.estado === "baja" ? "opacity-60" : ""}`}
-                      >
+                      <Enlace href={`/inventario/equipo/${e.equipo_id}`} className={`flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50 ${e.estado === "baja" ? "opacity-60" : ""}`} forma="bloque">
                         <span className="flex flex-col">
                           <span className="font-semibold text-n-900">{e.nombre as string}</span>
                           <span className="text-xs text-n-500">
@@ -204,7 +188,7 @@ export default async function InventarioPage({
                             <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${aviso.estilo}`}>{aviso.etiqueta}</span>
                           )}
                         </span>
-                      </Link>
+                      </Enlace>
                     </li>
                   );
                 })}

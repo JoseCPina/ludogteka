@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -6,6 +5,7 @@ import { cargarTutorialesVisibles, duracionTexto } from "@/lib/tutoriales";
 import { articuloPorSlug } from "@/lib/ayuda";
 import { articulosDeVideo } from "@/lib/ayuda/videos";
 import { ReproductorTutorial } from "@/components/ayuda/reproductor-tutorial";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function VideoPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -21,7 +21,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
   return (
     <div className="flex max-w-4xl flex-col gap-5">
       <div>
-        <Link href="/ayuda/videos" className="text-sm font-semibold text-morado hover:underline">← Videos</Link>
+        <Enlace href="/ayuda/videos" className="text-sm">← Videos</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">{video.titulo}</h1>
         <p className="mt-1 text-n-600">{video.resumen} {video.duracion_s ? `· ${duracionTexto(video.duracion_s)}` : ""}</p>
       </div>
@@ -31,16 +31,16 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
           <h2 className="text-base font-bold text-n-900">Si prefieres leerlo</h2>
           <ul className="list-disc pl-5 text-n-700">
             {articulos.map((a) => (
-              <li key={a!.slug}><Link href={`/ayuda/${a!.slug}`} className="font-semibold text-morado hover:underline">{a!.titulo}</Link></li>
+              <li key={a!.slug}><Enlace href={`/ayuda/${a!.slug}`}>{a!.titulo}</Enlace></li>
             ))}
           </ul>
         </section>
       )}
       {siguiente && (
-        <Link href={`/ayuda/videos/${siguiente.slug}`} className="rounded-lg border border-n-200 bg-n-50 p-4 hover:border-morado" data-siguiente-video>
+        <Enlace href={`/ayuda/videos/${siguiente.slug}`} className="rounded-lg border border-n-200 bg-n-50 p-4 hover:border-morado" data-siguiente-video forma="bloque">
           <span className="text-sm text-n-600">Siguiente video</span>
           <span className="block font-semibold text-n-900">{siguiente.titulo} →</span>
-        </Link>
+        </Enlace>
       )}
     </div>
   );

@@ -4,7 +4,6 @@ import { esperarConTope } from "@/lib/ui/espera";
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import { formatearFechaCalendario } from "@/lib/formato";
 import { alternarPertenencia, confirmarCheckout } from "../../../checkin-actions";
 import { MoverFechas } from "../../../mover-fechas";
 import { textoSalidaAnticipada, type CotizacionSalida } from "@/lib/reservas/salida-anticipada";
+import { Enlace } from "@/components/ui/enlace";
 
 type Pertenencia = { id: string; descripcion: string; devuelto: boolean };
 
@@ -139,9 +139,9 @@ export function CheckoutForm({
           </span>
         )}
         {cobroHref ? (
-          <Link href={cobroHref} data-cobrar-cuenta className="mt-2 inline-flex min-h-11 items-center rounded-md bg-morado px-4 text-sm font-semibold text-white hover:bg-morado-oscuro">
+          <Enlace href={cobroHref} data-cobrar-cuenta className="mt-2 text-sm">
             {saldoAlSalir !== null && saldoAlSalir <= 0.005 ? "Ver cobros" : "Cobrar la cuenta"}
-          </Link>
+          </Enlace>
         ) : null}
       </Alert>
     );
@@ -256,7 +256,7 @@ export function CheckoutForm({
         <div className="flex flex-col gap-2 sm:flex-row sm:gap-3" data-quien-recoge>
           <Button
             type="button"
-            variante={esDueno === true ? "exito" : "secundario"}
+            variante={esDueno === true ? "primario" : "secundario"}
             className="w-full sm:w-auto"
             onClick={() => {
               setEsDueno(true);

@@ -1,5 +1,4 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -7,6 +6,7 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { cargarPlantilla } from "@/lib/reporte/carga";
 import { coloresDeTarjeta } from "@/lib/reporte/colores";
 import { EditorPlantilla } from "./editor-plantilla";
+import { Enlace } from "@/components/ui/enlace";
 
 // Plantilla del reporte de comportamiento, colores de la tarjeta y los días
 // que viven las fotos, los videos y las ligas. Solo admin.
@@ -33,9 +33,9 @@ export default async function ReporteGuarderiaAdminPage() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <header>
-        <Link href="/admin" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/admin" className="text-sm">
           ← Administración
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold tracking-tight text-n-900">Reporte, fotos y videos</h1>
         <p className="mt-1 text-n-700">
           {conReporte

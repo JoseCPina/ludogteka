@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
 import { firmarConsentimiento, urlConsentimientoFirmado } from "../actions";
+import { Enlace } from "@/components/ui/enlace";
 
 /** La firma de puño y letra en el mostrador: el propietario dibuja en la pantalla. */
 export function FirmaConsentimiento({ id, firmanteInicial }: { id: string; firmanteInicial: string }) {
@@ -144,9 +145,9 @@ export function VerFirmado({ ruta }: { ruta: string }) {
         Ver el PDF firmado
       </Button>
       {pdf.enlace?.bloqueado && (
-        <a href={pdf.enlace.url} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-morado underline">
+        <Enlace href={pdf.enlace.url} target="_blank" rel="noopener noreferrer" className="text-sm" enTexto>
           El navegador no lo abrió solo: toca aquí para ver el PDF
-        </a>
+        </Enlace>
       )}
       {error && <p className="text-sm font-semibold text-coral-oscuro">{error}</p>}
     </div>

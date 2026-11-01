@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -18,6 +17,7 @@ import { EstadoVivo } from "@/components/concurrencia/estado-vivo";
 import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
+import { Enlace } from "@/components/ui/enlace";
 
 const ESTADO_HISTORIAL: Record<string, string> = {
   reservada: "antes de empezar",
@@ -197,9 +197,9 @@ export default async function CitaDetallePage({
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href="/estetica" className="text-sm font-semibold text-morado hover:underline">
+      <Enlace href="/estetica" className="text-sm">
         ← Estética
-      </Link>
+      </Enlace>
 
       <div>
         {/* QA R59 (N146): el estado siempre junto al título, con la insignia de la agenda; cambia con la acción (EstadoVivo). */}
@@ -405,9 +405,9 @@ async function CitaEliminada({ cita, zona, citaId }: { cita: { inicio: string; r
   const cuenta = cita.reserva_id ? `/caja/cobrar/${cita.reserva_id}` : null;
   return (
     <div className="flex flex-col gap-4" data-cita-eliminada>
-      <Link href="/estetica" className="text-sm font-semibold text-morado hover:underline">
+      <Enlace href="/estetica" className="text-sm">
         ← Estética
-      </Link>
+      </Enlace>
       <h1 className="text-2xl font-bold text-n-900">Esta cita se eliminó</h1>
       <p className="text-n-700">
         {cita.servicio_nombre ?? "Servicio"}{perro?.nombre ? ` — ${perro.nombre}` : ""} · {formatearDiaDeInstante(cita.inicio, zona)} · {horaLocalDeInstante(cita.inicio, zona)}
@@ -419,9 +419,9 @@ async function CitaEliminada({ cita, zona, citaId }: { cita: { inicio: string; r
       </p>
       <p className="text-sm text-n-600">Ya no está en la agenda. Si la cuenta tenía cobros, siguen en la cuenta.</p>
       {cuenta && puede(cuenta) && (
-        <Link href={cuenta} className="font-semibold text-morado hover:underline">
+        <Enlace href={cuenta}>
           Abrir la cuenta →
-        </Link>
+        </Enlace>
       )}
     </div>
   );

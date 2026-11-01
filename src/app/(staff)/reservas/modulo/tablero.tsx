@@ -1,5 +1,4 @@
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { TablaOcupacion, type FilaCalendario } from "./tabla-ocupacion";
 import { PasesTablero } from "./pases-tablero";
 import { LlegadasAtrasadas, type LlegadaAtrasada } from "./llegadas-atrasadas";
 import { zonaActual } from "@/lib/negocio/actual";
+import { Enlace } from "@/components/ui/enlace";
 
 const DIAS_CALENDARIO = 14;
 const TOPE_ATRASADAS = 30;
@@ -41,13 +41,10 @@ function ListaPerros({
     <ul className="flex flex-col gap-2">
       {filas.map((f) => (
         <li key={f.estancia_id}>
-          <Link
-            href={destino(f)}
-            className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
-          >
+          <Enlace href={destino(f)} className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
             <span className="font-semibold text-n-900">{f.perro_nombre}</span>
             <span className="text-xs text-n-500">{f.servicio_nombre}</span>
-          </Link>
+          </Enlace>
         </li>
       ))}
     </ul>
@@ -117,29 +114,19 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
         </div>
         <div className="flex flex-wrap gap-3">
           <BotonNuevoCliente tipo={tipoLinkDeModulo(modulo.categoria)} />
-          <Link href={`${modulo.base}/checkin`}>
-            <Button type="button" variante="secundario">
+          <Enlace href={`${modulo.base}/checkin`}>
               Check-in
-            </Button>
-          </Link>
-          <Link href={`${modulo.base}/checkout`}>
-            <Button type="button" variante="secundario">
+            </Enlace>
+          <Enlace href={`${modulo.base}/checkout`}>
               Check-out
-            </Button>
-          </Link>
-          <Link href="/adentro">
-            <Button type="button" variante="secundario">
+            </Enlace>
+          <Enlace href="/adentro">
               Fotos, videos y reporte
-            </Button>
-          </Link>
-          <Link href={`${modulo.base}/series`}>
-            <Button type="button" variante="secundario">
+            </Enlace>
+          <Enlace href={`${modulo.base}/series`}>
               Series recurrentes
-            </Button>
-          </Link>
-          <Link href={`${modulo.base}/nueva`}>
-            <Button type="button">Nueva reserva</Button>
-          </Link>
+            </Enlace>
+          <Enlace href={`${modulo.base}/nueva`}>Nueva reserva</Enlace>
         </div>
       </div>
 

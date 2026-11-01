@@ -79,7 +79,7 @@ export default async function Catalogos() {
               ) : (
                 <div className="mt-3 flex flex-col gap-3">
                   {p.parecidas.length > 0 && <p className="text-sm text-n-700">Se parece a: {p.parecidas.map((x) => `${x.nombre} (${Math.round(x.puntaje * 100)} %)`).join(", ")}</p>}
-                  <FormularioPlataforma accion={resolverPropuestaRaza} textoBoton="Aprobar como raza nueva" variante="exito" className="rounded-lg border border-n-200 p-4">
+                  <FormularioPlataforma accion={resolverPropuestaRaza} textoBoton="Aprobar como raza nueva" variante="primario" className="rounded-lg border border-n-200 p-4">
                     <input type="hidden" name="id" value={p.id} />
                     <input type="hidden" name="accion" value="aprobar" />
                     <Field label="Nombre final en el catálogo" name="nombre" defaultValue={p.nombre} />

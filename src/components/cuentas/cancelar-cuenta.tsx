@@ -11,6 +11,7 @@ import { Alert } from "@/components/ui/alert";
 import { cancelarCuenta, infoCancelarCuenta } from "@/app/(staff)/caja/cancelar-cuenta-actions";
 import { MOTIVOS_CANCELAR_CUENTA, type InfoCancelarCuenta } from "@/app/(staff)/caja/cancelar-cuenta-tipos";
 import { dinero } from "@/lib/dinero";
+import { Alternar } from "@/components/ui/alternar";
 
 /**
  * «Cancelar cuenta»: una cuenta con saldo que no se va a cobrar (no se presentó,
@@ -78,15 +79,10 @@ export function CancelarCuenta({
 
   if (!abierto) {
     return (
-      // Acción secundaria y poco frecuente (QA S25): texto, no un botón grande junto a «Cobrar».
-      <button
-        type="button"
-        data-cancelar-cuenta-abrir={reservaId}
-        className={`inline-flex min-h-10 items-center self-start rounded-md px-1 font-semibold text-coral-oscuro underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado ${compacto ? "text-sm" : "text-base"}`}
-        onClick={abrir}
-      >
+      // Acción secundaria y poco frecuente (QA S25): botón secundario compacto, no uno grande junto a «Cobrar».
+      <Button type="button" data-cancelar-cuenta-abrir={reservaId} onClick={abrir} className={`self-start ${compacto ? "" : "text-base"}`} variante="secundario" tamano="compacto">
         Cancelar cuenta
-      </button>
+      </Button>
     );
   }
 
@@ -112,18 +108,9 @@ export function CancelarCuenta({
                 {MOTIVOS_CANCELAR_CUENTA.filter((m) => m.clave !== "otro").map((m) => {
                   const bloqueado = m.clave === "cortesia" && cortesiaBloqueada;
                   return (
-                    <button
-                      key={m.clave}
-                      type="button"
-                      disabled={bloqueado}
-                      aria-pressed={motivo === m.clave}
-                      data-motivo={m.clave}
-                      title={bloqueado ? "Solo admin: el servicio ya se realizó" : undefined}
-                      onClick={() => setMotivo(motivo === m.clave ? "" : m.clave)}
-                      className={`min-h-10 rounded-full border-[1.5px] px-3 text-sm font-semibold ${motivo === m.clave ? "border-morado bg-morado text-white" : "border-n-300 bg-white text-n-800"} disabled:cursor-not-allowed disabled:opacity-50`}
-                    >
+                    <Alternar key={m.clave} type="button" disabled={bloqueado} data-motivo={m.clave} title={bloqueado ? "Solo admin: el servicio ya se realizó" : undefined} onClick={() => setMotivo(motivo === m.clave ? "" : m.clave)} className={`min-h-10 rounded-full border-[1.5px] px-3 text-sm font-semibold ${motivo === m.clave ? "border-morado bg-morado text-white" : "border-n-300 bg-white text-n-800"} disabled:cursor-not-allowed disabled:opacity-50`} activo={motivo === m.clave}>
                       {m.etiqueta}
-                    </button>
+                    </Alternar>
                   );
                 })}
               </div>

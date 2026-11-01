@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { TIPOS_LINK_ALTA, tiposDisponibles, type TipoLinkAlta } from "@/lib/alta/tipos-link";
 import { useModulos } from "@/components/modulos-contexto";
 import { usePuedeAbrir } from "@/components/acceso-contexto";
+import { Enlace } from "@/components/ui/enlace";
 
 /**
  * Dar de alta a alguien desde el módulo en el que está parada recepción.
@@ -71,22 +71,16 @@ export function BotonNuevoCliente({
       </div>
       <div className="flex flex-wrap gap-2">
         {definicion ? (
-          <Link href={`/clientes/invitaciones?tipo=${tipo}`}>
-            <Button type="button">Mandarle un link</Button>
-          </Link>
+          <Enlace href={`/clientes/invitaciones?tipo=${tipo}`}>Mandarle un link</Enlace>
         ) : (
           tipos.map((t) => (
-            <Link key={t.clave} href={`/clientes/invitaciones?tipo=${t.clave}`}>
-              <Button type="button">Link de {t.etiqueta.toLowerCase()}</Button>
-            </Link>
+            <Enlace key={t.clave} href={`/clientes/invitaciones?tipo=${t.clave}`}>Link de {t.etiqueta.toLowerCase()}</Enlace>
           ))
         )}
         {puedeCapturar && (
-          <Link href={hrefCaptura}>
-            <Button type="button" variante="secundario">
+          <Enlace href={hrefCaptura}>
               Capturarlo yo
-            </Button>
-          </Link>
+            </Enlace>
         )}
         <Button type="button" variante="secundario" onClick={() => setAbierto(false)}>
           Cerrar

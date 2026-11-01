@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
@@ -15,6 +14,7 @@ import { archivarEspejo, cancelarEspejo } from "../../actions";
 import { SurtirDocumento } from "../../surtir";
 import { unirFrases } from "@/lib/texto/frases";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function EspejoSitpv({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -44,16 +44,16 @@ export default async function EspejoSitpv({ params }: { params: Promise<{ id: st
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       <div className="print:hidden">
-        <Link href="/veterinaria/recetas/sitpv" className="text-sm font-semibold text-morado hover:underline">← Registro SITPV</Link>
+        <Enlace href="/veterinaria/recetas/sitpv" className="text-sm">← Registro SITPV</Enlace>
       </div>
       {cancelada && <Alert variante="error" titulo="Folio CANCELADO">{unirFrases(d.cancelada_motivo, "Va en ceros, con esta observación, en el reporte del mes.")}</Alert>}
 
       <div className="flex flex-wrap items-center gap-3 print:hidden">
         <BotonImprimirPagina texto="Imprimir PDF de referencia" />
         {urlSitpv && (
-          <a href={urlSitpv} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center rounded-md border-[1.5px] border-morado px-4 font-semibold text-morado hover:bg-morado-suave">
+          <Enlace href={urlSitpv} target="_blank" rel="noreferrer">
             Abrir el SITPV en otra pestaña
-          </a>
+          </Enlace>
         )}
       </div>
 

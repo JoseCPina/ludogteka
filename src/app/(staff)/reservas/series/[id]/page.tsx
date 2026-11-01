@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { hoyNegocio } from "@/lib/formato";
@@ -7,6 +6,7 @@ import { moduloDeCategoria } from "@/lib/modulos";
 import { diasSinGuarderia } from "@/lib/horario";
 import { SerieDetalle } from "./serie-detalle";
 import { zonaActual } from "@/lib/negocio/actual";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function SerieDetallePage({ params }: { params: Promise<{ id: string }> }) {
   const zona = await zonaActual();
@@ -80,17 +80,14 @@ export default async function SerieDetallePage({ params }: { params: Promise<{ i
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link
-          href={modulo ? `${modulo.base}/series` : "/reservas"}
-          className="text-sm font-semibold text-morado hover:underline"
-        >
+        <Enlace href={modulo ? `${modulo.base}/series` : "/reservas"} className="text-sm">
           ← Series recurrentes{modulo ? ` de ${modulo.etiqueta.toLowerCase()}` : ""}
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">{perro?.nombre ?? "—"}</h1>
         {serie.perro_id && (
-          <Link href={`/perros/${serie.perro_id}`} className="text-sm text-morado hover:underline">
+          <Enlace href={`/perros/${serie.perro_id}`} className="text-sm">
             Ver expediente del perro →
-          </Link>
+          </Enlace>
         )}
         {servicioSerie?.categoria === "guarderia" && (
           <p className="mt-2 text-sm text-n-700">

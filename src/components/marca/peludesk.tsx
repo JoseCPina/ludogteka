@@ -48,7 +48,10 @@ export function HechoConPeluDesk({ className = "" }: { className?: string }) {
       href="https://peludesk.mx"
       target="_blank"
       rel="noopener noreferrer"
-      className={`inline-flex items-center gap-1.5 text-xs font-medium text-n-600 hover:text-morado ${className}`}
+      // UX: es la firma con el logotipo (sus colores son los del logo y el contraste de un logotipo está exento);
+      // como cualquier enlace del panel, 44 px de alto y foco visible.
+      data-ui="marca"
+      className={`inline-flex min-h-11 items-center gap-1.5 rounded-sm text-xs font-medium text-n-600 hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado ${className}`}
     >
       Hecho con
       <IsotipoPeluDesk tamano={14} />

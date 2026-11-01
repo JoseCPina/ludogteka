@@ -417,9 +417,9 @@ export function TurnoAbierto({
                     </p>
                   )}
                   {r.puedeCancelar && !cerrando && cancelandoEfectivo !== r.id && (
-                    <button type="button" className="self-start text-xs font-semibold text-coral-oscuro hover:underline" onClick={() => { setCancelandoEfectivo(r.id); setMotivoEfectivo(""); }}>
+                    <Button type="button" onClick={() => { setCancelandoEfectivo(r.id); setMotivoEfectivo(""); }} className="self-start" variante="secundario" tamano="compacto">
                       Cancelar este efectivo agregado…
-                    </button>
+                    </Button>
                   )}
                   {cancelandoEfectivo === r.id && (
                     <div className="flex flex-wrap items-end gap-2 rounded-md bg-coral-suave p-2">
@@ -467,16 +467,12 @@ export function TurnoAbierto({
                   </p>
                 )}
                 {r.puedeCancelar && !cerrando && cancelando !== r.id && (
-                  <button
-                    type="button"
-                    className="self-start text-xs font-semibold text-coral-oscuro hover:underline"
-                    onClick={() => {
+                  <Button type="button" onClick={() => {
                       setCancelando(r.id);
                       setMotivoCancelacion("");
-                    }}
-                  >
+                    }} className="self-start" variante="secundario" tamano="compacto">
                     Cancelar este retiro…
-                  </button>
+                  </Button>
                 )}
                 {cancelando === r.id && (
                   <div className="flex flex-wrap items-end gap-2 rounded-md bg-coral-suave p-2">

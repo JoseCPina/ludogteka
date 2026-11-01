@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
@@ -6,6 +5,7 @@ import { Antiguedad } from "@/components/ui/antiguedad";
 import { diasDesde } from "@/lib/antiguedad";
 import { formatearFecha } from "@/lib/formato";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 type Fila = {
   correccion_id: string;
@@ -40,7 +40,7 @@ export default async function AjustesServicioPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/caja" className="text-sm font-semibold text-morado hover:underline">← Caja</Link>
+        <Enlace href="/caja" className="text-sm">← Caja</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Ajustes por corrección de servicio</h1>
         <p className="mt-1 text-n-600">
           Servicios que se corrigieron después de cobrarse. El cobro original no se toca: la cuenta queda con un cobro adicional o con un saldo a favor, y esto se limpia solo cuando el saldo llega a cero.
@@ -71,12 +71,12 @@ export default async function AjustesServicioPage() {
                   : "Un admin lo devuelve desde la cuenta con «Registrar devolución» (si el cobro fue con Mercado Pago, con «Devolver con Mercado Pago»)."}
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link href={`/caja/cobrar/${f.reserva_id}`} className="font-semibold text-morado hover:underline">
+                <Enlace href={`/caja/cobrar/${f.reserva_id}`}>
                   Abrir la cuenta →
-                </Link>
-                <Link href={`/estetica/${f.cita_id}`} className="font-semibold text-morado hover:underline">
+                </Enlace>
+                <Enlace href={`/estetica/${f.cita_id}`}>
                   Ver la cita →
-                </Link>
+                </Enlace>
               </div>
             </li>
           ))}

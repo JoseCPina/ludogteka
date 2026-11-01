@@ -70,13 +70,13 @@ export function CorreccionPrecioInfo({
         {formatearFecha(correccion.creadaEn, zona)} {formatearHoraNegocio(correccion.creadaEn, zona)}
       </p>
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="text-xs font-semibold text-morado hover:underline" onClick={() => setVerHistorial((v) => !v)} data-ver-historial-precio>
+        <Button type="button" onClick={() => setVerHistorial((v) => !v)} data-ver-historial-precio variante="secundario" tamano="compacto">
           {verHistorial ? "Ocultar historial" : "Ver historial"}
-        </button>
+        </Button>
         {puedeAnular && !anulando && (
-          <button type="button" className="text-xs font-semibold text-coral-oscuro hover:underline" onClick={() => setAnulando(true)} data-anular-correccion>
+          <Button type="button" onClick={() => setAnulando(true)} data-anular-correccion variante="secundario" tamano="compacto">
             Anular corrección
-          </button>
+          </Button>
         )}
       </div>
       {verHistorial && (

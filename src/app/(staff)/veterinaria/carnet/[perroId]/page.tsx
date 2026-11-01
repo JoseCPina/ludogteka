@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPermisos } from "@/lib/veterinaria/permisos";
@@ -22,6 +21,7 @@ import {
   type RequisitoOpcion,
 } from "./formularios";
 import { cargarMedicos, cargarProductosConLotes, miMedico } from "@/lib/veterinaria/lotes";
+import { Enlace } from "@/components/ui/enlace";
 
 const Etiqueta = ({ estado }: { estado: string }) => {
   const e = ESTADOS_CARNET[estado] ?? ESTADOS_CARNET.vigente;
@@ -85,7 +85,7 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <Link href="/veterinaria/carnet" className="text-sm font-semibold text-morado hover:underline">← Carnets</Link>
+        <Enlace href="/veterinaria/carnet" className="text-sm">← Carnets</Enlace>
         <div className="mt-1 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-n-900">Carnet de {perro.nombre as string}</h1>
@@ -97,17 +97,17 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href={`/veterinaria/carnet/${perroId}/imprimir`} className="inline-flex min-h-10 items-center rounded-md border-[1.5px] border-borde bg-white px-4 text-sm font-semibold text-n-900 hover:bg-n-100">
+            <Enlace href={`/veterinaria/carnet/${perroId}/imprimir`} className="text-sm">
               Ver e imprimir carnet
-            </Link>
+            </Enlace>
             {permisos.certificados && (
-              <Link href={`/veterinaria/certificados/nuevo?perro=${perroId}`} className="inline-flex min-h-10 items-center rounded-md border-[1.5px] border-borde bg-white px-4 text-sm font-semibold text-n-900 hover:bg-n-100">
+              <Enlace href={`/veterinaria/certificados/nuevo?perro=${perroId}`} className="text-sm">
                 Emitir certificado de salud
-              </Link>
+              </Enlace>
             )}
-            <Link href={hospitalizado ? `/veterinaria/hospitalizacion/${hospitalizado.id}` : `/veterinaria/hospitalizacion?perro=${perroId}`} className="inline-flex min-h-10 items-center rounded-md border-[1.5px] border-borde bg-white px-4 text-sm font-semibold text-n-900 hover:bg-n-100">
+            <Enlace href={hospitalizado ? `/veterinaria/hospitalizacion/${hospitalizado.id}` : `/veterinaria/hospitalizacion?perro=${perroId}`} className="text-sm">
               {hospitalizado ? "Ver hospitalización" : "Hospitalizar"}
-            </Link>
+            </Enlace>
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearFecha } from "@/lib/formato";
 import { marcarRecordatorioVisto } from "./modulos/cobro-actions";
+import { Enlace } from "@/components/ui/enlace";
 
 // El recordatorio de un cobro fallido de la suscripción: sale al admin al
 // abrir su tablero cada tercer día de la gracia (días 1, 4 y 7) hasta que
@@ -41,9 +42,9 @@ export function RecordatorioPago({ soloLecturaDesde }: { soloLecturaDesde: strin
           (nada se borra y se reactiva solo en cuanto pagues).
         </p>
         <AccionesFormulario error={error}>
-          <a href="/admin/modulos" className="inline-flex min-h-12 items-center rounded-md bg-morado px-5 font-semibold text-white hover:bg-morado-oscuro">
+          <Enlace href="/admin/modulos">
             Pagar o cambiar la tarjeta
-          </a>
+          </Enlace>
           <Button type="button" variante="secundario" cargando={envio.cargando} onClick={cerrar}>
             Recordármelo después
           </Button>

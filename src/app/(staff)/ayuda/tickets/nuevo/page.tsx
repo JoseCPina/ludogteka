@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { FormularioTicket } from "./formulario-ticket";
+import { Enlace } from "@/components/ui/enlace";
 
 // Crear un ticket, desde Ayuda, desde un artículo o desde el asistente
 // (con la conversación: su primera pregunta y lo que contestó).
@@ -30,9 +30,9 @@ export default async function NuevoTicket({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/ayuda" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/ayuda" className="text-sm">
           ← Ayuda
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Crear ticket</h1>
         <p className="mt-1 text-n-600">Te contesta alguien de PeluDesk. Ves la respuesta aquí en Ayuda{" "}y, si eres admin, también por WhatsApp.</p>
       </div>

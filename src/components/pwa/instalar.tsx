@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
+import { Button } from "@/components/ui/button";
+import { Alternar } from "@/components/ui/alternar";
 
 // «Instalar la app» (QA N26, 17 de octubre de 2026). Antes era un botón flotante abajo a la izquierda que tapaba
 // botones de acción («Crear cliente», «Agendar cita», «Emitir receta») y no se podía cerrar. Ahora:
@@ -109,22 +111,17 @@ export function AvisoInstalar() {
         {ayuda ?? "Instala la app en este equipo."}
       </p>
       {!ayuda && (
-        <button
-          type="button"
-          data-instalar-aviso
-          onClick={async () => {
+        <Button type="button" data-instalar-aviso onClick={async () => {
             const r = await instalar();
             if (r === "instrucciones") setAyuda(INSTRUCCIONES.ios);
             else cerrar();
-          }}
-          className="min-h-8 shrink-0 rounded-md bg-morado px-3 font-semibold text-white hover:bg-morado-oscuro"
-        >
+          }} className="shrink-0" tamano="compacto" sinBloqueo>
           Instalar
-        </button>
+        </Button>
       )}
-      <button type="button" data-cerrar-aviso-instalar onClick={cerrar} className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-n-600 hover:bg-white" aria-label="Cerrar el aviso de instalar la app">
+      <Alternar type="button" data-cerrar-aviso-instalar onClick={cerrar} aria-label="Cerrar el aviso de instalar la app" className="grid shrink-0 place-items-center rounded-md text-n-700 hover:bg-white">
         <span aria-hidden className="text-xl leading-none">×</span>
-      </button>
+      </Alternar>
     </div>
   );
 }
@@ -136,22 +133,17 @@ export function BotonInstalar({ className = "" }: { className?: string }) {
   if (estado === "instalada") return null;
   return (
     <div className={className}>
-      <button
-        type="button"
-        data-instalar-menu
-        onClick={async () => {
+      <Button type="button" data-instalar-menu onClick={async () => {
           const r = await instalar();
           setAyuda(r === "instrucciones" ? INSTRUCCIONES[estado === "ios" ? "ios" : "manual"] : null);
-        }}
-        className="flex min-h-11 w-full items-center gap-3 rounded-md px-3 font-semibold text-n-700 hover:bg-n-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
-      >
+        }} className="w-full justify-start gap-3" variante="secundario" tamano="compacto" sinBloqueo>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 3v12" />
           <path d="m7 10 5 5 5-5" />
           <path d="M5 21h14" />
         </svg>
         Instalar la app
-      </button>
+      </Button>
       {ayuda && <p role="status" className="px-3 pt-1 text-sm text-n-600">{ayuda}</p>}
     </div>
   );

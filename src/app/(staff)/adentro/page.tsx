@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
 import { Alert } from "@/components/ui/alert";
 import { PerroAdentro, type PerroAdentroDato } from "./perro-adentro";
 import { leerTodoPorIds } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 // «Adentro ahora»: los perros que están en el negocio ahora mismo (estancia
 // en curso de guardería u hotel), con lo que se hace al momento: tomar o
@@ -88,9 +88,9 @@ export default async function AdentroPage() {
           </p>
         </div>
         {conGuarderia && permiso && (
-          <Link href="/guarderia/reportes" className="inline-flex min-h-12 items-center rounded-md border-[1.5px] border-morado px-4 font-semibold text-morado hover:bg-morado-suave">
+          <Enlace href="/guarderia/reportes">
             Reportes del día
-          </Link>
+          </Enlace>
         )}
       </header>
 

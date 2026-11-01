@@ -11,6 +11,7 @@ import { BotonAccion, Desplegable, FormularioAccion } from "@/components/formula
 import { PadFirma } from "@/components/firma-pad";
 import { wa } from "@/lib/veterinaria/expediente";
 import { aceptarEnMostrador, cancelarEstimado, enviarEstimado, versionNuevaEstimado } from "../expediente/actions";
+import { Enlace } from "@/components/ui/enlace";
 
 /** Mandar el estimado al dueño: se genera una liga nueva (la anterior deja de servir) y se ofrece por WhatsApp. */
 export function EnviarEstimado({ id, telefono, mascota, titulo, yaEnviado }: { id: string; telefono: string | null; mascota: string; titulo: string; yaEnviado: boolean }) {
@@ -64,7 +65,7 @@ export function EnviarEstimado({ id, telefono, mascota, titulo, yaEnviado }: { i
           <CampoCopiable valor={url} etiqueta="Liga del estimado" />
           <CampoCopiable valor={mensaje} etiqueta="Mensaje para WhatsApp" />
           {enlace ? (
-            <a href={enlace} target="_blank" rel="noopener" className="w-fit text-sm font-semibold text-morado underline">Abrir WhatsApp con el mensaje</a>
+            <Enlace href={enlace} target="_blank" rel="noopener" className="w-fit text-sm" enTexto>Abrir WhatsApp con el mensaje</Enlace>
           ) : (
             <p className="text-sm text-n-600">El dueño no tiene un teléfono de 10 dígitos: copia la liga y mándasela por otro medio.</p>
           )}

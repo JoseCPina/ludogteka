@@ -24,6 +24,7 @@ import {
 } from "../agenda-actions";
 import { SelectorEstilista, type Estilista } from "../selector-estilista";
 import { AvisoVersion, useControlVersion } from "@/components/concurrencia/use-control-version";
+import { Enlace } from "@/components/ui/enlace";
 
 export type RecetaItem = {
   insumo_id: string;
@@ -361,9 +362,9 @@ export function CitaDetalle({
       {aviso && (
         <Alert variante="exito" titulo={aviso.texto}>
           {aviso.url && (
-            <a href={aviso.url} target="_blank" rel="noopener noreferrer" data-avisar-cliente className="font-semibold underline">
+            <Enlace href={aviso.url} target="_blank" rel="noopener noreferrer" data-avisar-cliente enTexto>
               Avisarle al cliente por WhatsApp
-            </a>
+            </Enlace>
           )}
         </Alert>
       )}
@@ -592,7 +593,7 @@ export function CitaDetalle({
                     <div className="flex flex-col gap-2 sm:flex-row sm:gap-3" data-quien-recoge>
                       <Button
                         type="button"
-                        variante={esDueno === true ? "exito" : "secundario"}
+                        variante={esDueno === true ? "primario" : "secundario"}
             className="w-full sm:w-auto"
                         onClick={() => {
                           setEsDueno(true);

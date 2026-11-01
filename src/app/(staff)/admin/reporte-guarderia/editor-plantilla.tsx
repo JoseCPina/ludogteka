@@ -10,6 +10,7 @@ import { CATALOGO_ICONOS, iconoSvg } from "@/lib/reporte/iconos";
 import type { ColoresTarjeta, ConfigReporte, SeccionPlantilla } from "@/lib/reporte/tipos";
 import { COLORES, COLUMNAS, PRESENTACIONES, type OpcionEditable, type SeccionEditable } from "./tipos";
 import { crearSeccion, guardarConfig, guardarSeccion, moverSeccion, vistaPreviaTarjeta } from "./actions";
+import { Alternar } from "@/components/ui/alternar";
 
 // Tras guardar se recarga la página y el formulario se vuelve a armar con lo
 // que quedó en la base (así las opciones nuevas ya traen su id): el aviso de
@@ -80,9 +81,9 @@ function FormConfig({ config, conReporte, coloresMarca }: { config: ConfigReport
         />
         <span className="text-sm font-normal text-n-600">{valor ? valor : "Los de tu marca"}</span>
         {valor && (
-          <button type="button" onClick={() => set(null)} className="min-h-11 text-sm font-semibold text-morado hover:underline">
+          <Button type="button" onClick={() => set(null)} variante="secundario" tamano="compacto">
             Usar los de la marca
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -178,22 +179,17 @@ function FormSeccion({ s, indice, total }: { s: SeccionPlantilla; indice: number
   return (
     <section className={`rounded-xl border bg-white ${d.activa ? "border-n-200" : "border-n-200 opacity-80"}`}>
       <div className="flex flex-wrap items-center gap-2 p-3 sm:p-4">
-        <button
-          type="button"
-          onClick={() => setAbierta((v) => !v)}
-          aria-expanded={abierta}
-          className="flex min-h-12 min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
-        >
+        <Alternar type="button" onClick={() => setAbierta((v) => !v)} aria-expanded={abierta} className="flex min-h-12 min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado">
           <span aria-hidden="true" className="text-n-500">
             {abierta ? "▾" : "▸"}
           </span>
           <span className="truncate text-base font-bold text-n-900">{s.titulo}</span>
           {!d.activa && <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">Apagada</span>}
-        </button>
-        <Button type="button" variante="secundario" className="min-h-11 px-3" onClick={() => subirBajar("arriba")} disabled={indice === 0} cargando={mover.cargando} aria-label={`Subir ${s.titulo}`}>
+        </Alternar>
+        <Button type="button" variante="secundario" className="px-3" tamano="compacto" onClick={() => subirBajar("arriba")} disabled={indice === 0} cargando={mover.cargando} aria-label={`Subir ${s.titulo}`}>
           ↑
         </Button>
-        <Button type="button" variante="secundario" className="min-h-11 px-3" onClick={() => subirBajar("abajo")} disabled={indice === total - 1} cargando={mover.cargando} aria-label={`Bajar ${s.titulo}`}>
+        <Button type="button" variante="secundario" className="px-3" tamano="compacto" onClick={() => subirBajar("abajo")} disabled={indice === total - 1} cargando={mover.cargando} aria-label={`Bajar ${s.titulo}`}>
           ↓
         </Button>
       </div>
@@ -280,12 +276,12 @@ function FormSeccion({ s, indice, total }: { s: SeccionPlantilla; indice: number
                         className={`${campo} min-w-0 flex-1 basis-56`}
                         placeholder="Texto de la opción"
                       />
-                      <button type="button" aria-label="Subir opción" onClick={() => moverOpcion(i, -1)} disabled={i === 0} className="min-h-11 min-w-11 rounded-md border border-borde bg-white text-lg disabled:opacity-40">
+                      <Button type="button" aria-label="Subir opción" onClick={() => moverOpcion(i, -1)} disabled={i === 0} className="px-0 text-lg" variante="secundario" tamano="compacto">
                         ↑
-                      </button>
-                      <button type="button" aria-label="Bajar opción" onClick={() => moverOpcion(i, 1)} disabled={i === d.opciones.length - 1} className="min-h-11 min-w-11 rounded-md border border-borde bg-white text-lg disabled:opacity-40">
+                      </Button>
+                      <Button type="button" aria-label="Bajar opción" onClick={() => moverOpcion(i, 1)} disabled={i === d.opciones.length - 1} className="px-0 text-lg" variante="secundario" tamano="compacto">
                         ↓
-                      </button>
+                      </Button>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
                       <div className="min-w-56 flex-1">

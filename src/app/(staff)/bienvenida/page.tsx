@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { formatearFecha } from "@/lib/formato";
@@ -8,6 +7,7 @@ import { cargarPasosBienvenida } from "@/lib/bienvenida/pasos";
 import { AvanceWeb } from "@/components/avance-web";
 import { cargarTutorialesVisibles } from "@/lib/tutoriales";
 import { VideosParaEmpezar } from "@/components/ayuda/videos-para-empezar";
+import { Enlace } from "@/components/ui/enlace";
 
 // Los primeros pasos de un negocio recién abierto desde peludesk.mx (QA S16). Cada paso se marca «Listo» solo
 // cuando el negocio ya puede operar con él (cargarPasosBienvenida decide, con la base) y manda a la pantalla donde se
@@ -57,9 +57,9 @@ export default async function BienvenidaPage() {
           <ul className="mt-2 flex flex-col gap-1.5">
             {faltan.map((p) => (
               <li key={p.clave} className="text-sm text-n-800">
-                <Link href={p.href} className="font-semibold text-morado hover:underline">
+                <Enlace href={p.href}>
                   {p.titulo}
-                </Link>
+                </Enlace>
                 {p.falta ? ` — ${p.falta}` : ""}
               </li>
             ))}
@@ -90,17 +90,14 @@ export default async function BienvenidaPage() {
                 <p className="mt-0.5 text-sm text-n-700">{p.que}</p>
                 {!p.listo && p.falta && <p className="mt-1 text-sm font-semibold text-ambar-oscuro">{p.falta}</p>}
                 {video && (
-                  <Link href={`/ayuda/videos/${video}`} data-video-paso className="mt-1 inline-block text-sm font-semibold text-morado hover:underline">
+                  <Enlace href={`/ayuda/videos/${video}`} data-video-paso className="mt-1 text-sm">
                     ▶ Ver cómo se hace (video)
-                  </Link>
+                  </Enlace>
                 )}
               </div>
-              <Link
-                href={p.href}
-                className={`inline-flex min-h-11 shrink-0 items-center justify-center rounded-md px-4 text-sm font-semibold ${p.listo ? "border-[1.5px] border-borde text-n-800 hover:bg-crema" : "bg-morado text-white hover:bg-morado-oscuro"}`}
-              >
+              <Enlace href={p.href} className="shrink-0 text-sm">
                 {p.listo ? "Revisar" : p.accion}
-              </Link>
+              </Enlace>
             </li>
           );
         })}
@@ -120,9 +117,9 @@ export default async function BienvenidaPage() {
       <AvanceWeb />
       <p className="text-sm text-n-600">
         Puedes volver a esta página cuando quieras desde el aviso de arriba.{" "}
-        <Link href="/admin" className="font-semibold text-morado hover:underline">
+        <Enlace href="/admin" enTexto>
           Ir a Administración
-        </Link>
+        </Enlace>
       </p>
     </div>
   );

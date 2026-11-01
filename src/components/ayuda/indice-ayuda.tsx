@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { agrupar, buscar, type Articulo } from "@/lib/ayuda";
+import { Enlace } from "@/components/ui/enlace";
 
 /**
  * El índice del centro de ayuda con su buscador: agrupado por módulo y, al
@@ -13,10 +13,10 @@ export function IndiceAyuda({ articulos, base = "/ayuda" }: { articulos: Articul
   const resultados = useMemo(() => (q.trim().length > 2 ? buscar(q, articulos) : null), [q, articulos]);
   const Tarjeta = ({ a }: { a: Articulo }) => (
     <li>
-      <Link href={`${base}/${a.slug}`} className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado">
+      <Enlace href={`${base}/${a.slug}`} className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado" forma="bloque">
         <span className="font-semibold text-n-900">{a.titulo}</span>
         <span className="mt-1 block text-sm text-n-600">{a.resumen}</span>
-      </Link>
+      </Enlace>
     </li>
   );
   return (

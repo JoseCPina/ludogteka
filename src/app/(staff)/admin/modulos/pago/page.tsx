@@ -1,11 +1,11 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { negocioActual } from "@/lib/negocio/actual";
 import { stripe } from "@/lib/cobro/stripe";
 import { METADATA_NEGOCIO, aplicarSuscripcion } from "@/lib/cobro/suscripcion";
 import { Alert } from "@/components/ui/alert";
+import { Enlace } from "@/components/ui/enlace";
 
 // El regreso de Stripe Checkout. No se confía en haber llegado a esta URL:
 // se lee la sesión en Stripe, se comprueba que es de ESTE negocio y se
@@ -44,9 +44,9 @@ export default async function RegresoDelPago({ searchParams }: { searchParams: P
       <Alert variante="advertencia" titulo="Revisa tu pago">
         {problema}
       </Alert>
-      <Link href="/admin/modulos" className="font-semibold text-morado underline underline-offset-2">
+      <Enlace href="/admin/modulos" enTexto>
         Volver a Módulos y plan
-      </Link>
+      </Enlace>
     </div>
   );
 }

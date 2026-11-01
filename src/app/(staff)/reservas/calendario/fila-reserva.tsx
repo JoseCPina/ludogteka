@@ -3,7 +3,6 @@
 import { describirEstancia } from "@/lib/formato";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import type { Conflicto } from "@/lib/concurrencia/tipos";
 import { cancelarEstancia } from "../reserva-actions";
 import { MoverFechas } from "../mover-fechas";
 import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
+import { Enlace } from "@/components/ui/enlace";
 
 export type ReservaCalendario = {
   id: string;
@@ -159,18 +159,15 @@ export function FilaReserva({ r }: { r: ReservaCalendario }) {
         </div>
       ) : (
         <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/reservas/${r.reservaId}`}
-            className="inline-flex min-h-10 items-center rounded-md border-[1.5px] border-n-300 bg-white px-3 text-sm font-semibold text-n-800 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
-          >
+          <Enlace href={`/reservas/${r.reservaId}`} className="text-sm">
             Abrir
-          </Link>
+          </Enlace>
           {editable && (
             <>
-              <Button type="button" variante="secundario" className="min-h-10 px-3 text-sm" onClick={() => { setMoviendo(true); setExito(null); }}>
+              <Button type="button" variante="secundario" className="px-3 text-sm" tamano="compacto" onClick={() => { setMoviendo(true); setExito(null); }}>
                 Mover fechas
               </Button>
-              <Button type="button" variante="secundario" className="min-h-10 px-3 text-sm" onClick={() => { setCancelando(true); setExito(null); }}>
+              <Button type="button" variante="secundario" className="px-3 text-sm" tamano="compacto" onClick={() => { setCancelando(true); setExito(null); }}>
                 Cancelar
               </Button>
             </>

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { EnlaceOTexto } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -10,6 +9,7 @@ import { opcionesDeEstimado } from "../../expediente/actions";
 import { EditorEstimado } from "../editor-estimado";
 import { AceptarEnMostrador, CancelarEstimado, EnviarEstimado, VersionNueva } from "../acciones-estimado";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function DetalleEstimadoPagina({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,7 +20,7 @@ export default async function DetalleEstimadoPagina({ params }: { params: Promis
   if (error || !data) {
     return (
       <div className="flex max-w-2xl flex-col gap-4">
-        <Link href="/veterinaria/estimados" className="text-sm font-semibold text-morado hover:underline">← Estimados</Link>
+        <Enlace href="/veterinaria/estimados" className="text-sm">← Estimados</Enlace>
         <Alert variante="advertencia" titulo="No pudimos abrir el estimado">No existe o no tienes acceso. Los estimados son de un médico veterinario, de admin o de quien tenga «Crear estimados».</Alert>
       </div>
     );
@@ -38,7 +38,7 @@ export default async function DetalleEstimadoPagina({ params }: { params: Promis
 
   const encabezado = (
     <div>
-      <Link href={`/veterinaria/expediente/${e.perro_id}`} className="text-sm font-semibold text-morado hover:underline">← Expediente de {d.mascota.nombre}</Link>
+      <Enlace href={`/veterinaria/expediente/${e.perro_id}`} className="text-sm">← Expediente de {d.mascota.nombre}</Enlace>
       <div className="mt-1 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-bold text-n-900">{e.titulo}</h1>
         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${d.vencido ? "bg-coral-suave text-coral-oscuro" : est.estilo}`}>{d.vencido ? "Vencido" : est.etiqueta}</span>
@@ -124,7 +124,7 @@ export default async function DetalleEstimadoPagina({ params }: { params: Promis
           <ul className="mt-2 flex flex-col gap-1 text-sm">
             {d.versiones.map((v) => (
               <li key={v.id}>
-                <Link href={`/veterinaria/estimados/${v.id}`} className={`font-semibold ${v.id === e.id ? "text-n-900" : "text-morado hover:underline"}`}>Versión {v.version}</Link>{" "}
+                <Enlace href={`/veterinaria/estimados/${v.id}`} aria-current={v.id === e.id ? "page" : undefined}>Versión {v.version}</Enlace>{" "}
                 <span className="text-n-600">· {ESTADOS_ESTIMADO[v.estado]?.etiqueta ?? v.estado} · {dinero(v.total_min)} – {dinero(v.total_max)}</span>
               </li>
             ))}
@@ -142,7 +142,7 @@ export default async function DetalleEstimadoPagina({ params }: { params: Promis
           )}
           {(e.estado === "enviado" || e.estado === "rechazado") && ultima && <VersionNueva id={e.id} />}
           {e.estado === "enviado" && <CancelarEstimado id={e.id} />}
-          {e.estado === "aceptado" && d.cuenta && (sesion?.rol === "admin" || sesion?.rol === "recepcion") && <Link href={`/caja/cobrar/${d.cuenta.reserva_id}`} className="inline-flex min-h-12 items-center rounded-md bg-morado px-5 font-semibold text-white hover:opacity-90">Cobrar en Caja</Link>}
+          {e.estado === "aceptado" && d.cuenta && (sesion?.rol === "admin" || sesion?.rol === "recepcion") && <Enlace href={`/caja/cobrar/${d.cuenta.reserva_id}`}>Cobrar en Caja</Enlace>}
         </div>
       )}
     </div>

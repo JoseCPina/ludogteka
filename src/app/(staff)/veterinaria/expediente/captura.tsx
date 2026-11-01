@@ -63,14 +63,14 @@ export function CapturarResultado({ perroId, consultaId, hoy }: { perroId: strin
             <input aria-label={`Valor ${i + 1}`} placeholder="Valor" value={f.valor} onChange={(e) => cambiar(i, "valor", e.target.value)} className="min-h-11 rounded-md border-[1.5px] border-borde px-3" />
             <input aria-label={`Unidad ${i + 1}`} placeholder="Unidad" value={f.unidad} onChange={(e) => cambiar(i, "unidad", e.target.value)} className="min-h-11 rounded-md border-[1.5px] border-borde px-3" />
             <input aria-label={`Rango ${i + 1}`} placeholder="Rango (37 - 55)" value={f.rango} onChange={(e) => cambiar(i, "rango", e.target.value)} className="min-h-11 rounded-md border-[1.5px] border-borde px-3" />
-            <button type="button" className="text-sm font-semibold text-coral-oscuro hover:underline" onClick={() => setFilas((x) => (x.length > 1 ? x.filter((_, j) => j !== i) : x))}>
+            <Button type="button" onClick={() => setFilas((x) => (x.length > 1 ? x.filter((_, j) => j !== i) : x))} variante="secundario" tamano="compacto">
               Quitar
-            </button>
+            </Button>
           </div>
         ))}
-        <button type="button" className="w-fit text-sm font-semibold text-morado hover:underline" onClick={() => setFilas((x) => [...x, { ...FILA_VACIA }])}>
+        <Button type="button" onClick={() => setFilas((x) => [...x, { ...FILA_VACIA }])} className="w-fit" variante="secundario" tamano="compacto">
           + Otro parámetro
-        </button>
+        </Button>
         <p className="text-sm text-n-600">Con un rango como «37 - 55» y un valor numérico, el sistema marca solo si está alto o bajo.</p>
       </div>
       <Field label="Notas (opcional)" name="notas" />

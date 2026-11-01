@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import {
   type Desglose,
 } from "@/lib/reportes/desglose";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 function dinero(n: number): string {
   return n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
@@ -44,7 +44,7 @@ export default async function DesglosePage({
         <Alert variante="error" titulo="Desglose no válido">
           Faltan la cifra o las fechas. Vuelve a Reportes y toca la cifra otra vez.
         </Alert>
-        <Link href="/reportes" className="font-semibold text-morado hover:underline">← Volver a Reportes</Link>
+        <Enlace href="/reportes">← Volver a Reportes</Enlace>
       </div>
     );
   }
@@ -64,7 +64,7 @@ export default async function DesglosePage({
         <Alert variante="info" titulo="Caja por método: al cerrar el turno">
           {TEXTO_CORTE_CIEGO}
         </Alert>
-        <Link href={`/reportes?desde=${desde}&hasta=${hasta}`} className="font-semibold text-morado hover:underline">← Volver a Reportes</Link>
+        <Enlace href={`/reportes?desde=${desde}&hasta=${hasta}`}>← Volver a Reportes</Enlace>
       </div>
     );
   }
@@ -79,7 +79,7 @@ export default async function DesglosePage({
         <Alert variante="error" titulo="No pudimos cargar el desglose">
           Revisa que tengas el permiso «Reportes financieros» y que la cifra exista. Si el problema sigue, avísale al equipo técnico.
         </Alert>
-        <Link href={`/reportes?desde=${desde}&hasta=${hasta}`} className="font-semibold text-morado hover:underline">← Volver a Reportes</Link>
+        <Enlace href={`/reportes?desde=${desde}&hasta=${hasta}`}>← Volver a Reportes</Enlace>
       </div>
     );
   }
@@ -111,7 +111,7 @@ export default async function DesglosePage({
   return (
     <div className="flex flex-col gap-5" data-desglose={tarjeta}>
       <div>
-        <Link href={`/reportes?desde=${desde}&hasta=${hasta}`} className="text-sm font-semibold text-morado hover:underline">← Volver a Reportes</Link>
+        <Enlace href={`/reportes?desde=${desde}&hasta=${hasta}`} className="text-sm">← Volver a Reportes</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">{d.titulo}</h1>
         <p className="mt-1 text-n-600">
           Del {formatearFechaCalendario(desde)} al {formatearFechaCalendario(hasta)}. Son las operaciones que forman esa cifra, con los mismos criterios del reporte.
@@ -132,8 +132,8 @@ export default async function DesglosePage({
           />
         </div>
         <Button type="submit">Buscar</Button>
-        {q && <Link href={enlace({ q: undefined, pagina: undefined })} className="pb-3 text-sm font-semibold text-morado hover:underline">Quitar búsqueda</Link>}
-        <a href={excel} className="pb-3 text-sm font-semibold text-morado hover:underline" data-desglose-excel>Descargar en Excel</a>
+        {q && <Enlace href={enlace({ q: undefined, pagina: undefined })} className="pb-3 text-sm">Quitar búsqueda</Enlace>}
+        <Enlace href={excel} className="pb-3 text-sm" data-desglose-excel>Descargar en Excel</Enlace>
       </form>
 
       <div className="rounded-lg border border-n-200 bg-white p-4 text-sm text-n-700" data-desglose-resumen>
@@ -158,7 +158,7 @@ export default async function DesglosePage({
                 <tr>
                   {columnas.map((c) => (
                     <th key={c} className={`border-b border-n-200 bg-n-100 px-3 py-3 text-xs font-bold uppercase tracking-wide text-n-600 ${c === "monto" || c === "descuento" ? "text-right" : "text-left"}`}>
-                      <Link href={ordenarPor(c)} className="hover:underline">{c === "monto" && !esDinero ? "Cantidad" : ETIQUETA_COLUMNA[c]}{flecha(c)}</Link>
+                      <Enlace href={ordenarPor(c)}>{c === "monto" && !esDinero ? "Cantidad" : ETIQUETA_COLUMNA[c]}{flecha(c)}</Enlace>
                     </th>
                   ))}
                   <th className="border-b border-n-200 bg-n-100 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">Cuenta</th>
@@ -179,7 +179,7 @@ export default async function DesglosePage({
                     <td className="whitespace-nowrap border-b border-n-200 px-3 py-2 text-right font-semibold tabular-nums">{valor(Number(f.monto))}</td>
                     <td className="whitespace-nowrap border-b border-n-200 px-3 py-2 text-right tabular-nums text-n-600">{Number(f.descuento) > 0 ? dinero(Number(f.descuento)) : "—"}</td>
                     <td className="border-b border-n-200 px-3 py-2">
-                      {f.href ? <Link href={f.href} className="font-semibold text-morado hover:underline">Abrir</Link> : "—"}
+                      {f.href ? <Enlace href={f.href}>Abrir</Enlace> : "—"}
                     </td>
                   </tr>
                 ))}
@@ -209,7 +209,7 @@ export default async function DesglosePage({
                   {[f.usuario && `Registró: ${f.usuario}`, f.metodo && etiquetaMetodos(f.metodo), Number(f.descuento) > 0 && `Descuento ${dinero(Number(f.descuento))}`].filter(Boolean).join(" · ")}
                 </p>
                 {f.detalle && <p className="mt-1 text-xs text-n-500">{f.detalle}</p>}
-                {f.href && <Link href={f.href} className="mt-2 inline-block font-semibold text-morado hover:underline">Abrir la cuenta</Link>}
+                {f.href && <Enlace href={f.href} className="mt-2">Abrir la cuenta</Enlace>}
               </li>
             ))}
             <li className="rounded-lg bg-n-100 p-3 text-right text-sm font-bold text-n-900">
@@ -219,9 +219,9 @@ export default async function DesglosePage({
 
           {paginas > 1 && (
             <nav className="flex flex-wrap items-center justify-between gap-3 text-sm" aria-label="Páginas del desglose">
-              {pagina > 1 ? <Link href={enlace({ pagina: String(pagina - 1) })} className="font-semibold text-morado hover:underline">← Anterior</Link> : <span />}
+              {pagina > 1 ? <Enlace href={enlace({ pagina: String(pagina - 1) })}>← Anterior</Enlace> : <span />}
               <span className="text-n-600">Página {pagina} de {paginas}</span>
-              {pagina < paginas ? <Link href={enlace({ pagina: String(pagina + 1) })} className="font-semibold text-morado hover:underline">Siguiente →</Link> : <span />}
+              {pagina < paginas ? <Enlace href={enlace({ pagina: String(pagina + 1) })}>Siguiente →</Enlace> : <span />}
             </nav>
           )}
         </>

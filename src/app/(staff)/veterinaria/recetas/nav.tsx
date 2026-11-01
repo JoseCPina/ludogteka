@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { EnlacePestana } from "@/components/ui/enlace-pestana";
 
 const PESTANAS = [
   { href: "/veterinaria/recetas", clave: "recetas", texto: "Recetas" },
@@ -12,13 +12,9 @@ export function NavRecetas({ activa }: { activa: (typeof PESTANAS)[number]["clav
   return (
     <nav aria-label="Recetas y controlados" className="flex flex-wrap gap-2 print:hidden">
       {PESTANAS.map((p) => (
-        <Link
-          key={p.clave}
-          href={p.href}
-          className={`rounded-full border px-3.5 py-1.5 text-sm font-semibold ${p.clave === activa ? "border-morado bg-morado-suave text-morado" : "border-n-200 bg-white text-n-700 hover:bg-n-50"}`}
-        >
+        <EnlacePestana key={p.clave} href={p.href} activo={p.clave === activa}>
           {p.texto}
-        </Link>
+        </EnlacePestana>
       ))}
     </nav>
   );

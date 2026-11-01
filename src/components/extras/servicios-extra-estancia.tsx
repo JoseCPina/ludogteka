@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
 import { useRouter } from "next/navigation";
 import { textoListaVacia } from "@/lib/reservas/lista-vacia";
@@ -15,6 +14,7 @@ import { ListaExtras } from "./lista-extras";
 import { etiquetaUnidadExtra, type CatalogoExtra, type ExtraFila } from "@/lib/extras/tipos";
 import { agregarExtra, programarExtra } from "@/app/(staff)/extras/actions";
 import { dinero } from "@/lib/dinero";
+import { Enlace } from "@/components/ui/enlace";
 
 
 /**
@@ -138,9 +138,9 @@ export function ServiciosExtraEstancia({
         <p className="text-sm text-n-600">
           El negocio todavía no tiene servicios extra en su catálogo.{" "}
           <SiPuedeAbrir href="/extras/catalogo" sino="Lo crea un admin o quien tenga «Editar catálogo de servicios extra».">
-            <Link href="/extras/catalogo" className="font-semibold text-morado hover:underline">
+            <Enlace href="/extras/catalogo">
               Crear el catálogo
-            </Link>
+            </Enlace>
           </SiPuedeAbrir>
         </p>
       )}
@@ -208,9 +208,9 @@ export function ServiciosExtraEstancia({
           </AccionesFormulario>
           <p className="text-xs text-n-500">
             ¿Un paquete de sesiones? Se vende desde{" "}
-            <Link href={`/clientes/${clienteId}`} className="font-semibold text-morado hover:underline">
+            <Enlace href={`/clientes/${clienteId}`} enTexto>
               la ficha del cliente
-            </Link>
+            </Enlace>
             ; al marcar la sesión como hecha se descuenta solo.
           </p>
         </div>

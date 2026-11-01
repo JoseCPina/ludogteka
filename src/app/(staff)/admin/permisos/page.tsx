@@ -1,5 +1,4 @@
 import { etiquetaDeCuenta } from "@/lib/auth/identidad";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { etiquetaDePermiso } from "@/lib/auth/permisos";
@@ -7,6 +6,7 @@ import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { CasillasPermisos } from "./casillas-permisos";
 import { zonaActual } from "@/lib/negocio/actual";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 // Permisos extra por persona de recepción (solo admin: el middleware no
 // deja entrar a nadie más y la base rechaza otorgar/revocar a quien no es
@@ -50,9 +50,9 @@ export default async function PermisosPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/admin" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/admin" className="text-sm">
           ← Panel de admin
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Permisos de recepción</h1>
         <p className="mt-1 max-w-3xl text-n-600">
           Permisos extra por persona, para que alguien de recepción te ayude a administrar. Se aplican

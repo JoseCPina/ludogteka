@@ -9,6 +9,7 @@ import { formatearFecha, horaLocalDeInstante } from "@/lib/formato";
 import { ETIQUETA_RESPUESTA, type AccionRecordatorio, type TipoRecordatorio } from "@/lib/recordatorios/plantillas";
 import { estadoDeRecordatorio, hrefDeRecordatorio } from "@/lib/recordatorios/estado";
 import { MarcarAtendido } from "./marcar-atendido";
+import { Enlace } from "@/components/ui/enlace";
 
 // Recordatorios por WhatsApp del negocio: lo que contestaron sus clientes y hay que atender (cambio de cita,
 // solicitud para agendar, un mensaje, una baja) y los últimos recordatorios con su estado de entrega.
@@ -145,14 +146,14 @@ export default async function RecordatoriosPage() {
               </div>
               <div className="flex flex-wrap gap-2 sm:flex-col sm:items-end">
                 {tel.length === 10 && m.tipo !== "baja" && (
-                  <a className="rounded-lg border border-menta-oscuro px-3 py-2 text-sm font-semibold text-menta-oscuro" href={`https://wa.me/52${tel}`} target="_blank" rel="noopener noreferrer">
+                  <Enlace className="text-sm" href={`https://wa.me/52${tel}`} target="_blank" rel="noopener noreferrer">
                     Escribirle por WhatsApp
-                  </a>
+                  </Enlace>
                 )}
                 {href && puedeAbrir(acceso, href.split("?")[0]) && (
-                  <a className="rounded-lg border border-n-300 px-3 py-2 text-sm font-semibold text-n-800" href={href}>
+                  <Enlace className="text-sm" href={href}>
                     {m.tipo === "solicitud_cita" ? "Agendar" : "Ver la cita"}
-                  </a>
+                  </Enlace>
                 )}
                 <MarcarAtendido id={m.id} />
               </div>
@@ -184,9 +185,9 @@ export default async function RecordatoriosPage() {
                     {r.respuesta && <Chip tono={r.respuesta === "confirmo" ? "exito" : "proceso"}>{ETIQUETA_RESPUESTA[r.respuesta]}</Chip>}
                     <Chip tono={e.tono}>{e.texto}</Chip>
                     {puedeAbrir(acceso, href.split("?")[0]) && (
-                      <a className="text-morado underline" href={href}>
+                      <Enlace href={href} enTexto>
                         Ver
-                      </a>
+                      </Enlace>
                     )}
                   </div>
                 </li>

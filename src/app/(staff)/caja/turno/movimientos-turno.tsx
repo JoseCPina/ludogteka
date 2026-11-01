@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { formatearFecha, formatearHoraNegocio } from "@/lib/formato";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 export type MovimientoTurno = {
   id: string;
@@ -110,16 +110,16 @@ export function MovimientosTurno({
                       m.origen !== "manual" && <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">{ETIQUETA_ORIGEN[m.origen]}</span>
                     )}
                     {m.grupoId && (
-                      <Link href={`/caja/recibo-junto/${m.grupoId}`} className="ml-2 rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-700 hover:underline" data-movimiento-junto>
+                      <Enlace href={`/caja/recibo-junto/${m.grupoId}`} className="ml-2 text-xs" data-movimiento-junto>
                         cobro junto
-                      </Link>
+                      </Enlace>
                     )}
                   </td>
                   <td className="border-b border-n-200 px-3 py-2 max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-700">
                     {m.reservaId ? (
-                      <Link href={`/caja/cobrar/${m.reservaId}`} className="font-semibold text-morado hover:underline">
+                      <Enlace href={`/caja/cobrar/${m.reservaId}`}>
                         {m.clienteNombre ?? "Cuenta"}
-                      </Link>
+                      </Enlace>
                     ) : (
                       m.clienteNombre
                     )}
@@ -134,9 +134,9 @@ export function MovimientosTurno({
         </div>
       )}
       {verMasHref && (
-        <Link href={verMasHref} scroll={false} className="self-start rounded-md border border-n-200 bg-white px-4 py-2 text-sm font-semibold text-morado hover:bg-n-50" data-movimientos-ver-mas>
+        <Enlace href={verMasHref} scroll={false} className="self-start text-sm" data-movimientos-ver-mas>
           Ver más movimientos
-        </Link>
+        </Enlace>
       )}
     </div>
   );

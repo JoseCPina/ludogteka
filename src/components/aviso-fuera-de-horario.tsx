@@ -84,7 +84,7 @@ function PropuestaVisible({ p, conHora, onUsar }: { p: PropuestaHorario; conHora
     <div className="mt-1 flex flex-wrap items-center gap-2" data-propuesta-horario={`${p.fecha}${p.hora ? `T${p.hora}` : ""}`}>
       <p className="font-semibold">{textoPropuesta(p)}.</p>
       {onUsar && (
-        <Button type="button" variante="secundario" className="min-h-9 px-3 py-1 text-sm" onClick={() => onUsar(p)} data-usar-propuesta>
+        <Button type="button" variante="secundario" className="px-3 text-sm" tamano="compacto" onClick={() => onUsar(p)} data-usar-propuesta>
           {conHora ? "Usar esa hora" : "Usar ese día"}
         </Button>
       )}

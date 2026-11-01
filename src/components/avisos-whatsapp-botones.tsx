@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
+import { Enlace } from "@/components/ui/enlace";
+import { Alternar } from "@/components/ui/alternar";
 
 export type MensajeWhatsApp = { titulo: string; texto: string; url: string };
 
@@ -18,33 +20,20 @@ export function AvisosWhatsAppBotones({ mensajes, etiqueta = "Avisar por WhatsAp
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-semibold text-n-700">{etiqueta}:</span>
         {mensajes.map((m) => (
-          <button
-            key={m.titulo}
-            type="button"
-            data-aviso={m.titulo}
-            aria-expanded={abierto === m.titulo}
-            onClick={() => setAbierto(abierto === m.titulo ? null : m.titulo)}
-            className={`inline-flex min-h-10 items-center gap-1.5 rounded-md border-[1.5px] px-3 text-sm font-semibold hover:bg-n-100 ${abierto === m.titulo ? "border-morado bg-morado-suave text-morado" : "border-borde bg-white text-n-800"}`}
-          >
+          <Alternar key={m.titulo} type="button" data-aviso={m.titulo} aria-expanded={abierto === m.titulo} onClick={() => setAbierto(abierto === m.titulo ? null : m.titulo)} className={`inline-flex min-h-10 items-center gap-1.5 rounded-md border-[1.5px] px-3 text-sm font-semibold hover:bg-n-100 ${abierto === m.titulo ? "border-morado bg-morado-suave text-morado" : "border-borde bg-white text-n-800"}`}>
             <WhatsappLogo size={16} weight="fill" className="text-[#117a43]" aria-hidden />
             {m.titulo}
-          </button>
+          </Alternar>
         ))}
       </div>
       {actual && (
         <div data-vista-mensaje className="flex flex-col gap-2 rounded-md border border-n-200 bg-n-50 p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-n-500">Este es el mensaje que se va a abrir en WhatsApp</p>
           <p className="whitespace-pre-line text-sm text-n-900 [overflow-wrap:anywhere]">{actual.texto}</p>
-          <a
-            href={actual.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-abrir-whatsapp
-            className="inline-flex min-h-10 items-center gap-1.5 self-start rounded-md bg-[#117a43] px-3 text-sm font-semibold text-white hover:opacity-90"
-          >
+          <Enlace href={actual.url} target="_blank" rel="noopener noreferrer" data-abrir-whatsapp className="self-start">
             <WhatsappLogo size={16} weight="fill" aria-hidden />
             Abrir WhatsApp con este mensaje
-          </a>
+          </Enlace>
           <p className="text-xs text-n-600">PeluDesk no lo manda solo: se abre WhatsApp con el mensaje escrito al número del cliente y tú lo envías.</p>
         </div>
       )}

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import type { MedicoVet } from "@/lib/veterinaria/expediente";
 import { opcionesDeEstimado } from "../../expediente/actions";
 import { EditorEstimado } from "../editor-estimado";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function NuevoEstimado({ searchParams }: { searchParams: Promise<{ perro?: string; consulta?: string; q?: string }> }) {
   const { perro, consulta, q: qCrudo } = await searchParams;
@@ -22,7 +22,7 @@ export default async function NuevoEstimado({ searchParams }: { searchParams: Pr
     return (
       <div className="flex flex-col gap-5">
         <div>
-          <Link href="/veterinaria/estimados" className="text-sm font-semibold text-morado hover:underline">← Estimados</Link>
+          <Enlace href="/veterinaria/estimados" className="text-sm">← Estimados</Enlace>
           <h1 className="mt-1 text-2xl font-bold text-n-900">Nuevo estimado</h1>
           <p className="mt-1 text-n-600">Elige a la mascota.</p>
         </div>
@@ -33,10 +33,10 @@ export default async function NuevoEstimado({ searchParams }: { searchParams: Pr
         <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
           {filas.map((f) => (
             <li key={f.id}>
-              <Link href={`/veterinaria/estimados/nuevo?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50">
+              <Enlace href={`/veterinaria/estimados/nuevo?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
                 <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
                 <span className="text-sm text-n-600">{f.dueno}</span>
-              </Link>
+              </Enlace>
             </li>
           ))}
         </ul>
@@ -55,7 +55,7 @@ export default async function NuevoEstimado({ searchParams }: { searchParams: Pr
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <Link href={`/veterinaria/expediente/${perro}`} className="text-sm font-semibold text-morado hover:underline">← Expediente de {mascota.nombre}</Link>
+        <Enlace href={`/veterinaria/expediente/${perro}`} className="text-sm">← Expediente de {mascota.nombre}</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Nuevo estimado</h1>
         <p className="text-n-700">{mascota.nombre} · de {dueno?.nombre ?? "—"}</p>
       </div>

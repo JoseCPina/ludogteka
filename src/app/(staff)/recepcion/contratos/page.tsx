@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha, hoyNegocio } from "@/lib/formato";
@@ -7,6 +6,7 @@ import { Antiguedad } from "@/components/ui/antiguedad";
 import { urlDelNegocioActual, zonaActual } from "@/lib/negocio/actual";
 import { BotonRegenerar } from "./boton-regenerar";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 type Fila = {
   situacion: "por_firmar" | "por_regenerar";
@@ -64,9 +64,9 @@ export default async function ContratosPorAtenderPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/recepcion" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/recepcion" className="text-sm">
           ← Tablero del día
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Contratos por firmar</h1>
         <p className="mt-1 text-n-600">
           El contrato de guardería se genera cuando el cliente compra un day pass o una mensualidad, y
@@ -99,9 +99,9 @@ export default async function ContratosPorAtenderPage() {
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-3">
                       <BotonRegenerar contratoId={f.contrato_id} />
-                      <Link href={`/perros/${f.perro_id}`} className="text-sm font-semibold text-morado hover:underline">
+                      <Enlace href={`/perros/${f.perro_id}`} className="text-sm">
                         Ver expediente
-                      </Link>
+                      </Enlace>
                     </div>
                   </li>
                 ))}
@@ -134,18 +134,13 @@ export default async function ContratosPorAtenderPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
                         {wa && (
-                          <a
-                            href={wa}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex min-h-10 items-center rounded-md bg-menta-oscuro px-4 text-sm font-semibold text-white hover:bg-morado"
-                          >
+                          <Enlace href={wa} target="_blank" rel="noopener noreferrer" className="text-sm">
                             Recordar por WhatsApp
-                          </a>
+                          </Enlace>
                         )}
-                        <Link href={`/perros/${f.perro_id}`} className="text-sm font-semibold text-morado hover:underline">
+                        <Enlace href={`/perros/${f.perro_id}`} className="text-sm">
                           Ver expediente
-                        </Link>
+                        </Enlace>
                       </div>
                     </li>
                   );

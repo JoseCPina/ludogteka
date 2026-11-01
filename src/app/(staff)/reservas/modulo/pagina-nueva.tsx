@@ -1,5 +1,4 @@
 import { tienePermiso } from "@/lib/auth/permisos";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
@@ -13,6 +12,7 @@ import { cargarPaquetesDePerros } from "@/lib/bonos/cargar-paquetes";
 import { zonaActual } from "@/lib/negocio/actual";
 import { leerTodo } from "@/lib/supabase/paginar";
 import { cargarHorarioSemana } from "@/lib/estetica/horario-semana";
+import { Enlace } from "@/components/ui/enlace";
 
 // Sirve a los dos puntos de entrada del mismo formulario: la reserva
 // normal y el walk-in (el perro ya está en la puerta). La única
@@ -73,9 +73,9 @@ export async function PaginaNuevaReserva({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href={modulo.base} className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href={modulo.base} className="text-sm">
           ← {modulo.etiqueta}
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">
           {esWalkin ? `Walk-in — ${modulo.etiqueta}` : `Nueva reserva — ${modulo.etiqueta}`}
         </h1>

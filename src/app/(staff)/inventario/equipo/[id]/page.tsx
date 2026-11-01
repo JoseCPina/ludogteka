@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -9,6 +8,7 @@ import { EquipoForm } from "../equipo-form";
 import { EventosEquipo } from "../eventos-equipo";
 import { actualizarEquipo, darDeBajaEquipo } from "../equipo-actions";
 import { zonaActual } from "@/lib/negocio/actual";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function EquipoPage({ params }: { params: Promise<{ id: string }> }) {
   const zona = await zonaActual();
@@ -47,9 +47,9 @@ export default async function EquipoPage({ params }: { params: Promise<{ id: str
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/inventario?ver=equipo" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/inventario?ver=equipo" className="text-sm">
           ← Equipo
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">{equipo.nombre as string}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
           <span className="font-semibold text-n-900">

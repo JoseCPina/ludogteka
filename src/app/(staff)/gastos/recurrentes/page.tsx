@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
@@ -9,6 +8,7 @@ import { moneda } from "@/lib/empleados/textos";
 import { CADA_MESES, CUBRE } from "@/lib/gastos/textos";
 import { cambiarRecurrente, crearRecurrente } from "../gastos-actions";
 import { zonaActual } from "@/lib/negocio/actual";
+import { Enlace } from "@/components/ui/enlace";
 
 type Recurrente = {
   id: string;
@@ -46,9 +46,9 @@ export default async function RecurrentesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/gastos" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/gastos" className="text-sm">
           ← Gastos
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Gastos recurrentes</h1>
         <p className="mt-1 max-w-3xl text-n-600">
           Lo que se paga seguido. Quince días antes de cada vencimiento aparece en «Por pagar» con el monto estimado, y en «Necesita

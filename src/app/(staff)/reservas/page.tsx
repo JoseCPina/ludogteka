@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { MODULOS_LISTA } from "@/lib/modulos";
+import { Enlace } from "@/components/ui/enlace";
 
 // "Reservas" dejó de ser una sección: ahora son dos módulos, Guardería y
 // Hotel. Esta pantalla se queda por dos razones concretas, no por
@@ -27,16 +27,13 @@ export default function ReservasPage() {
       <ul className="flex flex-col gap-3">
         {MODULOS_LISTA.map((m) => (
           <li key={m.categoria}>
-            <Link
-              href={m.base}
-              className="flex items-center justify-between gap-3 rounded-lg border-[1.5px] border-n-200 bg-white px-4 py-4 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave"
-            >
+            <Enlace href={m.base} className="flex items-center justify-between gap-3 rounded-lg border-[1.5px] border-n-200 bg-white px-4 py-4 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
               <span>
                 <span className="block font-bold text-n-900">{m.etiqueta}</span>
                 <span className="block text-sm text-n-600">{m.descripcion}</span>
               </span>
               <span className="text-morado">→</span>
-            </Link>
+            </Enlace>
           </li>
         ))}
       </ul>

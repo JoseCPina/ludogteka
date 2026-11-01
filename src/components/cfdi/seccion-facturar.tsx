@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { formatearFecha } from "@/lib/formato";
@@ -6,6 +5,7 @@ import { Alert } from "@/components/ui/alert";
 import { contextoFacturar, datosFiscalesDe, facturasDeCobros } from "./contexto";
 import { FacturarBoton } from "./facturar-boton";
 import { dinero, PRUEBAS_AVISO } from "./textos";
+import { Enlace } from "@/components/ui/enlace";
 
 // En la pantalla de cobro de una cuenta: sus cobros y, por cada uno, «Facturar».
 // No sale para quien no tiene el permiso «Facturar» (la base lo exige de todos modos).
@@ -28,9 +28,9 @@ export async function SeccionFacturar({
     return (
       <Alert variante="info" titulo="Facturación sin activar">
         Para facturar estos cobros, un admin captura los datos fiscales del negocio en{" "}
-        <Link href="/admin/facturacion" className="font-semibold underline">
+        <Enlace href="/admin/facturacion" enTexto>
           Facturación
-        </Link>
+        </Enlace>
         .
       </Alert>
     );

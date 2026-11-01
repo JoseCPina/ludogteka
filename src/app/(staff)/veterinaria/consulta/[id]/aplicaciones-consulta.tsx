@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { formatearFechaCalendario } from "@/lib/formato";
 import { EVENTO_APLICACION_CONSULTA, type AplicacionConsulta } from "@/lib/veterinaria/aplicacion-consulta";
 import type { RegistroDesparasitacion, RegistroVacuna } from "@/lib/veterinaria/carnet";
 import { QuitarAplicacion } from "./quitar-aplicacion";
+import { Enlace } from "@/components/ui/enlace";
 
 type Vacuna = Pick<RegistroVacuna, "id" | "biologico" | "lote" | "proxima_dosis">;
 type Desparasitacion = Pick<RegistroDesparasitacion, "id" | "tipo" | "producto" | "proxima_dosis">;
@@ -82,7 +82,7 @@ export function AplicacionesConsulta({
           ))}
         </ul>
       )}
-      <Link href={`/veterinaria/carnet/${perroId}`} className="mt-2 inline-block text-sm font-semibold text-morado hover:underline">Ver el carnet completo</Link>
+      <Enlace href={`/veterinaria/carnet/${perroId}`} className="mt-2 text-sm">Ver el carnet completo</Enlace>
     </>
   );
 }

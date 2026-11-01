@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha, fechaLocalDeInstante, sumarDiasFecha } from "@/lib/formato";
@@ -6,6 +5,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { ESTADOS_CITA, type CitaVet } from "@/lib/veterinaria/expediente";
 import { ETIQUETA_VENTANA, type DetalleTeleconsulta } from "@/lib/telemedicina/tipos";
 import { PanelTeleconsulta } from "./panel";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function TeleconsultaPagina({ params, searchParams }: { params: Promise<{ citaId: string }>; searchParams: Promise<{ nueva?: string; aviso?: string }> }) {
   const { citaId } = await params;
@@ -20,7 +20,7 @@ export default async function TeleconsultaPagina({ params, searchParams }: { par
   if (error) {
     return (
       <div className="flex max-w-2xl flex-col gap-4">
-        <Link href="/veterinaria/agenda" className="text-sm font-semibold text-morado hover:underline">← Agenda clínica</Link>
+        <Enlace href="/veterinaria/agenda" className="text-sm">← Agenda clínica</Enlace>
         <Alert variante="advertencia" titulo="No pudimos abrir la teleconsulta">{error.code === "42501" ? error.message : "No existe o no tienes acceso."}</Alert>
       </div>
     );
@@ -33,7 +33,7 @@ export default async function TeleconsultaPagina({ params, searchParams }: { par
   if (!cita) {
     return (
       <div className="flex max-w-2xl flex-col gap-4">
-        <Link href="/veterinaria/agenda" className="text-sm font-semibold text-morado hover:underline">← Agenda clínica</Link>
+        <Enlace href="/veterinaria/agenda" className="text-sm">← Agenda clínica</Enlace>
         <Alert variante="advertencia" titulo="No encontramos esa cita">Puede que se haya movido de fecha. Búscala en la agenda.</Alert>
       </div>
     );
@@ -43,7 +43,7 @@ export default async function TeleconsultaPagina({ params, searchParams }: { par
   return (
     <div className="flex max-w-3xl flex-col gap-5">
       <div>
-        <Link href={`/veterinaria/agenda?fecha=${fechaLocalDeInstante(cita.inicia_at, zona)}`} className="text-sm font-semibold text-morado hover:underline">← Agenda clínica</Link>
+        <Enlace href={`/veterinaria/agenda?fecha=${fechaLocalDeInstante(cita.inicia_at, zona)}`} className="text-sm">← Agenda clínica</Enlace>
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold text-n-900">Teleconsulta · {cita.mascota}</h1>
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${e.estilo}`}>{e.etiqueta}</span>

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { EnlaceOTexto } from "@/components/acceso-contexto";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -12,6 +11,7 @@ import { TIPOS_CITA, type TipoCitaConfig } from "@/lib/veterinaria/expediente";
 import { guardarAjustesVeterinaria, guardarDictadoAjustes, guardarTeleconsultaAjustes } from "../carnet/actions";
 import { guardarEspejoAntimicrobianos } from "../recetas/actions";
 import { guardarPlantillaConsulta, guardarPortalExpediente, guardarTipoCita } from "../expediente/actions";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function AjustesVeterinaria() {
   const supabase = await createSupabaseServerClient();
@@ -31,7 +31,7 @@ export default async function AjustesVeterinaria() {
   return (
     <div className="flex max-w-3xl flex-col gap-5">
       <div>
-        <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">← Veterinaria</Link>
+        <Enlace href="/veterinaria" className="text-sm">← Veterinaria</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Ajustes de Veterinaria</h1>
         <p className="mt-1 text-n-600">Recordatorios, certificados, carnet, hospitalización, agenda y expediente.</p>
       </div>

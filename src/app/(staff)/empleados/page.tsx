@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -11,6 +10,7 @@ import { SubnavEmpleados } from "./subnav";
 import { BotonAccion } from "@/components/formulario-accion";
 import { registrarEntrada, registrarSalida } from "./asistencia-actions";
 import { zonaActual } from "@/lib/negocio/actual";
+import { Enlace } from "@/components/ui/enlace";
 
 // Asistencia de hoy de toda la casa, y la lista del personal. Recepción
 // registra la entrada y salida de quien no tiene cuenta en la app; quien
@@ -46,9 +46,7 @@ export default async function EmpleadosPage() {
           </p>
         </div>
         {puedeNomina && (
-          <Link href="/empleados/nuevo">
-            <Button type="button">Nuevo empleado</Button>
-          </Link>
+          <Enlace href="/empleados/nuevo">Nuevo empleado</Enlace>
         )}
       </div>
 
@@ -75,9 +73,9 @@ export default async function EmpleadosPage() {
             return (
               <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="flex min-w-[14rem] flex-col gap-1">
-                  <Link href={`/empleados/${e.id}`} className="font-semibold text-n-900 hover:underline">
+                  <Enlace href={`/empleados/${e.id}`}>
                     {e.nombre}
-                  </Link>
+                  </Enlace>
                   <span className="text-sm text-n-600">
                     {e.puesto}
                     {d?.hora_entrada_prog ? ` · hoy ${hora(d.hora_entrada_prog)}–${hora(d.hora_salida_prog)}` : " · hoy no le toca"}
@@ -116,9 +114,9 @@ export default async function EmpleadosPage() {
           <ul className="mt-3 flex flex-col gap-1 text-sm">
             {bajas.map((e) => (
               <li key={e.id}>
-                <Link href={`/empleados/${e.id}`} className="text-morado hover:underline">
+                <Enlace href={`/empleados/${e.id}`}>
                   {e.nombre}
-                </Link>{" "}
+                </Enlace>{" "}
                 <span className="text-n-500">· {e.puesto} · baja el {formatearFechaCalendario(e.fecha_baja as string)}</span>
               </li>
             ))}

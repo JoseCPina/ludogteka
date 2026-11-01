@@ -1,5 +1,4 @@
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
@@ -9,6 +8,7 @@ import { AvisoRazasSinCatalogar } from "@/components/aviso-razas-sin-catalogar";
 import { leerTodo } from "@/lib/supabase/paginar";
 import { servicioActivo } from "@/lib/tarifas/huecos";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 const ETIQUETA_CATEGORIA: Record<string, string> = {
   guarderia: "Guardería",
@@ -101,9 +101,7 @@ export default async function ServiciosPage() {
           </p>
         </div>
         {esAdmin && (
-          <Link href="/servicios/nuevo">
-            <Button type="button">Nuevo servicio</Button>
-          </Link>
+          <Enlace href="/servicios/nuevo">Nuevo servicio</Enlace>
         )}
       </div>
 
@@ -154,12 +152,9 @@ export default async function ServiciosPage() {
                 return (
                   <tr key={s.id} className={s.deleted_at ? "opacity-60" : ""}>
                     <td className="border-b border-n-200 px-4 py-3">
-                      <Link
-                        href={esAdmin ? `/servicios/${s.id}` : `/servicios/${s.id}/tarifas`}
-                        className="rounded font-semibold text-morado hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado"
-                      >
+                      <Enlace href={esAdmin ? `/servicios/${s.id}` : `/servicios/${s.id}/tarifas`}>
                         {s.nombre}
-                      </Link>
+                      </Enlace>
                     </td>
                     <td className="border-b border-n-200 px-4 py-3 text-n-700">
                       {ETIQUETA_CATEGORIA[s.categoria] ?? s.categoria}
@@ -206,12 +201,9 @@ export default async function ServiciosPage() {
                           </span>
                         )}
                         {faltan > 0 && (
-                          <Link
-                            href={`/servicios/${s.id}/tarifas`}
-                            className="rounded-full border-[1.5px] border-coral-oscuro bg-coral-suave px-2 py-0.5 text-xs font-bold text-coral-oscuro hover:underline"
-                          >
+                          <Enlace href={`/servicios/${s.id}/tarifas`} className="text-xs">
                             {faltan} sin tarifa
-                          </Link>
+                          </Enlace>
                         )}
                       </div>
                     </td>
@@ -225,7 +217,7 @@ export default async function ServiciosPage() {
       {ocultos > 0 && (
         <p className="text-sm text-n-600" data-servicios-ocultos>
           {ocultos === 1 ? "Hay 1 servicio" : `Hay ${ocultos} servicios`} de módulos que tienes apagados (no se ofrecen ni se cobran). Salen aquí si
-          prendes el módulo en <Link href="/admin/modulos" className="font-semibold text-morado hover:underline">Módulos y plan</Link>.
+          prendes el módulo en <Enlace href="/admin/modulos" enTexto>Módulos y plan</Enlace>.
         </p>
       )}
     </div>

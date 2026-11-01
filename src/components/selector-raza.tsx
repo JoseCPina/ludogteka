@@ -1,11 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useId, useMemo, useRef, useState } from "react";
 import { buscarRazasCatalogo, normalizarRaza, razaExacta } from "@/lib/razas";
 import { useEspera } from "@/hooks/use-espera";
 import { HojaRazaNueva, type OpcionCatalogo } from "@/components/hoja-raza-nueva";
 import type { DatosRazaPropuesta, PropuestaRazaVista } from "@/lib/razas-propuesta";
+import { Enlace } from "@/components/ui/enlace";
+import { Button } from "@/components/ui/button";
+import { Alternar } from "@/components/ui/alternar";
 
 export type RazaOpcion = {
   id: string;
@@ -259,13 +261,9 @@ export function SelectorRaza({
             </span>
           )}
           {!disabled && (
-            <button
-              type="button"
-              onClick={limpiar}
-              className="ml-auto rounded px-2 py-1 text-sm font-semibold text-morado hover:bg-morado-suave"
-            >
+            <Button type="button" onClick={limpiar} className="ml-auto" variante="secundario" tamano="compacto">
               Cambiar
-            </button>
+            </Button>
           )}
         </div>
       ) : (
@@ -301,49 +299,32 @@ export function SelectorRaza({
             >
               {sugerencias.map(({ raza, parecido }, i) => (
                 <li key={raza.id} role="option" aria-selected={i === resaltado}>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => elegir(raza)}
-                    onMouseEnter={() => setResaltado(i)}
-                    className={`flex w-full flex-col items-start gap-0.5 px-3.5 py-2.5 text-left ${
+                  <Alternar type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => elegir(raza)} onMouseEnter={() => setResaltado(i)} className={`flex w-full flex-col items-start gap-0.5 px-3.5 py-2.5 text-left ${
                       i === resaltado ? "bg-morado-suave" : "bg-white"
-                    }`}
-                  >
+                    }`}>
                     <span className="text-n-900">{raza.nombre}</span>
                     {parecido && <span className="text-xs font-semibold text-n-600">¿Quisiste decir esta? Se parece a lo que escribiste</span>}
                     {mostrarGrupo && raza.grupo_nombre && (
                       <span className="text-xs text-n-500">{raza.grupo_nombre}</span>
                     )}
-                  </button>
+                  </Alternar>
                 </li>
               ))}
 
               {hayTexto && !coincideExacto && propuestas && (
                 <li>
-                  <button
-                    type="button"
-                    data-agregar-raza
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={abrirHoja}
-                    className="min-h-12 w-full border-t border-n-200 px-3.5 py-2.5 text-left font-semibold text-morado hover:bg-morado-suave"
-                  >
+                  <Alternar type="button" data-agregar-raza onMouseDown={(e) => e.preventDefault()} onClick={abrirHoja} className="min-h-12 w-full border-t border-n-200 px-3.5 py-2.5 text-left font-semibold text-morado hover:bg-morado-suave">
                     No la encuentro: agregar esta raza
                     <span className="block text-sm font-normal text-n-600">«{consulta.trim()}»</span>
-                  </button>
+                  </Alternar>
                 </li>
               )}
 
               {hayTexto && !coincideExacto && !propuestas && (
                 <li>
-                  <button
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={usarLibre}
-                    className="w-full border-t border-n-200 px-3.5 py-2.5 text-left text-n-700 hover:bg-n-100"
-                  >
+                  <Alternar type="button" onMouseDown={(e) => e.preventDefault()} onClick={usarLibre} className="w-full border-t border-n-200 px-3.5 py-2.5 text-left text-n-700 hover:bg-n-100">
                     Usar «<strong>{consulta.trim()}</strong>» tal cual
-                  </button>
+                  </Alternar>
                 </li>
               )}
 
@@ -364,16 +345,16 @@ export function SelectorRaza({
           <span>
             «{texto}» está en el catálogo como <strong>{exactaDelTexto.nombre}</strong>.
           </span>
-          <button type="button" onClick={() => elegir(exactaDelTexto)} className="ml-auto rounded px-2 py-1 font-semibold text-morado hover:bg-white">
+          <Button type="button" onClick={() => elegir(exactaDelTexto)} className="ml-auto" variante="secundario" tamano="compacto">
             Usar {exactaDelTexto.nombre}
-          </button>
+          </Button>
         </div>
       )}
 
       {texto && !elegida && !exactaDelTexto && !propuesta && propuestas && !disabled && (
-        <button type="button" data-agregar-raza onClick={abrirHoja} className="mt-2 min-h-11 rounded-md border-[1.5px] border-morado px-3 text-sm font-semibold text-morado hover:bg-morado-suave">
+        <Button type="button" data-agregar-raza onClick={abrirHoja} className="mt-2" variante="secundario" tamano="compacto">
           No la encuentro: agregar esta raza
-        </button>
+        </Button>
       )}
 
       {propuesta && propuestas?.modo === "dueno" && (
@@ -422,9 +403,9 @@ function AvisoGrupo({
   const enlace = puedeAsignar ? (
     <>
       {" "}
-      <Link href="/perros/razas/grupos" className="font-semibold text-morado underline">
+      <Enlace href="/perros/razas/grupos" enTexto>
         Asignar grupo
-      </Link>
+      </Enlace>
     </>
   ) : (
     " Pídeselo a admin o a quien tenga «Precios y tarifas»."

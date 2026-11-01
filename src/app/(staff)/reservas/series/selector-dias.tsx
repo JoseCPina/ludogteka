@@ -1,4 +1,5 @@
 import { DIAS_SEMANA } from "./dias-semana";
+import { Alternar } from "@/components/ui/alternar";
 
 // Botones de días de la semana de una serie. Los días en que el servicio
 // no se puede dar (guardería en día cerrado) se ven deshabilitados con la
@@ -22,20 +23,13 @@ export function SelectorDias({
           // quitar; lo que no se puede es elegirlo.
           const cerrado = diasCerrados.includes(d.valor) && !dias.includes(d.valor);
           return (
-            <button
-              key={d.valor}
-              type="button"
-              onClick={() => onAlternar(d.valor)}
-              disabled={cerrado}
-              title={diasCerrados.includes(d.valor) ? `Guardería no abre en ${d.larga.toLowerCase()}` : undefined}
-              className={`rounded-full border-[1.5px] px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:border-n-100 disabled:bg-n-100 disabled:text-n-500 disabled:line-through ${
+            <Alternar key={d.valor} type="button" onClick={() => onAlternar(d.valor)} disabled={cerrado} title={diasCerrados.includes(d.valor) ? `Guardería no abre en ${d.larga.toLowerCase()}` : undefined} className={`rounded-full border-[1.5px] px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:border-n-100 disabled:bg-n-100 disabled:text-n-500 disabled:line-through ${
                 dias.includes(d.valor)
                   ? "border-morado bg-morado-suave text-morado"
                   : "border-n-200 bg-white text-n-600 hover:border-n-300"
-              }`}
-            >
+              }`} activo={dias.includes(d.valor)}>
               {d.corta}
-            </button>
+            </Alternar>
           );
         })}
       </div>

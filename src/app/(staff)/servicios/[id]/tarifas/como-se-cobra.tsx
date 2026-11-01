@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { dinero } from "@/lib/dinero";
+import { Enlace } from "@/components/ui/enlace";
 
 // QA S18 (N70): un servicio que se cobra por kilómetro (u hora) con precio por volumen dice, con SUS precios, cómo se
 // calcula el cargo: el precio de cada tramo es por unidad y el tramo lo decide la cantidad TOTAL (la distancia del
@@ -73,16 +73,16 @@ export function ComoSeCobra({ unidad, dependeCantidad, vigentes, enlaceTarifas, 
               . A {ej.cantidad} {unidadDe(ej.cantidad)} se cobraría {ej.cantidad} × {dinero(ejPrecio)} = <strong>{dinero(ej.cantidad * ejPrecio)}</strong>.
             </p>
           )}
-          <Link href={enlaceCapturar} className="self-start" data-capturar-tramos>
+          <Enlace href={enlaceCapturar} className="self-start" data-capturar-tramos>
             <span className="inline-flex min-h-11 items-center rounded-md bg-morado px-4 font-semibold text-white hover:bg-morado-oscuro">Capturar tramos</span>
-          </Link>
+          </Enlace>
         </div>
       )}
       {enlaceTarifas && tramos.length > 0 && (
         <p className="mt-2">
-          <Link href={enlaceTarifas} className="font-semibold text-morado hover:underline" data-enlace-tarifas>
+          <Enlace href={enlaceTarifas} data-enlace-tarifas>
             Ver y editar los tramos y precios →
-          </Link>
+          </Enlace>
         </p>
       )}
     </section>

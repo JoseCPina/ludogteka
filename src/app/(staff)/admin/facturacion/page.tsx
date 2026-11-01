@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioIdActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
@@ -9,6 +8,7 @@ import { LlavePac } from "./llave-pac";
 import { TablaIva, type ClaseGuardada } from "./tabla-iva";
 import { Clasificacion } from "./clasificacion";
 import { leerTodo } from "@/lib/supabase/paginar";
+import { Enlace } from "@/components/ui/enlace";
 
 export const metadata = { title: "Facturación" };
 
@@ -53,9 +53,9 @@ export default async function FacturacionAdminPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <Link href="/admin" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/admin" className="text-sm">
           ← Administración
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Facturación</h1>
         <p className="text-n-600">Facturas (CFDI 4.0) de los cobros y la factura global al público en general.</p>
         {(cfg?.modo ?? "pruebas") !== "produccion" && <p className="mt-1 text-sm font-semibold text-ambar-oscuro">{PRUEBAS_AVISO}</p>}

@@ -138,9 +138,9 @@ export function EditorEstimado({
               <span className="text-sm text-n-700">
                 {dinero((num(f.cantidad) || 0) * (num(f.precio_min) || 0))} – {dinero((num(f.cantidad) || 0) * (num(f.precio_max) || num(f.precio_min) || 0))}
               </span>
-              <button type="button" className="text-sm font-semibold text-coral-oscuro hover:underline" onClick={() => setFilas((x) => (x.length > 1 ? x.filter((_, j) => j !== i) : [vacia()]))}>
+              <Button type="button" onClick={() => setFilas((x) => (x.length > 1 ? x.filter((_, j) => j !== i) : [vacia()]))} variante="secundario" tamano="compacto">
                 Quitar línea
-              </button>
+              </Button>
             </div>
           </div>
         ))}

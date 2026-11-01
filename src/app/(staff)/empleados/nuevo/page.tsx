@@ -1,5 +1,4 @@
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -8,6 +7,7 @@ import { FormularioAccion } from "@/components/formulario-accion";
 import { CamposEmpleado, type CuentaLigable } from "../campos-empleado";
 import { crearEmpleado } from "../empleados-actions";
 import { zonaActual } from "@/lib/negocio/actual";
+import { Enlace } from "@/components/ui/enlace";
 
 export default async function NuevoEmpleadoPage() {
   const zona = await zonaActual();
@@ -19,9 +19,9 @@ export default async function NuevoEmpleadoPage() {
   return (
     <div className="flex max-w-3xl flex-col gap-6">
       <div>
-        <Link href="/empleados" className="text-sm font-semibold text-morado hover:underline">
+        <Enlace href="/empleados" className="text-sm">
           ← Empleados
-        </Link>
+        </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Nuevo empleado</h1>
         <p className="mt-1 text-n-600">
           Después de darlo de alta capturas su horario y cómo se le paga, en su ficha.

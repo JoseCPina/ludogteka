@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -11,15 +10,16 @@ import { metaDeReporte } from "@/lib/reporte/meta";
 import { respuestasDeContenido, respuestasVacias, type ContenidoReporte } from "@/lib/reporte/tipos";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { FormularioReporte } from "./formulario-reporte";
+import { Enlace } from "@/components/ui/enlace";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function ReportePerroPage({ params }: { params: Promise<{ perroId: string }> }) {
   const { perroId } = await params;
   const volver = (
-    <Link href="/guarderia/reportes" className="text-sm font-semibold text-morado hover:underline">
+    <Enlace href="/guarderia/reportes" className="text-sm">
       ← Reportes del día
-    </Link>
+    </Enlace>
   );
   const sesion = await obtenerSesionConRol();
   if (!tienePermiso(sesion, "reportes_guarderia")) {

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -9,6 +8,7 @@ import { diasDesde } from "@/lib/antiguedad";
 import { hoyNegocio } from "@/lib/formato";
 import { zonaActual } from "@/lib/negocio/actual";
 import { EditorPlantilla } from "./plantillas";
+import { Enlace } from "@/components/ui/enlace";
 
 type Plantilla = { id: string; tipo: string; version: number; titulo: string; cuerpo: string };
 
@@ -28,7 +28,7 @@ export default async function Consentimientos() {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <Link href="/veterinaria" className="text-sm font-semibold text-morado hover:underline">← Veterinaria</Link>
+        <Enlace href="/veterinaria" className="text-sm">← Veterinaria</Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Consentimientos informados</h1>
         <p className="mt-1 max-w-3xl text-n-600">Los textos de hospitalización, cirugía, anestesia y eutanasia, y los que están esperando firma. Se crean desde la hospitalización o la ficha de la mascota.</p>
       </div>
@@ -42,10 +42,10 @@ export default async function Consentimientos() {
           <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
             {(pendientes ?? []).map((p) => (
               <li key={p.id as string}>
-                <Link href={`/veterinaria/consentimientos/${p.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50">
+                <Enlace href={`/veterinaria/consentimientos/${p.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
                   <span className="font-semibold text-n-900">{ETIQUETA_CONSENTIMIENTO[p.tipo as string]} · {un(p.perros as { nombre: string } | { nombre: string }[] | null)?.nombre}{p.procedimiento ? ` — ${p.procedimiento}` : ""}</span>
                   <Antiguedad dias={diasDesde(p.created_at as string, hoy, zona)} />
-                </Link>
+                </Enlace>
               </li>
             ))}
           </ul>

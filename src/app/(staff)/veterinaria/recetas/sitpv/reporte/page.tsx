@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
 import { Alert } from "@/components/ui/alert";
@@ -10,6 +9,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { nombreMes, type ReporteSitpv } from "@/lib/veterinaria/recetas";
 import { marcarReporte } from "../../actions";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
+import { Enlace } from "@/components/ui/enlace";
 
 // El reporte mensual de un médico, en el orden que pide el SITPV: folios usados, cancelados (en ceros),
 // parcialidades y pacientes. Se captura en el SITPV y aquí se marca como reportado.
@@ -26,7 +26,7 @@ export default async function ReporteMensual({ searchParams }: { searchParams: P
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
       <div className="print:hidden">
-        <Link href="/veterinaria/recetas/sitpv" className="text-sm font-semibold text-morado hover:underline">← Registro SITPV</Link>
+        <Enlace href="/veterinaria/recetas/sitpv" className="text-sm">← Registro SITPV</Enlace>
       </div>
       {!puede ? (
         <Alert variante="advertencia" titulo="Esto es de un médico veterinario">Pídele a un admin el permiso «Registrar recetas SITPV».</Alert>
