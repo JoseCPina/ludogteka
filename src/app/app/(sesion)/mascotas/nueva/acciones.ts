@@ -5,6 +5,7 @@ import { sesionApp } from "@/lib/app/sesion";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { subirFotoApp, tipoImagen, PESO_MAXIMO_FOTO } from "@/lib/app/fotos";
 import { crearAviso } from "@/lib/app/avisos";
+import { hoyMx } from "@/lib/app/cartilla-util";
 
 /** Alta de una mascota en la app: nombre, especie, sexo, nacimiento y foto (opcional). Navega a leer su cartilla. */
 // registro-final: crea la mascota y navega a su cartilla
@@ -20,7 +21,7 @@ export async function crearMascota(form: FormData): Promise<{ error: string | nu
   if (nombre.length < 1) return { error: "Escribe cómo se llama." };
   if (!["perro", "gato", "otro"].includes(especie)) return { error: "Escoge qué es." };
   if (nacimiento && !/^\d{4}-\d{2}-\d{2}$/.test(nacimiento)) return { error: "La fecha de nacimiento no se entiende." };
-  if (nacimiento && nacimiento > new Date().toISOString().slice(0, 10)) return { error: "La fecha de nacimiento no puede ser futura." };
+  if (nacimiento && nacimiento > hoyMx()) return { error: "La fecha de nacimiento no puede ser futura." };
   const foto = form.get("foto");
   let contentType: ReturnType<typeof tipoImagen> = null;
   if (foto instanceof File && foto.size > 0) {

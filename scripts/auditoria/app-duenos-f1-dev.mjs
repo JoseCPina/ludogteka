@@ -224,6 +224,21 @@ try {
   const pdfCuerpo = await pdf.body();
   if (pdf.status() !== 200 || !/application\/pdf/.test(pdf.headers()["content-type"] ?? "") || pdfCuerpo.subarray(0, 4).toString() !== "%PDF") hallazgo(`el PDF de la cartilla respondió ${pdf.status()}`);
   else bien(`la cartilla en PDF se descarga (${pdfCuerpo.length} bytes)`);
+  // Borrar las fotos ya revisadas: se va el archivo del bucket, la fila queda con deleted_at y la cartilla no cambia.
+  const { data: fotoAntes } = await A.from("mascotas_cartilla_fotos").select("id, foto_path").eq("mascota_id", mascotaId).is("deleted_at", null).not("confirmada_at", "is", null).limit(1).maybeSingle();
+  await p.goto(`${BASE_APP}/mascotas/${mascotaId}/cartilla`, { waitUntil: "networkidle" });
+  if (!(await p.locator("[data-borrar-fotos]").count()) || !fotoAntes) hallazgo("la cartilla no ofrece borrar la foto ya revisada");
+  else {
+    await ancho("/cartilla con fotos por borrar");
+    await p.locator("[data-borrar-fotos-abrir]").click();
+    await p.locator("[data-borrar-fotos-confirmar]").click();
+    await p.locator("[data-fotos-borradas]").waitFor({ timeout: 20_000 }).catch(() => hallazgo("borrar las fotos no confirmó en pantalla"));
+    const { data: fotoTras } = await A.from("mascotas_cartilla_fotos").select("deleted_at, ms").eq("id", fotoAntes.id).single();
+    const { data: archivo } = await A.storage.from("app-mascotas").download(fotoAntes.foto_path);
+    const { count: nTras } = await A.from("mascotas_cartilla").select("id", { count: "exact", head: true }).eq("mascota_id", mascotaId).is("deleted_at", null);
+    if (!fotoTras?.deleted_at || archivo || nTras !== 4 || !(fotoTras.ms > 0)) hallazgo(`borrar fotos: fila ${JSON.stringify(fotoTras)}, archivo ${archivo ? "sigue" : "borrado"}, registros ${nTras}`);
+    else bien("el dueño borra la foto ya revisada: el archivo se va, la medición queda y su cartilla sigue con 4 registros");
+  }
   await p.goto(`${BASE_APP}/mascotas/${mascotaId}/seguimiento`, { waitUntil: "networkidle" });
   await ancho("/seguimiento");
   await p.locator("[data-anotar-peso]").click();

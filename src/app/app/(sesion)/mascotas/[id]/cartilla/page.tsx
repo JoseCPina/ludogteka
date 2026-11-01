@@ -2,13 +2,19 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { miMascota } from "@/lib/app/datos";
 import { cartillaDe } from "@/lib/app/cartilla";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Cartilla } from "./cartilla";
+import { BorrarFotos } from "./borrar-fotos";
 
 export default async function CartillaPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ capturar?: string; guardado?: string }> }) {
   const [{ id }, q] = await Promise.all([params, searchParams]);
   const m = await miMascota(id);
   if (!m) notFound();
-  const registros = await cartillaDe(m.id);
+  const supabase = await createSupabaseServerClient("portal");
+  const [registros, { count: fotosRevisadas }] = await Promise.all([
+    cartillaDe(m.id),
+    supabase.from("mascotas_cartilla_fotos").select("id", { count: "exact", head: true }).eq("mascota_id", m.id).is("deleted_at", null).or("confirmada_at.not.is.null,estado.in.(sin_datos,error)"),
+  ]);
   return (
     <>
       <Link href={`/mascotas/${m.id}`} className="apd-enlace apd-aparece" style={{ display: "inline-block", marginTop: "0.25rem" }}>← {m.nombre}</Link>
@@ -27,6 +33,11 @@ export default async function CartillaPage({ params, searchParams }: { params: P
       <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 2 }}>
         <Cartilla mascotaId={m.id} especie={m.especie} registros={registros} abrirCaptura={Boolean(q.capturar)} recordatoriosApagados={m.recordatoriosApagados} />
       </section>
+      {(fotosRevisadas ?? 0) > 0 && (
+        <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 3 }}>
+          <BorrarFotos mascotaId={m.id} cuantas={fotosRevisadas ?? 0} />
+        </section>
+      )}
     </>
   );
 }

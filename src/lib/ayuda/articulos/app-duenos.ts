@@ -38,11 +38,11 @@ Tú sigues viendo solo lo tuyo: tus clientes, tus mascotas, tus citas. La app no
 
 ## Lo que el dueño puede hacer solo (aunque su mascota no esté contigo)
 
-- **Dar de alta a su mascota** (nombre, especie, sexo, nacimiento y foto) y **leer su cartilla de papel con una foto**: la app saca las vacunas, desparasitaciones, lotes y fechas, él revisa y confirma. También puede **anotar a mano** las fechas que recuerde.
+- **Dar de alta a su mascota** (nombre, especie, sexo, nacimiento y foto) y **leer su cartilla de papel con una foto**: la app saca las vacunas, desparasitaciones, lotes y fechas, él revisa y confirma. También puede **anotar a mano** las fechas que recuerde. Las fotos de la cartilla que ya revisó se guardan por si hay que volver a leerlas; desde su cartilla puede **borrarlas** cuando quiera, y lo que ya está en su cartilla no cambia.
 - **Recordatorios**: una semana antes y el mismo día de cada próxima dosis, por notificación en su celular, en Avisos y por WhatsApp (si tiene avisos de WhatsApp prendidos). El recordatorio trae **Pedir cita**: si la mascota tiene expediente contigo, le abre WhatsApp con tu número de la landing y un mensaje listo; si no, las veterinarias cercanas.
 - **Cartilla en PDF** para compartirla con cualquier vet.
 - **Peso, medicinas (con recordatorio a sus horas) y gastos del mes** por mascota.
-- **QR para la placa**: quien lo escanee ve a la mascota y le escribe a la familia sin ver su teléfono (PeluDesk lleva los mensajes; si quien la encontró manda «ENCONTRE» y el código al WhatsApp de PeluDesk, las respuestas del dueño le llegan a su WhatsApp).
+- **QR para la placa**: quien lo escanee ve a la mascota y le escribe a la familia sin ver su teléfono (PeluDesk lleva los mensajes; si quien la encontró manda «ENCONTRE» y el código al WhatsApp de PeluDesk, las respuestas del dueño le llegan a su WhatsApp). Los mensajes los ve y los contesta en «Si se pierde» de esa mascota, esté o no marcada como perdida.
 - **Mascota perdida**: con un toque se avisa por notificación a los dueños de la app a 5 km y por WhatsApp a los negocios con PeluDesk a 15 km (si tu sucursal tiene ubicación guardada, te llega a ti el mensaje «Se perdió … cerca de …» con el link de su perfil), y se genera un cartel con QR para compartir. «¡Ya apareció!» la cierra.
 
 > Lo que el dueño captura o lee de su cartilla de papel es suyo y no sustituye el carnet que tú firmas en Veterinaria; en la Fase 3 lo que registras tú aparece en su app automáticamente.

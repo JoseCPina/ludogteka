@@ -4,6 +4,7 @@ import { esperarConTope } from "@/lib/ui/espera";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
+import { hoyMx } from "@/lib/app/cartilla-util";
 import { agregarGasto, agregarMedicamento, agregarPeso, quitarGasto, quitarPeso, terminarMedicamento } from "./acciones";
 
 export type Peso = { id: string; pesoKg: number; fecha: string; notas: string | null };
@@ -12,7 +13,7 @@ export type Gasto = { id: string; concepto: string; monto: number; categoria: st
 const CATEGORIAS: [string, string][] = [["alimento", "Alimento"], ["veterinaria", "Veterinaria"], ["estetica", "Estética"], ["guarderia_hotel", "Guardería u hotel"], ["medicinas", "Medicinas"], ["accesorios", "Accesorios"], ["otro", "Otro"]];
 const fecha = (f: string) => `${f.slice(8, 10)}/${f.slice(5, 7)}/${f.slice(0, 4)}`;
 const pesos = (n: number) => `$${n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const hoy = () => new Date().toISOString().slice(0, 10);
+const hoy = () => hoyMx();
 
 export function Seguimiento({ mascotaId, pesosLista, medicamentos, gastos, totalMes, mesNombre }: { mascotaId: string; pesosLista: Peso[]; medicamentos: Medicamento[]; gastos: Gasto[]; totalMes: number; mesNombre: string }) {
   return (

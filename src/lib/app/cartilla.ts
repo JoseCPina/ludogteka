@@ -92,14 +92,29 @@ export async function programarRecordatorios(mascotaId: string): Promise<void> {
       }
     }
   }
-  const { data: pendientes } = await db.from("app_recordatorios").select("id, tipo, ref_id, para_at").eq("mascota_id", mascotaId).eq("estado", "pendiente").is("deleted_at", null);
-  const existentes = new Map(((pendientes ?? []) as { id: string; tipo: string; ref_id: string; para_at: string }[]).map((p) => [`${p.tipo}|${p.ref_id}|${new Date(p.para_at).toISOString()}`, p.id]));
-  const sobran = [...existentes.entries()].filter(([k]) => !deseados.has(k)).map(([, id]) => id);
-  if (sobran.length) await db.from("app_recordatorios").update({ estado: "omitido" }).in("id", sobran);
-  const nuevos = [...deseados.entries()].filter(([k]) => !existentes.has(k)).map(([, v]) => ({ ...v, dueno_id: m.dueno_id, mascota_id: mascotaId, created_by: null, updated_at: new Date().toISOString() }));
+  // Todas las filas vivas de la mascota, en cualquier estado: la llave (tipo, ref_id, para_at) es única entre las no
+  // borradas (índice PARCIAL, que no sirve para upsert con onConflict), así que aquí se decide qué se crea, qué se
+  // reactiva y qué se omite.
+  const { data: vivas } = await db.from("app_recordatorios").select("id, tipo, ref_id, para_at, estado").eq("mascota_id", mascotaId).is("deleted_at", null);
+  const existentes = new Map(((vivas ?? []) as { id: string; tipo: string; ref_id: string; para_at: string; estado: string }[]).map((p) => [`${p.tipo}|${p.ref_id}|${new Date(p.para_at).toISOString()}`, p]));
+  const ahora = new Date().toISOString();
+  const sobran = [...existentes.entries()].filter(([k, p]) => p.estado === "pendiente" && !deseados.has(k)).map(([, p]) => p.id);
+  if (sobran.length) await db.from("app_recordatorios").update({ estado: "omitido", updated_at: ahora }).in("id", sobran);
+  // Lo omitido que vuelve a tocar (recordatorios apagados y prendidos otra vez, registro quitado y vuelto a poner) se reactiva.
+  for (const [k, p] of existentes) {
+    const v = deseados.get(k);
+    if (v && p.estado === "omitido") await db.from("app_recordatorios").update({ estado: "pendiente", titulo: v.titulo, cuerpo: v.cuerpo, updated_at: ahora }).eq("id", p.id).eq("estado", "omitido");
+  }
+  const nuevos = [...deseados.entries()].filter(([k]) => !existentes.has(k)).map(([, v]) => ({ ...v, dueno_id: m.dueno_id, mascota_id: mascotaId, created_by: null, updated_at: ahora }));
   if (nuevos.length) {
-    const { error } = await db.from("app_recordatorios").upsert(nuevos, { onConflict: "tipo,ref_id,para_at", ignoreDuplicates: true });
-    if (error) console.error("[app] programar recordatorios", error.message);
+    const { error } = await db.from("app_recordatorios").insert(nuevos);
+    // 23505: otra llamada al mismo tiempo ya creó alguna fila; el resto del lote se crea fila por fila.
+    if (error?.code === "23505") {
+      for (const fila of nuevos) {
+        const r = await db.from("app_recordatorios").insert(fila);
+        if (r.error && r.error.code !== "23505") console.error("[app] programar recordatorios", r.error.message);
+      }
+    } else if (error) console.error("[app] programar recordatorios", error.message);
   }
 }
 

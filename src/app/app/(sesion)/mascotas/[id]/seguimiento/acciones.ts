@@ -4,7 +4,7 @@ import { sesionApp } from "@/lib/app/sesion";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
-import { programarRecordatorios } from "@/lib/app/cartilla";
+import { hoyMx, programarRecordatorios } from "@/lib/app/cartilla";
 
 type Resultado = { error: string | null; registros?: RegistroFinal[] };
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -23,7 +23,7 @@ export async function agregarPeso(mascotaId: string, pesoTexto: string, fecha: s
   const peso = Number(String(pesoTexto).replace(",", "."));
   if (!Number.isFinite(peso) || peso <= 0 || peso >= 200) return { error: "Escribe el peso en kilos (por ejemplo 12.5)." };
   if (fecha && !FECHA.test(fecha)) return { error: "La fecha no se entiende." };
-  const { data, error } = await supabase.from("mascotas_pesos").insert({ mascota_id: mascotaId, peso_kg: Math.round(peso * 100) / 100, fecha: fecha || undefined, notas: notas?.trim().slice(0, 200) || null, updated_at: new Date().toISOString() }).select("id").single();
+  const { data, error } = await supabase.from("mascotas_pesos").insert({ mascota_id: mascotaId, peso_kg: Math.round(peso * 100) / 100, fecha: fecha || hoyMx(), notas: notas?.trim().slice(0, 200) || null, updated_at: new Date().toISOString() }).select("id").single();
   if (error) return { error: "No pudimos guardar el peso." };
   return { error: null, registros: await registrosDe(supabase, [{ t: "mascotas_pesos", i: data.id as string }]) };
 }
@@ -67,7 +67,7 @@ export async function agregarGasto(mascotaId: string, g: { concepto: string; mon
   if (!Number.isFinite(monto) || monto < 0 || monto > 1_000_000) return { error: "Escribe cuánto fue." };
   if (g.fecha && !FECHA.test(g.fecha)) return { error: "La fecha no se entiende." };
   const categoria = ["alimento", "veterinaria", "estetica", "guarderia_hotel", "medicinas", "accesorios", "otro"].includes(g.categoria) ? g.categoria : "otro";
-  const { data, error } = await supabase.from("mascotas_gastos").insert({ mascota_id: mascotaId, concepto, monto: Math.round(monto * 100) / 100, categoria, fecha: g.fecha || undefined, updated_at: new Date().toISOString() }).select("id").single();
+  const { data, error } = await supabase.from("mascotas_gastos").insert({ mascota_id: mascotaId, concepto, monto: Math.round(monto * 100) / 100, categoria, fecha: g.fecha || hoyMx(), updated_at: new Date().toISOString() }).select("id").single();
   if (error) return { error: "No pudimos guardar el gasto." };
   return { error: null, registros: await registrosDe(supabase, [{ t: "mascotas_gastos", i: data.id as string }]) };
 }

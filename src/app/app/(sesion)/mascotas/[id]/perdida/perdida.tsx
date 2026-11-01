@@ -27,6 +27,32 @@ export function Perdida({ mascotaId, nombre, perdida, perdidaNota, urlPublica, u
     setPunto(r.valor);
   };
 
+  // El hilo con quien la vio va en los dos estados: el QR y su perfil público reciben mensajes aunque no esté marcada perdida.
+  const hilo = (
+    <section className="apd-aparece" style={{ ["--i" as string]: 2 }}>
+      <h2 className="apd-seccion-titulo">Mensajes de quien la vea</h2>
+      {mensajes.length === 0 ? (
+        <p className="apd-nota">Todavía nadie ha escrito. Cuando alguien escanee el QR o abra el cartel y te escriba, lo ves aquí y te llega aviso.</p>
+      ) : (
+        <ul className="apd-lista" data-hilo>
+          {mensajes.map((x) => (
+            <li key={x.id} className="apd-tarjeta" style={x.de === "dueno" ? { background: "var(--apd-morado-suave)", boxShadow: "none" } : undefined} data-mensaje={x.de}>
+              <p className="apd-nota" style={{ fontSize: "0.75rem" }}>{x.de === "dueno" ? "Tú" : x.halladorNombre || "Alguien"} · {x.cuando}{x.de === "dueno" && !x.entregadoAt ? " · sin entregar por WhatsApp" : ""}</p>
+              <p style={{ marginTop: "0.2rem" }}>{x.texto}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+      {mensajes.some((x) => x.de === "hallador") && (
+        <form className="apd-tarjeta" style={{ marginTop: "0.75rem" }} onSubmit={async (e) => { e.preventDefault(); setError(null); const r = await respuesta.ejecutar(() => responder(mascotaId, texto)); if (r.error) return setError(r.error); setTexto(""); setAviso(r.entregado ? "Tu respuesta le llegó por WhatsApp." : r.motivo ?? null); router.refresh(); }}>
+          <label className="apd-etiqueta" htmlFor="pd-resp">Contestar (no ven tu teléfono)</label>
+          <input id="pd-resp" className="apd-campo" value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={600} placeholder="¡Gracias! ¿Dónde la viste?" />
+          <button type="submit" className="apd-boton-sec" style={{ marginTop: "0.75rem" }} aria-busy={respuesta.cargando} disabled={respuesta.cargando} data-responder>Mandar</button>
+        </form>
+      )}
+    </section>
+  );
+
   if (!perdida) {
     return (
       <div className="apd-lista">
@@ -60,6 +86,7 @@ export function Perdida({ mascotaId, nombre, perdida, perdidaNota, urlPublica, u
           </button>
         </div>
         {aviso && <p className="apd-aviso apd-aviso-ok" role="status">{aviso}</p>}
+        {hilo}
       </div>
     );
   }
@@ -80,28 +107,7 @@ export function Perdida({ mascotaId, nombre, perdida, perdidaNota, urlPublica, u
         {error && <p className="apd-aviso apd-aviso-error" role="alert" style={{ marginTop: "0.75rem" }}>{error}</p>}
       </div>
       <CampoCopiable valor={urlPublica} etiqueta="Su perfil público (el del QR)" textoBoton="Copiar" />
-      <section className="apd-aparece" style={{ ["--i" as string]: 2 }}>
-        <h2 className="apd-seccion-titulo">Mensajes de quien la vea</h2>
-        {mensajes.length === 0 ? (
-          <p className="apd-nota">Todavía nadie ha escrito. Cuando alguien escanee el QR o abra el cartel y te escriba, lo ves aquí y te llega aviso.</p>
-        ) : (
-          <ul className="apd-lista" data-hilo>
-            {mensajes.map((x) => (
-              <li key={x.id} className="apd-tarjeta" style={x.de === "dueno" ? { background: "var(--apd-morado-suave)", boxShadow: "none" } : undefined} data-mensaje={x.de}>
-                <p className="apd-nota" style={{ fontSize: "0.75rem" }}>{x.de === "dueno" ? "Tú" : x.halladorNombre || "Alguien"} · {x.cuando}{x.de === "dueno" && !x.entregadoAt ? " · sin entregar por WhatsApp" : ""}</p>
-                <p style={{ marginTop: "0.2rem" }}>{x.texto}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-        {mensajes.some((x) => x.de === "hallador") && (
-          <form className="apd-tarjeta" style={{ marginTop: "0.75rem" }} onSubmit={async (e) => { e.preventDefault(); setError(null); const r = await respuesta.ejecutar(() => responder(mascotaId, texto)); if (r.error) return setError(r.error); setTexto(""); setAviso(r.entregado ? "Tu respuesta le llegó por WhatsApp." : r.motivo ?? null); router.refresh(); }}>
-            <label className="apd-etiqueta" htmlFor="pd-resp">Contestar (no ven tu teléfono)</label>
-            <input id="pd-resp" className="apd-campo" value={texto} onChange={(e) => setTexto(e.target.value)} maxLength={600} placeholder="¡Gracias! ¿Dónde la viste?" />
-            <button type="submit" className="apd-boton-sec" style={{ marginTop: "0.75rem" }} aria-busy={respuesta.cargando} disabled={respuesta.cargando} data-responder>Mandar</button>
-          </form>
-        )}
-      </section>
+      {hilo}
     </div>
   );
 }

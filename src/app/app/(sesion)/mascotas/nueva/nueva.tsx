@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { comprimirImagen } from "@/lib/imagen";
+import { hoyMx } from "@/lib/app/cartilla-util";
 import { IconoCamara, IconoFlecha } from "@/components/app/iconos";
 import { crearMascota } from "./acciones";
 
@@ -57,7 +58,7 @@ export function NuevaMascota() {
         <label className="apd-etiqueta" htmlFor="nm-raza" style={{ marginTop: "1rem" }}>Raza (si quieres)</label>
         <input id="nm-raza" name="raza" className="apd-campo" maxLength={60} placeholder="Mestizo, Schnauzer, Siamés…" />
         <label className="apd-etiqueta" htmlFor="nm-nac" style={{ marginTop: "1rem" }}>¿Cuándo nació? (aproximado está bien)</label>
-        <input id="nm-nac" name="fecha_nacimiento" type="date" className="apd-campo" max={new Date().toISOString().slice(0, 10)} />
+        <input id="nm-nac" name="fecha_nacimiento" type="date" className="apd-campo" max={hoyMx()} />
       </div>
 
       <div className="apd-tarjeta apd-aparece" style={{ ["--i" as string]: 2 }}>
