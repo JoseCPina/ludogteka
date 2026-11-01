@@ -500,8 +500,23 @@ try {
     console.log(`\n── ${rol} ──`);
     await recorrer(rol);
   }
+} catch (e) {
+  // Se dice el error de origen ANTES de restaurar: si la restauración también falla, su error no lo tapa.
+  console.error(`\n✘ La corrida se detuvo: ${e?.stack ?? e}`);
+  throw e;
 } finally {
-  await restaurarModulos();
+  // Con la base lenta, la restauración se reintenta (si no, Huellitas se queda con la prueba vencida o los módulos prendidos).
+  for (let intento = 1; ; intento++) {
+    try {
+      restaurado = false;
+      await restaurarModulos();
+      break;
+    } catch (e) {
+      if (intento >= 4) throw e;
+      console.log(`  · no se pudo restaurar Huellitas (${String(e.message).slice(0, 80)}); reintento ${intento + 1} de 4 en 20 s`);
+      await new Promise((r) => setTimeout(r, 20_000));
+    }
+  }
 }
 
 if (avisos.length) {

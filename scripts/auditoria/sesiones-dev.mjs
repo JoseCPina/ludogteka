@@ -22,7 +22,22 @@ export const NEGOCIO = process.env.AUDITORIA_NEGOCIO_ID ?? "10000000-0000-4000-8
 // negocio; aquí esas peticiones se acotan a NEGOCIO. Quien filtra
 // negocio_id a mano (la auditoría entre negocios) queda como está.
 const fetchOriginal = globalThis.fetch;
-const specServicio = await (await fetchOriginal(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` } })).json();
+// La base de desarrollo, con carga sostenida, a veces contesta «upstream request timeout» (texto, no JSON): se reintenta
+// hasta 5 veces con 30 s entre una y otra antes de rendirse (1 de noviembre de 2026).
+async function leerSpec() {
+  for (let intento = 1; ; intento++) {
+    try {
+      const r = await fetchOriginal(URL + "/rest/v1/", { headers: { apikey: env.SUPABASE_SECRET_KEY, Authorization: `Bearer ${env.SUPABASE_SECRET_KEY}` }, signal: AbortSignal.timeout(90_000) });
+      const texto = await r.text();
+      return JSON.parse(texto);
+    } catch (e) {
+      if (intento >= 5) throw new Error(`la base de desarrollo no contesta (${String(e.message).slice(0, 80)})`);
+      console.log(`  · la base de desarrollo no contestó (${String(e.message).slice(0, 60)}); reintento ${intento + 1} de 5 en 30 s`);
+      await new Promise((res) => setTimeout(res, 30_000));
+    }
+  }
+}
+const specServicio = await leerSpec();
 const CON_NEGOCIO = new Set(Object.entries(specServicio.definitions).filter(([, d]) => d.properties?.negocio_id).map(([t]) => t));
 globalThis.fetch = (input, init = {}) => {
   const destino = typeof input === "string" ? input : input instanceof URL_ ? input.href : input.url;
