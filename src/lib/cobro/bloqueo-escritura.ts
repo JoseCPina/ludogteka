@@ -140,7 +140,9 @@ export function esControlDeEscritura(el: Element, ruta: string, alcances: readon
   // Salir de un formulario o moverse por él siempre se puede. «Cancelar» a secas solo es salir dentro de un
   // formulario; suelto, junto a un registro (un servicio extra, una cuenta), cancela ESE registro (QA N152).
   if (esBoton && (el as HTMLButtonElement).type === "button" && SALIR_DE_FORMULARIO.test(texto)) {
-    if (!/^\s*cancelar\b/i.test(texto) || el.closest("form, [data-acciones-formulario]") || alcances.some((a) => a.contains(el))) return false;
+    // Dentro de un bloque SUELTO (N155) no cuenta como salir: ese bloque se bloquea entero, y puede ser la lista de un
+    // tablero donde «Cancelar» abre el formulario para cancelar el registro (los servicios extra de Recepción).
+    if (!/^\s*cancelar\b/i.test(texto) || el.closest("form, [data-acciones-formulario]") || alcances.some((a) => !BLOQUES_SUELTOS.has(a) && a.contains(el))) return false;
     return true;
   }
   // QA S53 (N155): en el bloque de un botón que guarda (reprogramar, cancelar con motivo, «no se presentó»…) se
