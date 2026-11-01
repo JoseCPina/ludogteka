@@ -412,8 +412,9 @@ async function appDuenos(request: NextRequest, cabeceras: Headers) {
     return u;
   };
   const siguiente = () => NextResponse.rewrite(destino(pathname), { request: { headers: cabeceras } });
-  // /m/<token>: el perfil público de una mascota (el QR de la placa) y su cartel. Públicos.
-  if (PUBLICAS_APP.has(pathname) || pathname.startsWith("/entrar/") || /^\/m\/[A-Za-z0-9]{10}(\/cartel)?\/?$/.test(pathname)) return siguiente();
+  // /m/<token>: el perfil público de una mascota (el QR de la placa), su cartel y el registro de atención de un negocio
+  // que no usa PeluDesk (Fase 2). Públicos.
+  if (PUBLICAS_APP.has(pathname) || pathname.startsWith("/entrar/") || /^\/m\/[A-Za-z0-9]{10}(\/(cartel|registrar))?\/?$/.test(pathname)) return siguiente();
 
   let response = siguiente();
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {

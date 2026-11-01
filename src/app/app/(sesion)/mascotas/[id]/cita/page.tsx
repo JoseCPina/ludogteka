@@ -17,7 +17,15 @@ export default async function CitaPage({ params }: { params: Promise<{ id: strin
   const registros = await cartillaDe(m.id);
   const toca = proximas(registros).filter((r) => r.proximaDosis).slice(0, 3);
   const que = toca.length ? toca.map((r) => `${r.tipo === "vacuna" ? "la vacuna" : "la desparasitación"} ${r.nombre} (${fechaLarga(r.proximaDosis!)})`).join(", ") : "su próxima vacuna";
-  const negocios: { nombre: string; wa: string | null; url: string }[] = [];
+  const negocios: { nombre: string; wa: string | null; url: string; qr?: boolean }[] = [];
+  // Fase 2: los negocios que registraron una atención con el QR (sin PeluDesk todavía): su WhatsApp, el más reciente primero.
+  const { data: ats } = await createSupabaseAdminClient().from("app_atenciones").select("negocio_nombre, negocio_whatsapp").eq("mascota_id", m.id).is("deleted_at", null).is("oculto_at", null).order("created_at", { ascending: false }).limit(20);
+  const vistos = new Set<string>();
+  for (const a of (ats ?? []) as { negocio_nombre: string; negocio_whatsapp: string }[]) {
+    if (vistos.has(a.negocio_whatsapp)) continue;
+    vistos.add(a.negocio_whatsapp);
+    negocios.push({ nombre: a.negocio_nombre, wa: a.negocio_whatsapp, url: "", qr: true });
+  }
   for (const v of m.vinculos) {
     const { data: n } = await createSupabaseAdminClient().from("negocios").select("landing").eq("id", v.negocioId).maybeSingle();
     const landing = (n?.landing ?? {}) as { telefono_wa?: string | null };
@@ -37,9 +45,9 @@ export default async function CitaPage({ params }: { params: Promise<{ id: strin
         {negocios.length > 0 ? (
           <ul className="apd-lista">
             {negocios.map((n) => (
-              <li key={n.nombre} className="apd-tarjeta" data-cita-negocio>
+              <li key={`${n.nombre}-${n.wa}`} className="apd-tarjeta" data-cita-negocio={n.qr ? "qr" : ""}>
                 <p style={{ fontWeight: 800 }}>{n.nombre}</p>
-                <p className="apd-nota">Ya conocen a {m.nombre}. Escríbeles con el mensaje listo.</p>
+                <p className="apd-nota">{n.qr ? `Registraron la última atención de ${m.nombre}. Escríbeles con el mensaje listo.` : `Ya conocen a ${m.nombre}. Escríbeles con el mensaje listo.`}</p>
                 <div className="apd-fila" style={{ marginTop: "0.75rem", flexWrap: "wrap" }}>
                   {n.wa ? (
                     <a href={`https://wa.me/${n.wa.length === 10 ? `52${n.wa}` : n.wa}?text=${encodeURIComponent(mensaje)}`} target="_blank" rel="noopener noreferrer" className="apd-boton"><IconoWhatsApp style={{ width: 20, height: 20 }} /> Pedir cita por WhatsApp</a>

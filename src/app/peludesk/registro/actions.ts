@@ -15,6 +15,7 @@ import { enviarConversion } from "@/lib/peludesk/capi";
 import { MIN_CONTRASENA, TEXTO_CONTRASENA_CORTA } from "@/lib/auth/contrasena";
 import { aplicarPrecarga } from "@/lib/herramientas/precarga";
 import { aplicarReclamoAlRegistro } from "@/lib/directorio/reclamo";
+import { aplicarPrecargaQR } from "@/lib/app/atenciones";
 import { esHerramienta } from "@/lib/herramientas/lista";
 import { registrarEventoHerramienta } from "@/lib/herramientas/telemetria";
 
@@ -189,7 +190,15 @@ async function registrar(fd: FormData): Promise<EstadoRegistro> {
     }
     // Llegó reclamando su ficha del directorio (código verificado por WhatsApp desde este mismo teléfono): «Negocio verificado».
     const reclamo = String(fd.get("reclamo") ?? "");
-    if (reclamo) await aplicarReclamoAlRegistro({ reclamoId: reclamo, telefono, negocioId: alta.negocio_id, slugProspecto });
+    if (reclamo) {
+      const verificado = await aplicarReclamoAlRegistro({ reclamoId: reclamo, telefono, negocioId: alta.negocio_id, slugProspecto });
+      // App para dueños · Fase 2: si el negocio registró atenciones con el QR de las mascotas, entra con esos pacientes
+      // y sus registros (sin datos de los dueños). Solo con el reclamo verificado por WhatsApp desde este teléfono.
+      if (verificado && pr) {
+        const precargaQR = await aplicarPrecargaQR(alta.negocio_id, pr.id);
+        if (precargaQR.registros) console.log(`[registro] precarga del QR: ${precargaQR.pacientes} pacientes, ${precargaQR.registros} registros`);
+      }
+    }
   }
 
   // Lo que capturó en las herramientas públicas con este mismo teléfono se carga en su negocio (tarifas «Calculado»,

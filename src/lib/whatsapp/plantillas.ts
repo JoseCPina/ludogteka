@@ -7,6 +7,7 @@ import herramienta from "@/lib/herramientas/plantilla.json";
 import carnet from "@/lib/carnet/plantilla-recordatorio.json";
 import teleconsulta from "@/lib/telemedicina/plantilla-teleconsulta.json";
 import perdida from "@/lib/app/plantilla-perdida.json";
+import citaSugerida from "@/lib/app/plantilla-cita-sugerida.json";
 
 /**
  * El catálogo ÚNICO de las plantillas de WhatsApp de PeluDesk (las que el bot y las tareas mandan desde el número de
@@ -75,6 +76,14 @@ export const PLANTILLAS_PELUDESK: PlantillaPeluDesk[] = [
     uso: "App para dueños: aviso a los negocios PeluDesk de la zona cuando un dueño marca a su mascota como perdida (docs/app-duenos/FASE-1.md).",
     fuente: "src/lib/app/plantilla-perdida.json",
     componentes: [cuerpo(perdida.cuerpo, perdida.ejemplos)],
+  },
+  {
+    nombre: citaSugerida.nombre,
+    idioma: citaSugerida.idioma,
+    categoria: "UTILITY",
+    uso: "App para dueños (Fase 2): la próxima cita que sugirió una estética al registrar una atención con el QR, firmada por ella (docs/app-duenos/FASE-2.md). Mientras no esté aprobada, el aviso va solo por push y Avisos.",
+    fuente: "src/lib/app/plantilla-cita-sugerida.json",
+    componentes: [cuerpo(citaSugerida.cuerpo, citaSugerida.ejemplos), ...botones(citaSugerida.botones.map((b) => b.texto))],
   },
   {
     nombre: teleconsulta.nombre,

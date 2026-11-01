@@ -14,7 +14,7 @@ export async function cartillaDe(mascotaId: string): Promise<RegistroCartilla[]>
   const supabase = await createSupabaseServerClient("portal");
   const { data } = await supabase
     .from("mascotas_cartilla")
-    .select("id, tipo, nombre, subtipo, lote, laboratorio, fecha_aplicacion, proxima_dosis, fuente, confianza, notas")
+    .select("id, tipo, nombre, subtipo, lote, laboratorio, fecha_aplicacion, proxima_dosis, fuente, confianza, notas, atencion_id")
     .eq("mascota_id", mascotaId)
     .is("deleted_at", null)
     .order("fecha_aplicacion", { ascending: false, nullsFirst: false })
@@ -64,7 +64,12 @@ export async function programarRecordatorios(mascotaId: string): Promise<void> {
     await db.from("app_recordatorios").update({ estado: "omitido" }).eq("mascota_id", mascotaId).eq("estado", "pendiente");
     return;
   }
-  const { data: filas } = await db.from("mascotas_cartilla").select("id, tipo, nombre, fecha_aplicacion, proxima_dosis").eq("mascota_id", mascotaId).is("deleted_at", null);
+  const { data: filas } = await db.from("mascotas_cartilla").select("id, tipo, nombre, fecha_aplicacion, proxima_dosis, atencion_id").eq("mascota_id", mascotaId).is("deleted_at", null);
+  // Fase 2: lo que registró un negocio con el QR sale firmado por él (y la próxima cita que sugirió una estética).
+  const { data: ats } = await db.from("app_atenciones").select("id, giro, negocio_nombre, datos, oculto_at").eq("mascota_id", mascotaId).is("deleted_at", null).is("oculto_at", null);
+  const atenciones = (ats ?? []) as { id: string; giro: string; negocio_nombre: string; datos: Record<string, unknown> }[];
+  const firmaDe = new Map(atenciones.map((a) => [a.id, a.negocio_nombre]));
+  const atencionDeRegistro = new Map(((filas ?? []) as { id: string; atencion_id: string | null }[]).map((f) => [f.id, f.atencion_id]));
   const registros = ((filas ?? []) as Record<string, unknown>[]).map(aRegistro);
   const hoy = hoyMx();
   const deseados = new Map<string, { tipo: string; ref_id: string; para_at: string; titulo: string; cuerpo: string }>();
@@ -75,7 +80,21 @@ export async function programarRecordatorios(mascotaId: string): Promise<void> {
       const fecha = sumarDias(r.proximaDosis, -dias);
       if (fecha < hoy) continue;
       const para = instanteMx(fecha, 10);
-      deseados.set(`${r.tipo}|${r.id}|${para}`, { tipo: r.tipo, ref_id: r.id, para_at: para, titulo: `A ${m.nombre} le toca ${que}`, cuerpo: dias === 0 ? `Hoy le toca ${que}. Si ya se la pusieron, anótalo en su cartilla.` : `Le toca ${que} ${cuando} (${fechaLarga(r.proximaDosis)}). Si quieres, pide su cita desde aquí.` });
+      const firma = firmaDe.get(atencionDeRegistro.get(r.id) ?? "") ?? null;
+      const deParte = firma ? ` De parte de ${firma}: ` : " ";
+      deseados.set(`${r.tipo}|${r.id}|${para}`, { tipo: r.tipo, ref_id: r.id, para_at: para, titulo: `A ${m.nombre} le toca ${que}`, cuerpo: dias === 0 ? `Hoy le toca ${que}.${deParte}${firma ? "escríbeles para agendar." : "Si ya se la pusieron, anótalo en su cartilla."}` : `Le toca ${que} ${cuando} (${fechaLarga(r.proximaDosis)}).${deParte}${firma ? "escríbeles para agendar desde aquí." : "Si quieres, pide su cita desde aquí."}` });
+    }
+  }
+  // La próxima cita que sugirió una estética al registrar con el QR: 3 días antes y el mismo día, firmada por ella.
+  for (const a of atenciones) {
+    const proxima = a.giro === "estetica" ? (a.datos?.proxima_cita as string | null | undefined) : null;
+    if (!proxima || proxima < hoy) continue;
+    for (const [dias, cuando] of [[3, "en tres días"], [0, "hoy"]] as const) {
+      const fecha = sumarDias(proxima, -dias);
+      if (fecha < hoy) continue;
+      const para = instanteMx(fecha, 10);
+      const servicio = String(a.datos?.servicio ?? "estética");
+      deseados.set(`cita_sugerida|${a.id}|${para}`, { tipo: "cita_sugerida", ref_id: a.id, para_at: para, titulo: `${m.nombre}: su próxima cita de ${servicio}`, cuerpo: `${a.negocio_nombre} le sugirió su próxima cita de ${servicio} para ${cuando === "hoy" ? "hoy" : `${cuando} (${fechaLarga(proxima)})`}. Escríbeles para agendar desde aquí.` });
     }
   }
   // Medicamentos activos: una toma por hora del día, los próximos 14 días.

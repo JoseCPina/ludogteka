@@ -47,8 +47,46 @@ Tú sigues viendo solo lo tuyo: tus clientes, tus mascotas, tus citas. La app no
 
 > Lo que el dueño captura o lee de su cartilla de papel es suyo y no sustituye el carnet que tú firmas en Veterinaria; en la Fase 3 lo que registras tú aparece en su app automáticamente.
 
+## El QR de la placa también sirve para la vet, la estética o el hotel
+
+Cualquier negocio que tenga enfrente a la mascota, aunque no use PeluDesk, escanea su QR con la cámara del celular y toca **Registrar atención**. Sin cuenta ni app:
+
+1. Escoge si es **Veterinaria**, **Estética** u **Hotel**.
+2. La vet anota la **vacuna o desparasitación** (con un toque en la que puso), su **lote**, la **próxima dosis**, el **peso** y una nota; la estética, el **servicio** y la **próxima cita sugerida**; el hotel, las **fechas de la estancia**.
+3. Escribe el **nombre y el WhatsApp de su negocio** (el teléfono los recuerda para el siguiente paciente) y **firma con el dedo**.
+
+Le llega al dueño **al momento** en su cartilla (notificación y Avisos), y el recordatorio de la próxima dosis o cita le llega **firmado por ese negocio**, con su WhatsApp para agendar. El negocio solo ve el nombre, la especie, la raza y la cartilla de la mascota: **nada de la familia**.
+
+Reglas: hasta 6 registros por mascota al día y 30 por número al día; el registro lo corrige solo el teléfono que lo hizo y solo las primeras 24 horas; el dueño lo puede **ocultar** desde la ficha de su mascota («Lo que registraron los negocios»), pero no se borra.
+
+A partir de su **tercer paciente registrado**, al negocio se le ofrece abrir su cuenta gratis: comprueba su WhatsApp con un código y entra a la prueba de PeluDesk con esos pacientes y lo que les registró ([[articulo:pacientes-del-qr]]).
+
 ## Lo que viene
 
-El QR que una vet sin PeluDesk escanea para registrar una vacuna (Fase 2), y citas, reservas, fotos, contratos y pagos desde la app (Fase 3): docs/app-duenos/PLAN.md.`,
+Citas, reservas, fotos, contratos y pagos desde la app (Fase 3): docs/app-duenos/PLAN.md.`,
+  },
+  {
+    slug: "pacientes-del-qr",
+    titulo: "Tus pacientes del QR: lo que registraste antes de abrir tu cuenta",
+    resumen: "Si registraste vacunas, baños o estancias con el QR de las mascotas antes de usar PeluDesk, entran como tus pacientes al abrir tu cuenta.",
+    grupo: "clientes",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: ["/clientes"],
+    palabras: ["qr", "pacientes del qr", "registrar atención", "placa", "reclamar", "precargado", "sin datos del dueño", "familia", "código por whatsapp"],
+    cuerpo: `Si antes de abrir tu cuenta registraste atenciones con el **QR de la placa** de las mascotas (desde su perfil en la app PeluDesk, con **Registrar atención**), al abrir tu cuenta desde ese mismo flujo —comprobando tu WhatsApp con el código— entran a PeluDesk como tus pacientes.
+
+## Dónde quedan
+
+- En [Clientes](/clientes) aparece **Pacientes del QR de PeluDesk**, con el WhatsApp de tu propio negocio. Ahí están todas las mascotas que registraste, con su nombre, especie y raza.
+- Lo que le registraste a cada una (la fecha, la vacuna o desparasitación con su próxima dosis, el baño o la estancia, el peso y tu nota) queda en sus **Notas clínicas** si tu negocio tiene Veterinaria; si no, en las **notas internas** de «Pacientes del QR de PeluDesk», una lista por mascota. Esas notas solo las ve tu personal.
+
+## Por qué no vienen los datos de la familia
+
+Con el QR nunca ves los datos del dueño: solo la mascota y su cartilla. Por eso aquí tampoco llegan. Pídeselos a la familia en su próxima visita y dala de alta como cliente; mientras, lo que registres de esa mascota le sigue llegando a su app.
+
+## Si algo no sale
+
+- **No veo a «Pacientes del QR de PeluDesk»**: la cuenta se tuvo que abrir desde la oferta del QR (con el código por WhatsApp desde el número con el que registraste). Si la abriste por otro camino, escríbenos desde [Ayuda](/ayuda).`,
   },
 ];

@@ -3,12 +3,26 @@
 // y comprueba hosts, manifest, service worker, Mis mascotas (Canela y Pimienta), Avisos, Cerca de mí y Mi cuenta.
 // Lo único que escribe es lo de la propia dueña de la demo (su fila en duenos: último acceso).
 //
-//   node scripts/auditoria/app-duenos-prod.mjs
+//   node scripts/auditoria/app-duenos-prod.mjs [--escribir] [--plantillas]
+//
+// Fase 2 (docs/app-duenos/FASE-2.md), con una mascota de la dueña de la demo:
+//   · siempre (lectura): /m/<token> ofrece «Registrar atención»; /m/<token>/registrar enseña la mascota y nada de la
+//     familia; /plataforma/app-duenos no se abre sin sesión.
+//   · --escribir: un negocio de prueba («Prueba QR PeluDesk», WhatsApp 5599990001; nunca Ludogteka) registra una vacuna
+//     con firma desde un navegador sin sesión; se comprueban la cartilla (fuente qr), el aviso, el recordatorio firmado
+//     y la ficha de la dueña. Al final se borra TODO lo que creó (atención, escaneo, cartilla, peso, recordatorios,
+//     avisos, firma y prospecto).
+//   · --plantillas: con la sesión de administración de la plataforma, «Mandar a aprobar» peludesk_cita_sugerida_v1 en
+//     /plataforma/plantillas-whatsapp si todavía no existe en Meta, y su estado.
 import { createClient } from "@supabase/supabase-js";
 import { abrirNavegador } from "../lib/navegador.mjs";
 import { llavesProd, URL_PROD, REF_PROD } from "../lib/prod.mjs";
 
 const APP = "https://app.peludesk.mx";
+const ESCRIBIR = process.argv.includes("--escribir");
+const PLANTILLAS = process.argv.includes("--plantillas");
+const TEL_PRUEBA = "5599990001";
+const NEG_PRUEBA = "Prueba QR PeluDesk";
 const hallazgos = [];
 const hallazgo = (t) => { hallazgos.push(t); console.log(`  ✘ ${t}`); };
 const bien = (t) => console.log(`  ✔ ${t}`);
@@ -96,6 +110,117 @@ try {
   if (!dueno) hallazgo("la dueña de la demo no tiene fila en duenos");
   else bien(`duenos: teléfono ${dueno.telefono}, último acceso ${dueno.ultimo_acceso_at}`);
   await ctx.close();
+
+  console.log("\n3. Fase 2: el QR para negocios");
+  const { data: masc } = await S.from("mascotas").select("id, nombre, token_publico").eq("dueno_id", m.profile_id).is("deleted_at", null).eq("fallecido", false).order("created_at").limit(1).maybeSingle();
+  if (!masc) hallazgo("la dueña de la demo no tiene mascota en la app");
+  else {
+    const perfil = await pedir(`/m/${masc.token_publico}`);
+    if (perfil.status !== 200 || !perfil.cuerpo.includes("data-registrar-atencion")) hallazgo(`/m/<token> no ofrece «Registrar atención» (${perfil.status})`);
+    else bien(`/m/${masc.token_publico} ofrece «Registrar atención»`);
+    const form = await pedir(`/m/${masc.token_publico}/registrar`);
+    const familia = [cliente.nombre, "4420000201", u.user.email].filter(Boolean);
+    if (form.status !== 200 || !form.cuerpo.includes(masc.nombre) || familia.some((x) => form.cuerpo.includes(x))) hallazgo(`/registrar: ${form.status}, o enseña algo de la familia`);
+    else bien("/registrar enseña la mascota y nada de la familia");
+    const met = await fetch("https://peludesk.mx/plataforma/app-duenos", { redirect: "manual" });
+    if (![302, 307, 308].includes(met.status)) hallazgo(`/plataforma/app-duenos sin sesión → ${met.status}`);
+    else bien("/plataforma/app-duenos pide sesión de la plataforma");
+
+    if (ESCRIBIR) {
+      const ctxN = await nav.newContext({ viewport: { width: 390, height: 860 } });
+      const pn = await ctxN.newPage();
+      try {
+        const t0 = Date.now();
+        await pn.goto(`${APP}/m/${masc.token_publico}/registrar`, { waitUntil: "networkidle" });
+        await pn.locator('[data-giro="veterinaria"]').click();
+        await pn.locator("[data-agregar-vacuna]").first().click();
+        await pn.locator('input[name="lote-0"]').fill("QRPROD1");
+        await pn.locator('input[name="peso"]').fill("7.5");
+        await pn.locator('input[name="negocio_nombre"]').fill(NEG_PRUEBA);
+        await pn.locator('input[name="negocio_whatsapp"]').fill(TEL_PRUEBA);
+        await pn.locator("[data-firma]").scrollIntoViewIfNeeded();
+        const caja = await pn.locator("[data-firma]").boundingBox();
+        await pn.mouse.move(caja.x + 30, caja.y + 40);
+        await pn.mouse.down();
+        for (let k = 1; k <= 12; k++) await pn.mouse.move(caja.x + 30 + k * 20, caja.y + 40 + (k % 2 ? 15 : -15));
+        await pn.mouse.up();
+        await pn.locator("[data-guardar-atencion]").click();
+        await pn.locator("[data-atencion-guardada]").waitFor({ timeout: 30_000 });
+        const seg = ((Date.now() - t0) / 1000).toFixed(1);
+        const { data: at } = await S.from("app_atenciones").select("id").eq("mascota_id", masc.id).eq("negocio_whatsapp", TEL_PRUEBA).order("created_at", { ascending: false }).limit(1).single();
+        const { data: cart } = await S.from("mascotas_cartilla").select("id, fuente, lote").eq("atencion_id", at.id).is("deleted_at", null);
+        const { data: av } = await S.from("app_avisos").select("id").eq("dueno_id", m.profile_id).eq("tipo", "registro").eq("mascota_id", masc.id).contains("datos", { atencion_id: at.id });
+        const { data: rec } = await S.from("app_recordatorios").select("cuerpo").eq("ref_id", cart?.[0]?.id ?? at.id);
+        if (cart?.length !== 1 || cart[0].fuente !== "qr" || cart[0].lote !== "QRPROD1") hallazgo("la vacuna no entró a la cartilla con fuente qr y lote");
+        else bien(`la vacuna entró a la cartilla (fuente qr, lote) en ${seg} s desde abrir el formulario`);
+        if (!(av ?? []).length) hallazgo("a la dueña no le llegó el aviso");
+        else bien("a la dueña le llegó el aviso (push y Avisos)");
+        if (!(rec ?? []).length || !rec.every((x) => x.cuerpo.includes(`De parte de ${NEG_PRUEBA}`))) hallazgo("los recordatorios no van firmados por el negocio");
+        else bien(`${rec.length} recordatorio(s) firmados por el negocio`);
+        const ctxD = await nav.newContext({ viewport: { width: 390, height: 800 } });
+        await ctxD.addCookies(galletas.map(([name, value]) => ({ name, value, domain: "app.peludesk.mx", path: "/", secure: true, sameSite: "Lax" })));
+        const pd = await ctxD.newPage();
+        await pd.goto(`${APP}/mascotas/${masc.id}`, { waitUntil: "networkidle" });
+        if (!(await pd.locator(`[data-atencion="${at.id}"]`).count())) hallazgo("la ficha de la dueña no enseña el registro");
+        else bien("la ficha de la dueña enseña «Lo que registraron los negocios»");
+        await ctxD.close();
+      } catch (e) {
+        hallazgo(`registro en producción: ${e instanceof Error ? e.message : e}`);
+      } finally {
+        await ctxN.close();
+        // Limpieza: solo lo que creó la prueba (WhatsApp y nombre del negocio de prueba).
+        const { data: ats } = await S.from("app_atenciones").select("id, firma_path").eq("mascota_id", masc.id).eq("negocio_whatsapp", TEL_PRUEBA);
+        for (const a of ats ?? []) {
+          const { data: cs } = await S.from("mascotas_cartilla").select("id").eq("atencion_id", a.id);
+          const ids = (cs ?? []).map((c) => c.id);
+          if (ids.length) await S.from("app_recordatorios").delete().in("ref_id", ids);
+          await S.from("app_recordatorios").delete().eq("ref_id", a.id);
+          await S.from("mascotas_cartilla").delete().eq("atencion_id", a.id);
+          await S.from("mascotas_pesos").delete().eq("atencion_id", a.id);
+          await S.from("app_avisos").delete().eq("dueno_id", m.profile_id).contains("datos", { atencion_id: a.id });
+          if (a.firma_path) await S.storage.from("app-mascotas").remove([a.firma_path]);
+          await S.from("app_atenciones").delete().eq("id", a.id);
+        }
+        await S.from("app_qr_escaneos").delete().eq("mascota_id", masc.id).gte("created_at", new Date(Date.now() - 3_600_000).toISOString());
+        const { data: prs } = await S.from("prospectos").select("id").eq("nombre", NEG_PRUEBA).eq("fuente", "qr");
+        for (const pr of prs ?? []) {
+          await S.from("prospectos_eventos").delete().eq("prospecto_id", pr.id);
+          await S.from("prospectos").delete().eq("id", pr.id);
+        }
+        const { count: quedan } = await S.from("app_atenciones").select("id", { count: "exact", head: true }).eq("negocio_whatsapp", TEL_PRUEBA);
+        if (quedan) hallazgo(`quedaron ${quedan} atenciones de prueba`);
+        else bien("se borró todo lo que creó la prueba");
+      }
+    }
+  }
+
+  if (PLANTILLAS) {
+    console.log("\n4. Plantilla de cita sugerida");
+    const { data: pa } = await S.from("plataforma_admins").select("profile_id").limit(1).single();
+    const { data: ua } = await S.auth.admin.getUserById(pa.profile_id);
+    const { data: la } = await S.auth.admin.generateLink({ type: "magiclink", email: ua.user.email });
+    const { data: sa, error: ea } = await createClient(URL_PROD, llavesProd().anon, { auth: { persistSession: false } }).auth.verifyOtp({ type: "magiclink", token_hash: la.properties.hashed_token });
+    if (ea) throw ea;
+    const va = "base64-" + Buffer.from(JSON.stringify(sa.session)).toString("base64url");
+    const ta = va.match(/.{1,3180}/g);
+    const ga = ta.length === 1 ? [[`sb-${REF_PROD}-auth-token`, va]] : ta.map((t, i) => [`sb-${REF_PROD}-auth-token.${i}`, t]);
+    const ctxP = await nav.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctxP.addCookies(ga.map(([name, value]) => ({ name, value, domain: "peludesk.mx", path: "/", secure: true, sameSite: "Lax" })));
+    const pp = await ctxP.newPage();
+    await pp.goto("https://peludesk.mx/plataforma/plantillas-whatsapp", { waitUntil: "networkidle" });
+    const fila = pp.locator('[data-plantilla="peludesk_cita_sugerida_v1"]');
+    let estado = await fila.getAttribute("data-estado").catch(() => null);
+    if (estado === "NO_EXISTE") {
+      await fila.getByRole("button", { name: "Mandar a aprobar" }).click();
+      await pp.waitForTimeout(8000);
+      await pp.goto("https://peludesk.mx/plataforma/plantillas-whatsapp", { waitUntil: "networkidle" });
+      estado = await pp.locator('[data-plantilla="peludesk_cita_sugerida_v1"]').getAttribute("data-estado").catch(() => null);
+    }
+    const perdida = await pp.locator('[data-plantilla="peludesk_mascota_perdida_v1"]').getAttribute("data-estado").catch(() => null);
+    if (!estado || estado === "NO_EXISTE") hallazgo(`peludesk_cita_sugerida_v1: ${estado ?? "no aparece en la lista"}`);
+    else bien(`peludesk_cita_sugerida_v1: ${estado} · peludesk_mascota_perdida_v1: ${perdida}`);
+    await ctxP.close();
+  }
 } finally {
   await nav.close();
 }

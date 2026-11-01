@@ -14,6 +14,8 @@ export type RegistroCartilla = {
   fuente: "foto" | "manual" | "negocio" | "qr";
   confianza: number | null;
   notas: string | null;
+  /** Fase 2: la atención por QR que lo registró (para nombrar al negocio). */
+  atencionId: string | null;
   estado: "vigente" | "por_vencer" | "vencida" | "sin_fecha";
 };
 
@@ -69,6 +71,7 @@ export function aRegistro(f: Record<string, unknown>): RegistroCartilla {
     fuente: f.fuente as RegistroCartilla["fuente"],
     confianza: f.confianza == null ? null : Number(f.confianza),
     notas: (f.notas as string | null) ?? null,
+    atencionId: (f.atencion_id as string | null) ?? null,
     estado: estadoDe((f.proxima_dosis as string | null) ?? null),
   };
 }
