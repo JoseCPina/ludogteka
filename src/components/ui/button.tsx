@@ -85,7 +85,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
         aria-busy={cargando || undefined}
         className={cn(
           buttonVariants({ variant: VARIANTE_SHADCN[variante] }),
-          "cursor-pointer select-none rounded-md font-semibold whitespace-normal transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-n-200 disabled:bg-n-100 disabled:text-n-600 disabled:opacity-100 disabled:shadow-none disabled:hover:bg-n-100 aria-busy:cursor-progress aria-busy:disabled:text-n-700 [&_svg:not([class*='size-'])]:size-[1.1em]",
+          "min-w-0 max-w-full shrink cursor-pointer select-none rounded-md font-semibold whitespace-normal text-center transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-n-200 disabled:bg-n-100 disabled:text-n-600 disabled:opacity-100 disabled:shadow-none disabled:hover:bg-n-100 aria-busy:cursor-progress aria-busy:disabled:text-n-700 [&_svg:not([class*='size-'])]:size-[1.1em]",
           clasesPorTamano[tamano],
           clasesPorVariante[variante],
           className
