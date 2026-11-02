@@ -54,7 +54,13 @@ const recordatorioCarnet = async (perroId, fechaHoy) => {
   creados.carnet.push(data.id);
   return data.id;
 };
-const perroEnBase = async (id) => (await SB.from("perros").select("id, nombre, deleted_at, baja_motivo, baja_nota, baja_por, fallecido, fecha_fallecimiento").eq("id", id).maybeSingle()).data;
+// La nota y el autor de la baja viven en la bitácora (perros_bajas, solo personal), no en perros (migración 20261203001400).
+const perroEnBase = async (id) => {
+  const p = (await SB.from("perros").select("id, nombre, deleted_at, baja_motivo, fallecido, fecha_fallecimiento").eq("id", id).maybeSingle()).data;
+  if (!p) return p;
+  const b = (await SB.from("perros_bajas").select("nota, atendida_por").eq("perro_id", id).eq("tipo", "baja").is("deleted_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle()).data;
+  return { ...p, baja_nota: b?.nota ?? null, baja_por: b?.atendida_por ?? null };
+};
 const bajasDe = async (nombre) => (await SB.from("perros_bajas").select("tipo, motivo, resultado, perro_id, atendida_por").eq("perro_nombre", nombre).order("created_at")).data ?? [];
 const esperarEnBase = async (f, ms = 20000) => { const fin = Date.now() + ms; let v = await f(); while (!v && Date.now() < fin) { await espera(500); v = await f(); } return v; };
 
