@@ -151,3 +151,27 @@ Medido con `tiempo-panel-prod.mjs --muestras 6` justo después de desplegar (med
 1. `src/app/(staff)/layout.tsx`: arrancar `cargarNegocioLanding()`, `mis_negocios`, `tutorialesDeSesion()` y `bloqueoDeEscritura()` A LA VEZ que `obtenerSesionConRol()` (hoy esperan a la sesión; solo `tutorialesDeSesion` la necesita y ya la espera por dentro). Una tanda menos (−30–50 ms) en cada pantalla.
 2. `tablero-dia.tsx`: arrancar `previas` y la tanda principal antes de esperar `obtenerSesionConRol()` cuando lo que piden no depende del rol (la mayoría; las condicionadas por permiso pueden esperar), y pintar el tablero dentro de `Suspense` para que el encabezado y el menú salgan sin esperar las dos tandas del tablero (el TTFB de /recepcion caería al piso; el tablero llega 150–250 ms después, en la misma respuesta).
 3. Si después de eso /recepcion sigue cerca de 600 ms: una función `tablero_atencion()` que junte en un viaje las ~15 piezas de «Necesita atención» (cada una cuesta 0–20 ms; lo que se ahorra son conexiones y cola, no base), replicando en SQL las mismas condiciones de rol y permiso que hoy decide la pantalla.
+
+## Cuarta vuelta (2 de noviembre de 2026, laptop): tercera vuelta desplegada + palancas de pantalla
+
+**Producción, `tiempo-panel-prod.mjs --sin-consultas` (TTFB mediano desde la laptop; 3 muestras, variación de ±100 ms entre corridas):**
+
+| Pantalla | Antes (main con PR #233) | Tras la tercera vuelta (PR #235) | Tras las palancas de pantalla (PR #236) |
+|---|---|---|---|
+| Ludogteka /admin (admin) | 669 ms | 649 ms | 748 ms |
+| Ludogteka /recepcion (recepción) | 644 ms | 635 ms | 596 ms |
+| Ludogteka /recepcion (admin) | 705 ms | 647 ms | 650 ms |
+| Demo /admin (admin) | 772 ms | 778 ms | 733 ms |
+| Demo /recepcion (recepción) | 800 ms | 786 ms | 953 ms |
+| Demo /recepcion (admin) | 711 ms | 635 ms | 647 ms |
+
+**Desarrollo (`tiempo-panel-dev.mjs`):** consultas por pantalla /admin 65 → 61, /recepcion 49 → 45, /hotel 18 → 14, /estetica 18 → 14 (con PR #233, que quitó las dos RPC repetidas de `AvisoPlan`, y `sesion_actual`). Topes de consultas en exacto + 2: /admin 63, /recepcion 47, /hotel 16, /estetica 16.
+
+**Qué se hizo (PR #236):** (1) el layout del personal pide `cargarNegocioLanding`, `mis_negocios`, `tutorialesDeSesion` y `bloqueoDeEscritura` A LA VEZ que la sesión; (2) el tablero arranca lo que no depende del rol antes de esperar la sesión, y va en `<Suspense>` (esqueleto `EsqueletoTableroDia`) en Recepción y en el Inicio del admin, igual que la administración del Inicio.
+
+**Por qué el TTFB casi no se movió (causa, para la siguiente vuelta):** /recepcion y /admin YA tenían `loading.tsx`, que es un `Suspense` alrededor de la página entera: la página ya salía en streaming y el TTFB no lo marcaba el tablero sino el CASCARÓN: middleware (Auth ∥ `acceso_de_sesion`) → layout (sesión ∥ su grupo) → `AvisoPlan` y `AvisoTickets`, que son hijos del layout SIN `Suspense` y abren otra tanda en serie (`negocios` de la baja de la sucursal y `mis_tickets_con_respuesta`) → render. El Suspense de la página no acorta nada de eso. Lo que mejora con las palancas es el total (el tablero llega antes dentro de la misma respuesta), no el primer byte.
+
+**Lo que queda para bajar de 600 ms el primer byte:**
+1. `AvisoPlan` y `AvisoTickets` dentro de `<Suspense fallback={null}>` en el layout (una tanda menos en el cascarón de TODAS las pantallas del personal; la franja de prueba vencida también la pinta el bloqueo, que sí va en el layout).
+2. El middleware: `acceso_de_sesion` y Auth ya van a la vez; lo siguiente es no repetir Auth en el layout cuando el middleware ya validó (pasar el usuario firmado en un encabezado, como el negocio), con `getUserConReintento` como única puerta.
+3. `tablero_atencion()` en un viaje para «Necesita atención» (sigue pendiente; afecta el total, no el primer byte).
