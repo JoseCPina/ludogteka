@@ -55,13 +55,17 @@
   --sombra-flotante: 0 12px 32px -8px rgb(43 42 51 / 0.18), 0 2px 6px rgb(43 42 51 / 0.06);
 }
 
-/* App de dueños, portal y sitio público: crema, radios grandes, más aire. */
+/* App de dueños, portal y sitio público: crema, radios grandes, más aire. (Si una página trae contenido cálido, el fondo de la página entera también es crema.) */
 [data-lenguaje="calido"] {
   --background: #fff8ee;
   --muted: #f6efe5;
   --border: #ebe3d8;
   --radius: 1rem;
   --sombra-tarjeta: 0 1px 3px rgb(75 63 114 / 0.08), 0 8px 24px -12px rgb(75 63 114 / 0.16);
+}
+
+body:has([data-lenguaje="calido"]) {
+  background: var(--color-crema);
 }
 
 @theme inline {

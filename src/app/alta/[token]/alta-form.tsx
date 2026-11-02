@@ -357,7 +357,7 @@ export function AltaForm({
             />
           )}
 
-          <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900" data-consentimiento-recordatorios>
+          <label className="flex items-start gap-2 rounded-md border-[1.5px] border-border bg-white p-3 text-n-900" data-consentimiento-recordatorios>
             <input type="checkbox" checked={recordatorios} onChange={(e) => setRecordatorios(e.target.checked)} className="mt-1 h-4 w-4" />
             <span>
               Acepto recibir recordatorios por WhatsApp
@@ -371,7 +371,7 @@ export function AltaForm({
               perro. Preguntársela a todos es un campo largo, en un celular,
               que la mayoría no va a usar. Y solo si el negocio recoge. */}
           {ofreceRecoleccion && (
-          <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
+          <label className="flex items-start gap-2 rounded-md border-[1.5px] border-border bg-white p-3 text-n-900">
             <input
               type="checkbox"
               checked={quiereRecoleccion}
@@ -486,7 +486,7 @@ export function AltaForm({
       {paso === PASO_CUENTA && (
         <div className="flex flex-col gap-4">
           {cuentaOpcional ? (
-            <div className="flex flex-col gap-3 rounded-md border-[1.5px] border-n-200 bg-white p-4 text-n-900">
+            <div className="flex flex-col gap-3 rounded-md border-[1.5px] border-border bg-white p-4 text-n-900">
               <div>
                 <p className="font-bold">¿Quieres una cuenta para ver las citas de {vm.tu}?</p>
                 <p className="mt-1 text-sm text-n-600">

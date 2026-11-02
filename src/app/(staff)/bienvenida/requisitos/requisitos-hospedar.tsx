@@ -46,7 +46,7 @@ export function RequisitosHospedar({ exigeEvaluacion, revisados, tipos }: { exig
 
   return (
     <form method="post" onSubmit={guardar} data-requisitos-hospedar className="flex flex-col gap-4">
-      <section className="rounded-lg border border-n-200 bg-white p-4">
+      <section className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <label className="flex items-start gap-3 text-n-900">
           <input type="checkbox" data-requisito="evaluacion" checked={evaluacion} onChange={(e) => setEvaluacion(e.target.checked)} className="mt-1 h-5 w-5" />
           <span>
@@ -57,7 +57,7 @@ export function RequisitosHospedar({ exigeEvaluacion, revisados, tipos }: { exig
           </span>
         </label>
       </section>
-      <section className="rounded-lg border border-n-200 bg-white p-4">
+      <section className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <h2 className="font-semibold text-n-900">Vacunas y desparasitación</h2>
         <p className="mt-1 text-sm text-n-600">Las prendidas tienen que estar vigentes para reservar. La vigencia es cuánto dura cada aplicación.</p>
         <ul className="mt-3 flex flex-col gap-3">

@@ -24,7 +24,7 @@ export function YoAtiendo({ atiende }: { atiende: boolean }) {
   }
 
   return (
-    <section data-yo-atiendo className="rounded-lg border border-n-200 bg-white p-4">
+    <section data-yo-atiendo className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <h2 className="font-semibold text-n-900">¿Tú atiendes las citas de estética?</h2>
       <p className="mt-1 text-sm text-n-600">
         Tu cuenta ya aparece en la agenda. Si tú haces los servicios, márcalo y este paso queda listo; si no, invita abajo a tus estilistas.

@@ -43,7 +43,7 @@ export function DesignarMedico({ soyMedico, candidatos }: { soyMedico: boolean; 
   return (
     <div className="flex flex-col gap-4">
       {!soyMedico && (
-        <form method="post" onSubmit={soyYo} data-yo-soy-medico className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+        <form method="post" onSubmit={soyYo} data-yo-soy-medico className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <h2 className="font-semibold text-n-900">Yo soy el médico</h2>
           <p className="text-sm text-n-600">Tu cuenta queda designada como médico veterinario: agendas y firmas consultas a tu nombre.</p>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -65,7 +65,7 @@ export function DesignarMedico({ soyMedico, candidatos }: { soyMedico: boolean; 
           </AccionesFormulario>
         </form>
       )}
-      <form method="post" onSubmit={esOtro} data-designar-otro className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+      <form method="post" onSubmit={esOtro} data-designar-otro className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <h2 className="font-semibold text-n-900">El médico es otra persona</h2>
         {candidatos.length === 0 ? (
           <p className="text-sm text-n-600">

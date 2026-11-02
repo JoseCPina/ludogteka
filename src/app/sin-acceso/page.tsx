@@ -34,7 +34,7 @@ export default async function SinAccesoPage() {
         negocio que te dé acceso.
       </Alert>
       {negocios.length > 0 && (
-        <section className="rounded-lg border border-n-200 bg-white p-5">
+        <section className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
           <p className="font-semibold text-n-900">Tu cuenta sí entra a:</p>
           <ul className="mt-3 flex flex-col gap-2">
             {negocios.map((n) => (

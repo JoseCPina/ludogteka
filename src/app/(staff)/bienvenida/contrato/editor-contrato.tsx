@@ -32,7 +32,7 @@ export function EditorContrato({ tituloInicial, cuerpoInicial, publicado }: { ti
   }
 
   return (
-    <form method="post" onSubmit={publicar} data-editor-contrato className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-4">
+    <form method="post" onSubmit={publicar} data-editor-contrato className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <Field label="Título *" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
       <Textarea label="Texto del contrato *" rows={22} value={cuerpo} onChange={(e) => setCuerpo(e.target.value)} />
       <AccionesFormulario error={error} exito={exito}>

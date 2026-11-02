@@ -61,7 +61,7 @@ export function RequisitosGuarderiaHotel({
   const regla = (clave: ClavePolitica) => politicas.find((p) => p.clave === clave)?.texto ?? "";
   const reglasSueltas = politicas.filter((p) => ["evaluacion", "celo_gestantes", "agresivos", "cancelaciones", "recoleccion"].includes(p.clave));
   return (
-    <section className="rounded-lg border border-n-200 bg-n-50 p-4" data-politicas-alta>
+    <section className="rounded-lg border border-border bg-card shadow-tarjeta p-4" data-politicas-alta>
       <h2 className="font-bold text-n-900">Lo que le vamos a pedir a tu perro</h2>
       <p className="mt-1 text-sm text-n-600">
         Para cuidarlo bien y cuidar a los demás perros, antes de su primera estancia necesitamos:

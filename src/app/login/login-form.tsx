@@ -45,7 +45,7 @@ export function LoginForm({
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="tablist" aria-label="¿Quién entra?" className="grid grid-cols-2 gap-1 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-1">
+      <div role="tablist" aria-label="¿Quién entra?" className="grid grid-cols-2 gap-1 rounded-lg border-[1.5px] border-border bg-muted p-1">
         {(["cliente", "equipo"] as const).map((q) => (
           <button
             key={q}
@@ -107,7 +107,7 @@ export function LoginForm({
       </button>
 
       {ayuda && !esEquipo && (
-        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4" data-recuperar="cliente">
+        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-border bg-muted p-4" data-recuperar="cliente">
           {urlWhatsApp ? (
             <>
               <p className="text-sm text-n-700">
@@ -133,7 +133,7 @@ export function LoginForm({
         </div>
       )}
       {ayuda && esEquipo && (
-        <div className="flex flex-col gap-2 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4 text-sm text-n-700" data-recuperar="equipo">
+        <div className="flex flex-col gap-2 rounded-lg border-[1.5px] border-border bg-muted p-4 text-sm text-n-700" data-recuperar="equipo">
           <p>
             Tu contraseña la restablece un admin de tu negocio desde <strong>Empleados</strong> → tu ficha → «Restablecer contraseña» (o, si tu negocio no usa Empleados, desde{" "}
             <strong>Inicio</strong>: en el panel de admin, la lista «Cuentas»): te da una contraseña temporal y, al entrar, escoges una nueva.

@@ -43,7 +43,7 @@ export function ComprobantesPerro({
   const cubiertos = requisitos.filter((r) => cubierto(r));
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-n-200 bg-white p-4" data-comprobantes-perro>
+    <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-border bg-white p-4" data-comprobantes-perro>
       <h3 className="font-bold text-n-900">{titulo}</h3>
       {cubiertos.length > 0 && (
         <p className="text-sm text-n-600">
@@ -55,7 +55,7 @@ export function ComprobantesPerro({
         const valor = valores[r.id] ?? { fecha: hoy, archivo: null };
         const esPdf = valor.archivo?.type === "application/pdf";
         return (
-          <fieldset key={r.id} className="flex flex-col gap-2 rounded-md border border-n-200 p-3" data-requisito={r.clave}>
+          <fieldset key={r.id} className="flex flex-col gap-2 rounded-md border border-border p-3" data-requisito={r.clave}>
             <legend className="px-1 text-sm font-semibold text-n-900">
               {r.etiqueta}{" "}
               <span className="font-normal text-coral-oscuro">· {ETIQUETA_ESTADO[r.estado].toLowerCase()}</span>
