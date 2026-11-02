@@ -192,6 +192,18 @@ body {
     background: var(--color-morado-suave);
     color: var(--color-morado-oscuro);
   }
+  /* El encabezado del panel es fijo arriba (h-16) y en celular la barra de secciones es fija abajo: lo que se trae a la
+     vista (foco con teclado, un ancla, scrollIntoView) queda fuera de los dos, no debajo. ux-respuesta-dev lo encontró:
+     el enlace «← Carnet» quedaba bajo el encabezado y el toque caía en la miga. */
+  html {
+    scroll-padding-top: 5rem;
+    scroll-padding-bottom: 1rem;
+  }
+  @media (max-width: 767px) {
+    html {
+      scroll-padding-bottom: 6.5rem;
+    }
+  }
 }
 
 /* Tabla del panel (DESIGN.md → «Tabla», base: `Table` de shadcn/ui y el bloque `datatable-*` de shadcn/studio): desde
