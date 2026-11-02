@@ -20,7 +20,27 @@ export type ItemNav = {
   // También la ve quien sea médico veterinario designado o tenga algún permiso del módulo,
   // sin importar su rol (`acceso_veterinaria()`).
   conAccesoVeterinaria?: boolean;
+  // Rediseño (docs/diseno/DESIGN.md → «Navegación»): el grupo del menú lateral, como los menús de referencia
+  // (Square, Jobber): el día a día primero, luego clientes, dinero, equipo, ajustes y ayuda. El nombre de la entrada
+  // no cambia (los textos de ayuda la nombran así: rutas-en-textos.mjs).
+  grupo?: GrupoNav;
 };
+
+export type GrupoNav = "dia" | "clientes" | "dinero" | "equipo" | "ajustes" | "ayuda";
+export const GRUPOS_NAV: { id: GrupoNav; titulo: string }[] = [
+  { id: "dia", titulo: "Día a día" },
+  { id: "clientes", titulo: "Clientes" },
+  { id: "dinero", titulo: "Dinero" },
+  { id: "equipo", titulo: "Equipo e inventario" },
+  { id: "ajustes", titulo: "Ajustes" },
+  { id: "ayuda", titulo: "Ayuda" },
+];
+
+/** Las entradas del menú agrupadas en el orden de GRUPOS_NAV (el inicio va aparte, arriba). */
+export function agruparNav(items: ItemNav[]): { id: GrupoNav; titulo: string; items: ItemNav[] }[] {
+  const resto = items.slice(1);
+  return GRUPOS_NAV.map((g) => ({ ...g, items: resto.filter((i) => (i.grupo ?? "ajustes") === g.id) })).filter((g) => g.items.length > 0);
+}
 
 // Agregar una sección nueva (Fase 4+) es agregar una entrada aquí, no
 // tocar el layout. `roles` respeta lo que cada rol puede ver según
@@ -32,49 +52,49 @@ export const SECCIONES_STAFF: ItemNav[] = [
   // uno con sus reservas, su check-in/check-out y su lista del día. La
   // ocupación que se muestra en ambos es la de toda la casa — ver
   // src/lib/modulos.ts.
-  { etiqueta: "Guardería", href: "/guarderia", roles: ["admin", "recepcion"], modulo: "guarderia" },
-  { etiqueta: "Hotel", href: "/hotel", roles: ["admin", "recepcion"], modulo: "hotel" },
+  { etiqueta: "Guardería", href: "/guarderia", grupo: "dia", roles: ["admin", "recepcion"], modulo: "guarderia" },
+  { etiqueta: "Hotel", href: "/hotel", grupo: "dia", roles: ["admin", "recepcion"], modulo: "hotel" },
   // Ocupación por día contra el cupo y la lista de próximas reservas de guardería y hotel.
-  { etiqueta: "Calendario", href: "/reservas/calendario", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
+  { etiqueta: "Calendario", href: "/reservas/calendario", grupo: "dia", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
   // Los que están adentro, con fotos, videos y el reporte del día.
-  { etiqueta: "Adentro ahora", href: "/adentro", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
-  { etiqueta: "Estética", href: "/estetica", roles: ["admin", "recepcion", "estetica"], modulo: "estetica" },
-  { etiqueta: "Servicios", href: "/servicios", roles: ["admin"], permisos: ["tarifas"] },
-  { etiqueta: "Clientes", href: "/clientes", roles: ["admin", "recepcion"] },
+  { etiqueta: "Adentro ahora", href: "/adentro", grupo: "dia", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
+  { etiqueta: "Estética", href: "/estetica", grupo: "dia", roles: ["admin", "recepcion", "estetica"], modulo: "estetica" },
+  { etiqueta: "Servicios", href: "/servicios", grupo: "ajustes", roles: ["admin"], permisos: ["tarifas"] },
+  { etiqueta: "Clientes", href: "/clientes", grupo: "clientes", roles: ["admin", "recepcion"] },
   // Respuestas de los clientes a los recordatorios automáticos por WhatsApp y su estado.
-  { etiqueta: "Recordatorios", href: "/recordatorios", roles: ["admin", "recepcion"] },
-  { etiqueta: "Vinculación", href: "/vinculacion", roles: ["admin", "recepcion"], modulo: "portal" },
-  { etiqueta: "Caja", href: "/caja", roles: ["admin", "recepcion"] },
-  { etiqueta: "Contratos", href: "/contratos", roles: ["admin", "recepcion"], modulo: "contratos", ademas: ["guarderia", "hotel"] },
-  { etiqueta: "Inventario", href: "/inventario", roles: ["admin", "recepcion", "estetica"], modulo: "inventario" },
-  { etiqueta: "Reportes", href: "/reportes", roles: ["admin"], permisos: ["reportes_financieros"], modulo: "reportes" },
-  { etiqueta: "Empleados", href: "/empleados", roles: ["admin", "recepcion"], modulo: "empleados" },
-  { etiqueta: "Gastos", href: "/gastos", roles: ["admin"], permisos: ["gastos"], modulo: "gastos" },
-  { etiqueta: "Mi asistencia", href: "/mi-trabajo", roles: ["recepcion", "estetica"], modulo: "empleados" },
+  { etiqueta: "Recordatorios", href: "/recordatorios", grupo: "clientes", roles: ["admin", "recepcion"] },
+  { etiqueta: "Vinculación", href: "/vinculacion", grupo: "clientes", roles: ["admin", "recepcion"], modulo: "portal" },
+  { etiqueta: "Caja", href: "/caja", grupo: "dinero", roles: ["admin", "recepcion"] },
+  { etiqueta: "Contratos", href: "/contratos", grupo: "clientes", roles: ["admin", "recepcion"], modulo: "contratos", ademas: ["guarderia", "hotel"] },
+  { etiqueta: "Inventario", href: "/inventario", grupo: "equipo", roles: ["admin", "recepcion", "estetica"], modulo: "inventario" },
+  { etiqueta: "Reportes", href: "/reportes", grupo: "dinero", roles: ["admin"], permisos: ["reportes_financieros"], modulo: "reportes" },
+  { etiqueta: "Empleados", href: "/empleados", grupo: "equipo", roles: ["admin", "recepcion"], modulo: "empleados" },
+  { etiqueta: "Gastos", href: "/gastos", grupo: "dinero", roles: ["admin"], permisos: ["gastos"], modulo: "gastos" },
+  { etiqueta: "Mi asistencia", href: "/mi-trabajo", grupo: "equipo", roles: ["recepcion", "estetica"], modulo: "empleados" },
   // Admin aterriza en /admin (su "Inicio"); esta entrada es para recepción
   // con permisos de personal o de configuración.
-  { etiqueta: "Administración", href: "/admin", roles: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
-  { etiqueta: "Permisos", href: "/admin/permisos", roles: ["admin"] },
+  { etiqueta: "Administración", href: "/admin", grupo: "ajustes", roles: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
+  { etiqueta: "Permisos", href: "/admin/permisos", grupo: "ajustes", roles: ["admin"] },
   // QA R22 (N87): la configuración vive en /admin#configuracion; /admin/configuracion lleva ahí.
-  { etiqueta: "Configuración", href: "/admin/configuracion", roles: ["admin"], permisos: ["configuracion_negocio"] },
-  { etiqueta: "Perfil y página web", href: "/admin/perfil", roles: ["admin"], permisos: ["configuracion_negocio"] },
-  { etiqueta: "Políticas y reglas", href: "/admin/politicas", roles: ["admin"], permisos: ["configuracion_negocio"] },
-  { etiqueta: "Recordatorios por WhatsApp", href: "/admin/recordatorios", roles: ["admin"], permisos: ["configuracion_negocio"] },
-  { etiqueta: "Reporte y fotos", href: "/admin/reporte-guarderia", roles: ["admin"], modulo: ["guarderia", "hotel"] },
+  { etiqueta: "Configuración", href: "/admin/configuracion", grupo: "ajustes", roles: ["admin"], permisos: ["configuracion_negocio"] },
+  { etiqueta: "Perfil y página web", href: "/admin/perfil", grupo: "ajustes", roles: ["admin"], permisos: ["configuracion_negocio"] },
+  { etiqueta: "Políticas y reglas", href: "/admin/politicas", grupo: "ajustes", roles: ["admin"], permisos: ["configuracion_negocio"] },
+  { etiqueta: "Recordatorios por WhatsApp", href: "/admin/recordatorios", grupo: "ajustes", roles: ["admin"], permisos: ["configuracion_negocio"] },
+  { etiqueta: "Reporte y fotos", href: "/admin/reporte-guarderia", grupo: "ajustes", roles: ["admin"], modulo: ["guarderia", "hotel"] },
   // N132: la política de salida anticipada (Configuración → Hotel).
-  { etiqueta: "Configuración de hotel", href: "/admin/hotel", roles: ["admin"], permisos: ["configuracion_negocio"], modulo: ["guarderia", "hotel"] },
-  { etiqueta: "Tarifa de guardería", href: "/admin/tarifa-guarderia", roles: ["admin"], permisos: ["tarifas"], modulo: "estetica", ademas: ["guarderia"] },
-  { etiqueta: "Módulos y plan", href: "/admin/modulos", roles: ["admin"], permisos: ["administrar_modulos"] },
-  { etiqueta: "Cobro con terminal", href: "/admin/pagos", roles: ["admin"] },
+  { etiqueta: "Configuración de hotel", href: "/admin/hotel", grupo: "ajustes", roles: ["admin"], permisos: ["configuracion_negocio"], modulo: ["guarderia", "hotel"] },
+  { etiqueta: "Tarifa de guardería", href: "/admin/tarifa-guarderia", grupo: "ajustes", roles: ["admin"], permisos: ["tarifas"], modulo: "estetica", ademas: ["guarderia"] },
+  { etiqueta: "Módulos y plan", href: "/admin/modulos", grupo: "ajustes", roles: ["admin"], permisos: ["administrar_modulos"] },
+  { etiqueta: "Cobro con terminal", href: "/admin/pagos", grupo: "ajustes", roles: ["admin"] },
   // Veterinaria (Fase 0): su inicio y, para quien lo administra, los módulos.
-  { etiqueta: "Veterinaria", href: "/veterinaria", roles: ["admin", "recepcion"], modulo: "veterinaria", conAccesoVeterinaria: true },
-  { etiqueta: "Facturación", href: "/admin/facturacion", roles: ["admin"], permisos: ["editar_datos_fiscales", "facturar"] },
-  { etiqueta: "Facturas", href: "/caja/facturas", roles: ["admin"], permisos: ["facturar", "cancelar_facturas"] },
-  { etiqueta: "Importar", href: "/admin/importar", roles: ["admin"], permisos: ["importar_datos"] },
+  { etiqueta: "Veterinaria", href: "/veterinaria", grupo: "dia", roles: ["admin", "recepcion"], modulo: "veterinaria", conAccesoVeterinaria: true },
+  { etiqueta: "Facturación", href: "/admin/facturacion", grupo: "ajustes", roles: ["admin"], permisos: ["editar_datos_fiscales", "facturar"] },
+  { etiqueta: "Facturas", href: "/caja/facturas", grupo: "dinero", roles: ["admin"], permisos: ["facturar", "cancelar_facturas"] },
+  { etiqueta: "Importar", href: "/admin/importar", grupo: "ajustes", roles: ["admin"], permisos: ["importar_datos"] },
   // Artículos, asistente y tickets de soporte: sin permiso especial.
-  { etiqueta: "Ayuda", href: "/ayuda", roles: ["admin", "recepcion"] },
+  { etiqueta: "Ayuda", href: "/ayuda", grupo: "ayuda", roles: ["admin", "recepcion"] },
   // Servicios extra cobrables de Hotel y guardería (carril B).
-  { etiqueta: "Servicios extra", href: "/extras", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
+  { etiqueta: "Servicios extra", href: "/extras", grupo: "dia", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
 ];
 
 // Vacío por ahora — Fase 2/6/9 agregan aquí Mis perros, Mis reservas,

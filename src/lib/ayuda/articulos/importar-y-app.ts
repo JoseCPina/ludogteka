@@ -86,12 +86,13 @@ Cada persona tiene sus propios borradores: nadie más ve lo que tú dejaste a me
 
 ## Instalarla
 
-- **Android o computadora (Chrome):** arriba de la pantalla sale un aviso con **Instalar**; apriétalo. Si lo cerraste con la **×**, ya no vuelve a salir, pero siempre está **Instalar la app** al final del menú (en el celular, en el menú de las tres rayas). Si el navegador no abre su aviso, abre su menú y escoge «Instalar aplicación».
+- **Android o computadora (Chrome):** arriba de la pantalla sale un aviso con **Instalar**; apriétalo. Si lo cerraste con la **×**, ya no vuelve a salir, pero siempre está **Instalar la app** al final del menú (en el celular, en **Más**, en la barra de abajo). Si el navegador no abre su aviso, abre su menú y escoge «Instalar aplicación».
 - **iPhone (Safari):** aprieta el botón de compartir y escoge **Agregar a pantalla de inicio**.
 
 ## Cómo se ve en el celular
 
-- El menú se abre con las tres rayas de arriba a la izquierda y se cierra con su botón **Cerrar** (o tocando fuera de él).
+- Abajo hay una barra fija con **Inicio**, tus pantallas de todos los días y **Más**. **Más** abre el menú completo, ordenado por grupos (Día a día, Clientes, Dinero, Equipo e inventario, Ajustes y Ayuda); se cierra con su botón **Cerrar** (o tocando fuera de él). Ahí, al final, están tu nombre y **Salir**.
+- En la computadora el menú está siempre a la izquierda con los mismos grupos; tu nombre y **Salir** van al final del menú.
 - Las listas en forma de tabla (clientes, Caja, inventario, Reportes, empleados, servicios, turnos, recordatorios) se ven como **tarjetas**: una por renglón, con lo principal arriba y cada dato debajo con su nombre. Nada se esconde a los lados: desde una tableta se ven como tabla y, si una no cabe, abajo dice **Desliza la tabla para ver más columnas**.
 
 ## Qué pasa sin conexión

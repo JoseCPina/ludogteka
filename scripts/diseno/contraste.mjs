@@ -25,7 +25,7 @@ const c = (n) => {
 // [texto, fondo, mínimo, dónde se usa]
 const PARES = [
   // Texto de lectura sobre las superficies
-  ...["n-0", "n-50", "n-100"].flatMap((f) => [
+  ...["n-0", "n-50", "n-100", "lienzo", "lienzo-suave"].flatMap((f) => [
     ["n-900", f, 4.5, "texto principal"],
     ["n-700", f, 4.5, "labels, texto enfatizado"],
     ["n-600", f, 4.5, "texto secundario"],
@@ -64,6 +64,10 @@ const PARES = [
   ["blanco", "morado", 3, "símbolo blanco del ícono de alerta de información"],
   ["morado", "n-0", 3, "anillo de foco"],
   ["morado", "n-50", 3, "anillo de foco sobre crema"],
+  // Rediseño (DESIGN.md): el lienzo del panel y su fondo «muted»
+  ["borde", "lienzo", 3, "borde de input/select (sobre el lienzo del panel)"],
+  ["morado", "lienzo", 3, "anillo de foco sobre el lienzo"],
+  ["morado-oscuro", "morado-suave", 4.5, "elemento activo del menú / botón secundario de shadcn"],
   // Los tonos base de la marca: NO llevan texto encima (se documenta que fallan)
 ];
 const PROHIBIDOS = [

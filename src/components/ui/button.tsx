@@ -1,26 +1,31 @@
 "use client";
 
 import { ButtonHTMLAttributes, forwardRef, useEffect, useState, useSyncExternalStore } from "react";
+import { buttonVariants } from "@/components/shadcn/button";
+import { cn } from "@/lib/utils";
 import { Spinner } from "./spinner";
 
 /**
- * UX (1 de noviembre de 2026): los TRES botones del panel. Lo que ejecuta una acción es botón; lo que navega es
- * `<Enlace>` (src/components/ui/enlace.tsx).
- *   · `primario`: relleno morado, la acción principal de la pantalla o del formulario.
- *   · `secundario`: blanco con borde, todo lo demás (cancelar, abrir, filtrar, copiar).
- *   · `peligro` (destructivo): relleno coral OSCURO (blanco sobre coral claro no pasa AA: 2.37:1).
- * Todos llevan cursor de mano, hover, foco visible y 48 px de alto (44 px con `tamano="compacto"`).
- * Ver scripts/diseno/contraste.mjs.
+ * Los TRES botones de la app, armados ENCIMA del `Button` de shadcn/ui (`buttonVariants`, src/components/shadcn/button.tsx;
+ * docs/diseno/DESIGN.md → «Botón»). Lo que ejecuta una acción es botón; lo que navega es `<Enlace>`.
+ *   · `primario`: relleno morado (`default` de shadcn), la acción principal de la pantalla o del formulario.
+ *   · `secundario`: superficie con borde de control (`outline`), todo lo demás (cancelar, abrir, filtrar, copiar).
+ *   · `peligro`: relleno coral OSCURO (`destructive`; blanco sobre coral claro no pasa AA: 2.37:1).
+ * Encima de shadcn se conserva lo que el sistema exige: 44 px mínimos (área táctil), foco visible de 3 px, deshabilitado
+ * con colores que pasan AA (no la opacidad de shadcn), `aria-busy` + giro al tocar, «Sigue trabajando…» a los 3 s,
+ * bloqueo de escritura (`data-escritura`) y nada de envío antes de hidratar. Ver scripts/diseno/contraste.mjs.
  */
 export type VarianteBoton = "primario" | "secundario" | "peligro";
+const VARIANTE_SHADCN = { primario: "default", secundario: "outline", peligro: "destructive" } as const;
 const clasesPorVariante: Record<VarianteBoton, string> = {
-  primario: "bg-morado text-white shadow-sm hover:bg-morado-oscuro active:bg-morado-oscuro",
-  secundario: "bg-white text-n-900 border-[1.5px] border-borde hover:border-morado hover:bg-morado-suave hover:text-morado-oscuro",
-  peligro: "bg-coral-oscuro text-white shadow-sm hover:bg-coral-hondo active:bg-coral-hondo",
+  primario: "shadow-xs hover:bg-morado-oscuro active:bg-morado-oscuro",
+  secundario: "border-[1.5px] border-input bg-card text-foreground shadow-none hover:border-primary hover:bg-accent hover:text-accent-foreground",
+  peligro: "text-destructive-foreground shadow-xs hover:bg-coral-hondo active:bg-coral-hondo",
 };
 const clasesPorTamano = {
-  normal: "min-h-12 min-w-12 px-5 text-base",
-  compacto: "min-h-11 min-w-11 px-4 text-sm",
+  // Panel (herramienta): 44 px con letra de 15 px; en el lenguaje cálido el radio sale más grande solo.
+  normal: "h-auto min-h-11 min-w-11 px-4 text-[0.9375rem]",
+  compacto: "h-auto min-h-11 min-w-11 px-3 text-sm",
 };
 
 /** Pasados 3 s esperando, el botón lo dice: «Sigue trabajando…» en vez de parecer colgado. */
@@ -78,7 +83,13 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
         data-escritura={cargando !== undefined && !sinBloqueo ? "" : undefined}
         data-sin-bloqueo={sinBloqueo ? "" : undefined}
         aria-busy={cargando || undefined}
-        className={`inline-flex cursor-pointer select-none items-center justify-center gap-2 rounded-md font-semibold transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado focus-visible:ring-offset-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 disabled:cursor-not-allowed disabled:border-n-200 disabled:bg-n-100 disabled:text-n-600 disabled:shadow-none disabled:hover:bg-n-100 aria-busy:cursor-progress aria-busy:disabled:text-n-700 ${clasesPorTamano[tamano]} ${clasesPorVariante[variante]} ${className}`}
+        className={cn(
+          buttonVariants({ variant: VARIANTE_SHADCN[variante] }),
+          "min-w-0 max-w-full shrink cursor-pointer select-none rounded-md font-semibold whitespace-normal text-center transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:ring-offset-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 disabled:pointer-events-auto disabled:cursor-not-allowed disabled:border-n-200 disabled:bg-n-100 disabled:text-n-600 disabled:opacity-100 disabled:shadow-none disabled:hover:bg-n-100 aria-busy:cursor-progress aria-busy:disabled:text-n-700 [&_svg:not([class*='size-'])]:size-[1.1em]",
+          clasesPorTamano[tamano],
+          clasesPorVariante[variante],
+          className
+        )}
         {...props}
       >
         {cargando && <Spinner />}

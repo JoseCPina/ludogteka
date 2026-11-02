@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PawPrint } from "@phosphor-icons/react/dist/ssr";
+import { PawPrint } from "lucide-react";
 
 /**
  * Una foto de la página de un negocio. Si no hay foto, o el archivo ya no existe,
@@ -35,7 +35,7 @@ export function FotoNegocio({ url, color, className = "", prioridad = false }: {
       className={`flex items-center justify-center overflow-hidden ${className}`}
       style={{ background: `linear-gradient(135deg, ${tinte(0.12)}, ${tinte(0.25)})` }}
     >
-      <PawPrint size={72} weight="duotone" style={{ color }} />
+      <PawPrint size={72} strokeWidth={1.5} style={{ color }} aria-hidden="true" />
     </div>
   );
 }

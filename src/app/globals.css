@@ -1,4 +1,111 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+/* Un solo tema (claro). La variante existe porque los componentes de shadcn la nombran; ninguna pantalla la prende. */
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Sistema de diseño (docs/diseno/DESIGN.md). Tres capas:
+ *   1. Marca (abajo, @theme): morado, menta, coral, ámbar, crema, grafito y la rampa n-0…n-900. No cambian.
+ *   2. Semánticos de shadcn/ui (:root → @theme inline): background, card, primary, muted, border, ring, sidebar…
+ *      Los componentes de src/components/shadcn los usan; los de src/components/ui se arman encima de ellos.
+ *   3. Lenguaje: el panel del negocio es «herramienta» (denso, lienzo neutro, radios chicos) y la app de dueños,
+ *      el portal y lo público son «cálido» (crema, radios grandes, letra más grande): [data-lenguaje="calido"].
+ * Cada par de texto sobre fondo está verificado: node scripts/diseno/contraste.mjs.
+ */
+:root {
+  /* Panel del negocio: lienzo neutro cálido, superficies blancas. */
+  --background: var(--color-lienzo);
+  --foreground: #2b2a33;
+  --card: #ffffff;
+  --card-foreground: #2b2a33;
+  --popover: #ffffff;
+  --popover-foreground: #2b2a33;
+  --primary: #4b3f72;
+  --primary-foreground: #ffffff;
+  --secondary: #ece8f5;
+  --secondary-foreground: #3a3059;
+  --muted: var(--color-lienzo-suave);
+  --muted-foreground: #5e5968;
+  --accent: #ece8f5;
+  --accent-foreground: #3a3059;
+  --destructive: #b23c31;
+  --destructive-foreground: #ffffff;
+  --success: #1f6b57;
+  --success-foreground: #ffffff;
+  --warning: #8a5400;
+  --border: var(--color-linea);
+  --input: #948d98;
+  --ring: #4b3f72;
+  --radius: 0.625rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #46424f;
+  --sidebar-primary: #4b3f72;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ece8f5;
+  --sidebar-accent-foreground: #3a3059;
+  --sidebar-border: var(--color-linea);
+  --sidebar-ring: #4b3f72;
+  --chart-1: #4b3f72;
+  --chart-2: #1f6b57;
+  --chart-3: #f28c82;
+  --chart-4: #f5b85c;
+  --chart-5: #a7d8c8;
+  --sombra-tarjeta: 0 1px 2px rgb(43 42 51 / 0.06), 0 0 0 1px rgb(43 42 51 / 0.02);
+  --sombra-flotante: 0 12px 32px -8px rgb(43 42 51 / 0.18), 0 2px 6px rgb(43 42 51 / 0.06);
+}
+
+/* App de dueños, portal y sitio público: crema, radios grandes, más aire. */
+[data-lenguaje="calido"] {
+  --background: #fff8ee;
+  --muted: #f6efe5;
+  --border: #ebe3d8;
+  --radius: 1rem;
+  --sombra-tarjeta: 0 1px 3px rgb(75 63 114 / 0.08), 0 8px 24px -12px rgb(75 63 114 / 0.16);
+}
+
+@theme inline {
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --shadow-tarjeta: var(--sombra-tarjeta);
+  --shadow-flotante: var(--sombra-flotante);
+}
 
 /*
  * Tokens de marca — ver docs/DISENO.md para la justificación de cada valor
@@ -56,20 +163,67 @@
   --color-n-800: #35323e;
   --color-n-900: #2b2a33;
 
-  --color-background: var(--color-n-50);
-  --color-foreground: var(--color-n-900);
+  /* Rediseño (1 nov 2026, docs/diseno/DESIGN.md): neutros del panel. Lienzo = fondo de página del panel (más neutro que
+     la crema, como las herramientas de trabajo de referencia); lienzo-suave = fondo de fila, tabla y bloque «muted»;
+     línea = borde de tarjeta y separador (decorativo: los controles siguen con --color-borde, 3:1). */
+  --color-lienzo: #f9f8f6;
+  --color-lienzo-suave: #f3f1ed;
+  --color-linea: #e4dfd8;
+
+  /* fondo y texto: del lenguaje (:root = panel, [data-lenguaje="calido"] = dueños y público) */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
 
   --font-sans: var(--font-outfit);
-
-  /* radios: 10 / 12 / 18px, como el UI kit (controles 12, tarjetas 18) */
-  --radius-sm: 10px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
+  /* Los radios (sm/md/lg/xl) salen de --radius, que pone el lenguaje (@theme inline, arriba). */
 }
 
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* El texto que se selecciona y el borde por omisión siguen la marca. */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  ::selection {
+    background: var(--color-morado-suave);
+    color: var(--color-morado-oscuro);
+  }
+  /* El encabezado del panel es fijo arriba (h-16) y en celular la barra de secciones es fija abajo: lo que se trae a la
+     vista (foco con teclado, un ancla, scrollIntoView) queda fuera de los dos, no debajo. ux-respuesta-dev lo encontró:
+     el enlace «← Carnet» quedaba bajo el encabezado y el toque caía en la miga. */
+  html {
+    scroll-padding-top: 5rem;
+    scroll-padding-bottom: 1rem;
+  }
+  @media (max-width: 767px) {
+    html {
+      scroll-padding-bottom: 6.5rem;
+    }
+  }
+}
+
+/* Tabla del panel (DESIGN.md → «Tabla», base: `Table` de shadcn/ui y el bloque `datatable-*` de shadcn/studio): desde
+   tableta, encabezado en letra chica y gris, renglones separados por una línea y la fila bajo el puntero en el fondo
+   «muted». Va en @layer base para que las clases de cada pantalla manden sobre esto. */
+@layer base {
+  @media screen and (min-width: 640px) {
+    table.tabla-tarjetas thead th {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      color: var(--muted-foreground);
+    }
+    table.tabla-tarjetas tbody tr {
+      transition: background-color 120ms;
+    }
+    table.tabla-tarjetas tbody tr:hover {
+      background-color: var(--muted);
+    }
+  }
 }
 
 /* Tablas que en celular (menos de 640 px) se vuelven tarjetas (QA N154: TODAS, con <TablaResponsiva>,

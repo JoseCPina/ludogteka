@@ -1,6 +1,6 @@
 "use client";
 
-import { WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
+import { IconoWhatsApp } from "@/components/iconos/whatsapp";
 import { CampoCopiable } from "./campo-copiable";
 
 /**
@@ -43,7 +43,7 @@ export function AbrirWhatsApp({
         data-abrir-whatsapp
         className={`inline-flex min-h-12 items-center justify-center gap-2 self-start rounded-md px-5 text-base font-semibold focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado focus-visible:ring-offset-2 ${clases}`}
       >
-        <WhatsappLogo size={18} weight="fill" aria-hidden />
+        <IconoWhatsApp size={18} />
         {texto}
       </a>
     </div>

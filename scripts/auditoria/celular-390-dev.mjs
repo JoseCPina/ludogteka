@@ -110,11 +110,12 @@ try {
       p = await ctx.newPage();
       p.on("dialog", (d) => d.dismiss().catch(() => {}));
     };
-    // El menú lateral: se abre y se cierra con su botón «Cerrar».
+    // El menú lateral: se abre y se cierra con su botón «Cerrar». Desde el rediseño (docs/diseno/DESIGN.md) el botón que lo
+// abre es «Más» de la barra inferior, ya no el del encabezado: se busca por aria-controls, esté donde esté.
     await pestana();
     await p.goto(BASE + INICIO[rol], { waitUntil: "load" });
     await p.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {});
-    await p.locator("header button[aria-controls=menu-lateral-staff]").click();
+    await p.locator("button[aria-controls=menu-lateral-staff]").click();
     const cerrar = p.locator("[data-cerrar-menu]");
     if (!(await cerrar.isVisible().catch(() => false))) mal(`${rol}: el menú lateral no trae un botón «Cerrar» visible`);
     else {

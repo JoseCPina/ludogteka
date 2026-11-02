@@ -137,7 +137,7 @@ try {
       const inicio = rol === "admin" ? "/admin" : "/recepcion";
       // El menú lateral, con su botón «Cerrar».
       const p0 = await abrir(ctx, n.base + inicio);
-      await p0.locator("header button[aria-controls=menu-lateral-staff]").click().catch(() => {});
+      await p0.locator("button[aria-controls=menu-lateral-staff]").click().catch(() => {});
       await p0.waitForTimeout(300);
       const cerrar = p0.locator("[data-cerrar-menu]");
       if (await cerrar.isVisible().catch(() => false)) {
