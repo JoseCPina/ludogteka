@@ -270,7 +270,7 @@ export function CheckinForm({
         <div className="flex items-center gap-3">
           {fotoUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={fotoUrl} alt="" className="h-20 w-20 rounded-md border border-n-200 object-cover" />
+            <img src={fotoUrl} alt="" className="h-20 w-20 rounded-md border border-border object-cover" />
           )}
           <input
             ref={inputFotoRef}

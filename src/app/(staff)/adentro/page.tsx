@@ -102,7 +102,7 @@ export default async function AdentroPage() {
 
       {grupos.map((g) => (
         <section key={g.clave} aria-labelledby={`grupo-${g.clave}`} className="flex flex-col gap-3">
-          <h2 id={`grupo-${g.clave}`} className="text-sm font-bold uppercase tracking-wide text-n-600">
+          <h2 id={`grupo-${g.clave}`} className="text-[0.9375rem] font-semibold text-foreground">
             {g.titulo} <span className="font-semibold text-n-500">({g.lista.length})</span>
           </h2>
           <ul className="flex flex-col gap-3">

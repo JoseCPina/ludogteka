@@ -220,7 +220,7 @@ export function SerieDetalle({
         </Alert>
       )}
 
-      <div className="rounded-lg border border-n-200 bg-white p-4">
+      <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <p className="text-sm text-n-600">Patrón actual</p>
         <p className="font-bold text-n-900">
           {servicios.find((s) => s.id === servicioId)?.nombre ?? "—"} · {formatearDiasSemana(diasSemana)}
@@ -232,8 +232,8 @@ export function SerieDetalle({
       </div>
 
       {pausas.length > 0 && (
-        <div className="rounded-lg border border-n-200 bg-n-50 p-4">
-          <p className="mb-2 text-sm font-bold uppercase tracking-wide text-n-600">Pausas registradas</p>
+        <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
+          <p className="mb-2 text-[0.9375rem] font-semibold text-foreground">Pausas registradas</p>
           <ul className="flex flex-col gap-2">
             {pausas.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-3 text-sm">
@@ -268,14 +268,14 @@ export function SerieDetalle({
       )}
 
       {resultadosRenovar && (
-        <div className="rounded-lg border border-n-200 bg-white p-4">
+        <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <p className="mb-2 font-semibold text-n-900">Resultado de renovar horizonte</p>
           <ResumenGeneracion resultados={resultadosRenovar} />
         </div>
       )}
 
       {resultadosEditar && (
-        <div className="rounded-lg border border-n-200 bg-white p-4">
+        <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <p className="mb-2 font-semibold text-n-900">
             Patrón actualizado — se cancelaron {resultadosEditar.canceladas} estancia
             {resultadosEditar.canceladas === 1 ? "" : "s"} futura{resultadosEditar.canceladas === 1 ? "" : "s"} sin
@@ -304,7 +304,7 @@ export function SerieDetalle({
       )}
 
       {editando && (
-        <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-n-50 p-4">
+        <div className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <p className="font-semibold text-n-900">Editar patrón</p>
           <p className="text-sm text-n-600">
             El perro y la fecha de inicio no se pueden cambiar — para eso, cancela esta serie y crea una nueva.
@@ -367,7 +367,7 @@ export function SerieDetalle({
       )}
 
       {pausando && (
-        <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-n-50 p-4">
+        <div className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <p className="font-semibold text-n-900">Pausar por vacaciones</p>
           <p className="text-sm text-n-600">
             Libera el cupo de ese rango y la serie sigue normal después — no hace falta cancelar día por día.
@@ -390,7 +390,7 @@ export function SerieDetalle({
       )}
 
       <div className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Próximas fechas</h2>
+        <h2 className="text-[0.9375rem] font-semibold text-foreground">Próximas fechas</h2>
         {proximas.length === 0 ? (
           <p className="text-sm text-n-500">No hay fechas próximas generadas.</p>
         ) : (
@@ -398,7 +398,7 @@ export function SerieDetalle({
             {proximas.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2"
+                className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-3 py-2"
               >
                 <span className="font-semibold text-n-900">{formatearFechaCalendario(e.fechaEntrada)}</span>
                 <div className="flex items-center gap-3">
@@ -423,13 +423,13 @@ export function SerieDetalle({
       </div>
 
       {pasadas.length > 0 && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Historial</h2>
+        <div className="flex flex-col gap-3 border-t border-border pt-4">
+          <h2 className="text-[0.9375rem] font-semibold text-foreground">Historial</h2>
           <ul className="flex flex-col gap-2">
             {pasadas.map((e) => (
               <li
                 key={e.id}
-                className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-n-50 px-3 py-2 text-sm"
+                className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted px-3 py-2 text-sm"
               >
                 <span className="text-n-700">{formatearFechaCalendario(e.fechaEntrada)}</span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ESTILO_ESTADO[e.estado] ?? "bg-n-100"}`}>

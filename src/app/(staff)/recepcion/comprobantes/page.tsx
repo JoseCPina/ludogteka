@@ -115,8 +115,8 @@ export default async function ComprobantesPage() {
 
       {revisados.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Últimos revisados</h2>
-          <ul className="divide-y divide-n-200 rounded-lg border border-n-200 bg-white">
+          <h2 className="text-[0.9375rem] font-semibold text-foreground">Últimos revisados</h2>
+          <ul className="divide-y divide-border rounded-lg border border-border bg-card shadow-tarjeta">
             {revisados.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-sm">
                 <span className="text-n-900">

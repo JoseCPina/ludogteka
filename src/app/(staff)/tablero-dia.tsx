@@ -24,6 +24,11 @@ import {
 import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
 import { Enlace } from "@/components/ui/enlace";
 import { arrancarTodas } from "@/lib/supabase/arrancar";
+import { Tarjeta, TarjetaCuerpo, TarjetaEncabezado, Cifra as CifraTablero } from "@/components/ui/tarjeta";
+import { Chip, type TonoChip } from "@/components/ui/chip";
+import { cn } from "@/lib/utils";
+import { CalendarPlus, CircleAlert, Dog, LogIn, LogOut, Moon, Scissors, Sun, CircleCheck, ChevronRight } from "lucide-react";
+import { MovimientosDia } from "@/components/estancias/movimientos-dia";
 
 /**
  * El tablero del día: lo que recepción necesita ver al abrir la app.
@@ -99,50 +104,21 @@ const ETIQUETA_ESTADO_CITA: Record<string, string> = {
 };
 const DIAS_ADELANTE = 7;
 
-function ListaPerros({
-  filas,
-  vacio,
-  destino,
-}: {
-  filas: FilaPerro[];
-  vacio: string;
-  destino: (fila: FilaPerro) => string;
-}) {
-  if (filas.length === 0) return <p className="text-sm text-n-500">{vacio}</p>;
-  return (
-    <ul className="flex flex-col gap-2">
-      {filas.map((f) => (
-        <li key={f.estancia_id}>
-          <Enlace href={destino(f)} className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
-            <span className="font-semibold text-n-900">{f.perro_nombre}</span>
-            <span className="text-xs text-n-500">
-              {ETIQUETA_CATEGORIA[f.categoria] ?? f.categoria} · {f.servicio_nombre}
-            </span>
-          </Enlace>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function Cifra({ etiqueta, valor, sub, href }: { etiqueta: string; valor: string; sub?: string; href?: string }) {
+// Cifra del tablero (bloque statistics-component de shadcn/studio; Mobbin: Jobber «Workflow», Luma «At a Glance»):
+// ícono en su cuadro de color, etiqueta, número grande. Con `href`, la tarjeta entera lleva a su pantalla.
+function Cifra({ etiqueta, valor, sub, href, icono, tono }: { etiqueta: string; valor: string; sub?: string; href?: string; icono?: React.ReactNode; tono?: "neutro" | "morado" | "menta" | "coral" | "ambar" }) {
+  const contenido = <CifraTablero etiqueta={etiqueta} valor={valor} sub={href ? <span className="font-semibold text-primary">{sub ?? "Fotos, videos y reporte →"}</span> : sub} icono={icono} tono={tono} />;
   if (href) {
     return (
-      <Enlace href={href} className="rounded-lg border border-n-200 bg-white p-4 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
-        <p className="text-xs font-bold uppercase tracking-wide text-n-500">{etiqueta}</p>
-        <p className="mt-1 text-2xl font-bold text-n-900">{valor}</p>
-        <p className="text-xs font-semibold text-morado">{sub ?? "Fotos, videos y reporte →"}</p>
+      <Enlace href={href} className="rounded-lg border border-border bg-card p-4 shadow-tarjeta transition-colors hover:border-primary/40 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring" forma="bloque">
+        {contenido}
       </Enlace>
     );
   }
-  return (
-    <div className="rounded-lg border border-n-200 bg-white p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-n-500">{etiqueta}</p>
-      <p className="mt-1 text-2xl font-bold text-n-900">{valor}</p>
-      {sub && <p className="text-xs text-n-500">{sub}</p>}
-    </div>
-  );
+  return <div className="rounded-lg border border-border bg-card p-4 shadow-tarjeta">{contenido}</div>;
 }
+
+const TONO_CITA: Record<string, TonoChip> = { reservada: "info", confirmada: "info", en_curso: "proceso", finalizada: "exito", cancelada: "neutro", no_llego: "pendiente" };
 
 export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const negocio = await negocioActual();
@@ -1001,52 +977,68 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const citasEnCurso = citas.filter((c) => c.estado === "en_curso").length;
   const citasTerminadas = citas.filter((c) => c.estado === "finalizada").length;
   const cifras = !conEstancias ? (
-    <div className="grid grid-cols-3 gap-3">
-      <Cifra etiqueta="Citas hoy" valor={String(citas.length)} />
-      <Cifra etiqueta="En curso" valor={String(citasEnCurso)} />
-      <Cifra etiqueta="Terminadas" valor={String(citasTerminadas)} />
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <Cifra etiqueta="Citas hoy" valor={String(citas.length)} icono={<Scissors />} tono="morado" />
+      <Cifra etiqueta="En curso" valor={String(citasEnCurso)} icono={<Scissors />} tono="ambar" />
+      <Cifra etiqueta="Terminadas" valor={String(citasTerminadas)} icono={<CircleCheck />} tono="menta" />
     </div>
   ) : (
-    <div className={`grid grid-cols-2 gap-3 ${conHotel ? "md:grid-cols-5" : "md:grid-cols-4"}`}>
-      <Cifra etiqueta="Llegan hoy" valor={String(llegan.length)} />
-      <Cifra etiqueta="Se van hoy" valor={String(seVan.length)} />
-      <Cifra etiqueta="Adentro ahora" valor={String(dentro.length)} href="/adentro" />
+    <div className={`grid grid-cols-2 gap-3 ${conHotel ? "lg:grid-cols-5" : "lg:grid-cols-4"}`}>
+      <Cifra etiqueta="Llegan hoy" valor={String(llegan.length)} icono={<LogIn />} tono="morado" />
+      <Cifra etiqueta="Se van hoy" valor={String(seVan.length)} icono={<LogOut />} tono="ambar" />
+      <Cifra etiqueta="Adentro ahora" valor={String(dentro.length)} href="/adentro" icono={<Dog />} tono="menta" />
       <Cifra
         etiqueta="Ocupación de día"
         valor={ocupacionDiurna}
         sub={hoyCal?.cupo_estado === "sin_configurar" ? "Cupo sin configurar" : "toda la casa"}
+        icono={<Sun />}
       />
-      {conHotel && <Cifra etiqueta="Ocupación de noche" valor={ocupacionNocturna} sub="perros de hotel" />}
+      {conHotel && <Cifra etiqueta="Ocupación de noche" valor={ocupacionNocturna} sub="perros de hotel" icono={<Moon />} />}
     </div>
   );
 
   // QA N127: lo que lleva a una pantalla que esta persona no abre no se lista (no podría resolverlo desde ahí).
   const acceso = accesoDeSesion(sesion);
   const atencionVisible = atencion.filter((a) => puedeAbrir(acceso, a.href));
+  // Mobbin: Remote «Things to do (4)»: un renglón por pendiente con su ícono en cuadro de color, qué es en negritas,
+  // qué falta abajo y desde cuándo. Lo más viejo, en coral.
   const listaAtencion = (
-    <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-      <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Necesita atención</h2>
-      {atencionVisible.length === 0 ? (
-        <p className="text-sm text-menta-oscuro">Nada pendiente por ahora.</p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {atencionVisible.map((a) => {
-            const viejo = a.dias !== undefined && esMuyViejo(a.dias);
-            return (
-              <li key={a.clave}>
-                <Enlace href={a.href} className={`flex flex-col gap-1 rounded-md border-l-4 px-3 py-2 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave ${
-                    viejo ? "border-coral bg-coral-suave/40 hover:bg-coral-suave/60" : "border-ambar bg-white hover:bg-n-50"
-                  }`} forma="bloque">
-                  <span className="font-semibold text-n-900">{a.texto}</span>
-                  {a.detalle && <span className="text-xs text-n-600">{a.detalle}</span>}
-                  {a.dias !== undefined && a.antiguedad && <Antiguedad dias={a.dias} texto={a.antiguedad} />}
-                </Enlace>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </section>
+    <Tarjeta data-necesita-atencion="">
+      <TarjetaEncabezado titulo="Necesita atención" conteo={atencionVisible.length} icono={<CircleAlert />} />
+      <TarjetaCuerpo className="gap-1">
+        {atencionVisible.length === 0 ? (
+          <p className="flex items-center gap-2 py-1 text-sm font-medium text-menta-oscuro">
+            <CircleCheck aria-hidden="true" className="size-4" />
+            Nada pendiente por ahora.
+          </p>
+        ) : (
+          <ul className="-mx-2 flex flex-col">
+            {atencionVisible.map((a) => {
+              const viejo = a.dias !== undefined && esMuyViejo(a.dias);
+              return (
+                <li key={a.clave}>
+                  <Enlace
+                    href={a.href}
+                    className="flex items-start gap-3 rounded-md px-2 py-2 hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring"
+                    forma="bloque"
+                  >
+                    <span aria-hidden="true" className={cn("mt-0.5 grid size-8 flex-none place-items-center rounded-md [&_svg]:size-4", viejo ? "bg-coral-suave text-coral-oscuro" : "bg-ambar-suave text-ambar-oscuro")}>
+                      <CircleAlert />
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="font-semibold text-foreground">{a.texto}</span>
+                      {a.detalle && <span className="text-xs text-n-600">{a.detalle}</span>}
+                      {a.dias !== undefined && a.antiguedad && <Antiguedad dias={a.dias} texto={a.antiguedad} />}
+                    </span>
+                    <ChevronRight aria-hidden="true" className="mt-1.5 size-4 flex-none text-n-400" />
+                  </Enlace>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </TarjetaCuerpo>
+    </Tarjeta>
   );
 
   if (compacto) {
@@ -1061,72 +1053,47 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     );
   }
 
-  return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-n-900">Hoy en {negocio.nombre}</h1>
-          <p className="mt-1 text-n-600">{formatearFechaCalendario(hoy)} — toda la casa en una pantalla.</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <BotonNuevoCliente tipo={conEstancias ? "guarderia_hotel" : "estetica"} />
-          {conEstancias && (
-            <>
-              <Enlace href={mods.includes("guarderia") ? "/guarderia/checkin" : "/hotel/checkin"}>
-                  Check-in
-                </Enlace>
-              <Enlace href={mods.includes("guarderia") ? "/guarderia/checkout" : "/hotel/checkout"}>
-                  Check-out
-                </Enlace>
-            </>
-          )}
-          {conEstetica && (
-            <Enlace href="/estetica/nueva">
-                Nueva cita de estética
-              </Enlace>
-          )}
-          {conEstancias && (
-            <Enlace href={mods.includes("guarderia") ? "/guarderia/nueva" : "/hotel/nueva"}>Nueva reserva</Enlace>
-          )}
-        </div>
-      </div>
-
-      {cifras}
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {listaAtencion}
-
-        {conEstetica && (
-        <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Citas de estética hoy</h2>
-            <Enlace href="/estetica" className="text-sm">
-              Ver agenda →
-            </Enlace>
-          </div>
-          {citas.length === 0 ? (
-            <p className="text-sm text-n-500">No hay citas hoy.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {citas.map((c) => (
-                <li key={c.id} className="flex flex-col gap-2 rounded-md border border-n-200 bg-white p-2">
-                  <Enlace href={`/estetica/${c.id}`} className="flex items-center justify-between gap-3 rounded-md px-1 py-1 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
-                    <span>
-                      <span className="tabular-nums font-semibold text-n-900">{c.hora}</span>{" "}
-                      <span className="font-semibold text-n-900">{c.perro_nombre}</span>
-                      <span className="text-xs text-n-500"> · {c.servicio_nombre}</span>
-                      <span className="block text-xs text-n-500">
-                        Estilista: {c.empleado_id ? (nombreDe.get(c.empleado_id) ?? "—") : "Sin asignar"}
-                      </span>
-                      {enAusencia.has(c.id) && (
-                        <span data-cita-en-ausencia className="block text-xs font-semibold text-coral-oscuro">
-                          Estilista ausente ({enAusencia.get(c.id)}): reasigna esta cita
-                        </span>
-                      )}
+  // Mobbin: Fresha «Appointments activity»: la hora en bloque a la izquierda, el perro y el servicio en negritas,
+  // quién lo atiende abajo y el estado en su chip a la derecha.
+  const tarjetaCitas = conEstetica && (
+    <Tarjeta>
+      <TarjetaEncabezado
+        titulo="Citas de estética hoy"
+        conteo={citas.length}
+        icono={<Scissors />}
+        accion={
+          <Enlace href="/estetica" className="text-sm">
+            Ver agenda →
+          </Enlace>
+        }
+      />
+      <TarjetaCuerpo className="gap-1">
+        {citas.length === 0 ? (
+          <p className="py-2 text-sm text-muted-foreground">No hay citas hoy.</p>
+        ) : (
+          <ul className="-mx-2 flex flex-col divide-y divide-border">
+            {citas.map((c) => (
+              <li key={c.id} className="flex flex-col gap-2 py-1.5">
+                <Enlace href={`/estetica/${c.id}`} className="flex items-center gap-3 rounded-md px-2 py-1 hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring" forma="bloque">
+                  <span className="w-14 flex-none rounded-md bg-muted py-1 text-center text-sm font-bold tabular-nums text-foreground">{c.hora}</span>
+                  <span className="min-w-0 flex-1 leading-tight">
+                    <span className="block truncate">
+                      <span className="font-semibold text-foreground">{c.perro_nombre}</span>
+                      <span className="text-sm text-muted-foreground"> · {c.servicio_nombre}</span>
                     </span>
-                    <span className="text-xs text-n-500">{ETIQUETA_ESTADO_CITA[c.estado] ?? c.estado}</span>
-                  </Enlace>
-                  {puedeReasignar && (c.estado === "reservada" || c.estado === "confirmada") && (
+                    <span className="block text-xs text-muted-foreground">
+                      Estilista: {c.empleado_id ? (nombreDe.get(c.empleado_id) ?? "—") : "Sin asignar"}
+                    </span>
+                    {enAusencia.has(c.id) && (
+                      <span data-cita-en-ausencia className="block text-xs font-semibold text-coral-oscuro">
+                        Estilista ausente ({enAusencia.get(c.id)}): reasigna esta cita
+                      </span>
+                    )}
+                  </span>
+                  <Chip tono={TONO_CITA[c.estado] ?? "neutro"}>{ETIQUETA_ESTADO_CITA[c.estado] ?? c.estado}</Chip>
+                </Enlace>
+                {puedeReasignar && (c.estado === "reservada" || c.estado === "confirmada") && (
+                  <div className="pl-[4.25rem]">
                     <SelectorEstilista
                       citaId={c.id}
                       estado={c.estado}
@@ -1138,43 +1105,67 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
                       version={c.version}
                       compacto
                     />
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
         )}
+      </TarjetaCuerpo>
+    </Tarjeta>
+  );
+
+  const movimientos = conEstancias && (
+    <MovimientosDia llegan={llegan} seVan={seVan} dentro={dentro} detalle={(f) => `${ETIQUETA_CATEGORIA[f.categoria ?? ""] ?? f.categoria} · ${f.servicio_nombre}`} />
+  );
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Mobbin: Jobber «Home»: la fecha arriba y el saludo del día; las acciones de todos los días a la derecha. */}
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div>
+          <p className="text-sm font-medium text-muted-foreground first-letter:uppercase">{formatearFechaCalendario(hoy)}</p>
+          <h1 className="mt-0.5 text-2xl font-bold text-foreground">Hoy en {negocio.nombre}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Toda la casa en una pantalla.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <BotonNuevoCliente tipo={conEstancias ? "guarderia_hotel" : "estetica"} />
+          {conEstancias && (
+            <>
+              <Enlace href={mods.includes("guarderia") ? "/guarderia/checkin" : "/hotel/checkin"}>
+                <LogIn aria-hidden="true" className="size-4" />
+                Check-in
+              </Enlace>
+              <Enlace href={mods.includes("guarderia") ? "/guarderia/checkout" : "/hotel/checkout"}>
+                <LogOut aria-hidden="true" className="size-4" />
+                Check-out
+              </Enlace>
+            </>
+          )}
+          {conEstetica && (
+            <Enlace href="/estetica/nueva">
+              <Scissors aria-hidden="true" className="size-4" />
+              Nueva cita de estética
+            </Enlace>
+          )}
+          {conEstancias && (
+            <Enlace href={mods.includes("guarderia") ? "/guarderia/nueva" : "/hotel/nueva"}>
+              <CalendarPlus aria-hidden="true" className="size-4" />
+              Nueva reserva
+            </Enlace>
+          )}
+        </div>
       </div>
 
-      {conEstancias && (
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Llegan hoy</h2>
-          <ListaPerros
-            filas={llegan}
-            vacio="Nadie más por llegar."
-            destino={(f) => `/reservas/estancias/${f.estancia_id}/checkin`}
-          />
-        </section>
-        <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Se van hoy</h2>
-          <ListaPerros
-            filas={seVan}
-            vacio="Nadie más por salir."
-            destino={(f) => `/reservas/estancias/${f.estancia_id}/checkout`}
-          />
-        </section>
-        <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Siguen aquí ahora</h2>
-          <ListaPerros
-            filas={dentro}
-            vacio="No hay nadie dentro."
-            destino={(f) => `/reservas/estancias/${f.estancia_id}/checkout`}
-          />
-        </section>
+      {cifras}
+
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+        <div className="flex min-w-0 flex-col gap-4 lg:col-span-2">
+          {movimientos}
+          {tarjetaCitas}
+        </div>
+        <div className="flex min-w-0 flex-col gap-4">{listaAtencion}</div>
       </div>
-      )}
     </div>
   );
 }

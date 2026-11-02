@@ -76,12 +76,12 @@ export default async function ReportesDelDiaPage() {
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
       ) : filas.length === 0 ? (
-        <div className="rounded-xl border border-n-200 bg-white p-6 text-n-700">
+        <div className="rounded-xl border border-border bg-white p-6 text-n-700">
           No hay perros de guardería adentro en este momento. Cuando alguien haga check-in aparece aquí.
         </div>
       ) : (
         <>
-          <section aria-label="Avance" className="rounded-xl border border-n-200 bg-white p-4">
+          <section aria-label="Avance" className="rounded-xl border border-border bg-white p-4">
             <div className="flex items-baseline justify-between gap-3">
               <p className="text-2xl font-bold text-n-900">
                 {listos} de {filas.length} <span className="text-base font-semibold text-n-600">listos</span>
@@ -96,9 +96,9 @@ export default async function ReportesDelDiaPage() {
           <ul className="flex flex-col gap-2.5">
             {filas.map((f) => (
               <li key={f.perroId}>
-                <Enlace href={`/guarderia/reportes/${f.perroId}`} className="flex min-h-[4.5rem] items-center justify-between gap-3 rounded-xl border border-n-200 bg-white px-4 py-3 transition-colors hover:border-morado/40 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado" forma="bloque">
+                <Enlace href={`/guarderia/reportes/${f.perroId}`} className="flex min-h-[4.5rem] items-center justify-between gap-3 rounded-xl border border-border bg-white px-4 py-3 transition-colors hover:border-morado/40 hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado" forma="bloque">
                   <span className="flex min-w-0 flex-col">
-                    <span className="truncate text-lg font-bold text-n-900">{f.nombre}</span>
+                    <span className="truncate text-lg font-semibold text-foreground">{f.nombre}</span>
                     <span className="text-sm text-n-600">
                       {f.estado === "enviado" && f.enviadoAt
                         ? `Enviado a las ${horaLocalDeInstante(f.enviadoAt, zona)}`

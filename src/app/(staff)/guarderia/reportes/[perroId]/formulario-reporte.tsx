@@ -374,7 +374,7 @@ export function FormularioReporte({
         </Alert>
       )}
 
-      <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-n-200 bg-white p-3">
+      <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-border bg-white p-3">
         <Button type="button" variante="primario" onClick={pedirBuenDia} className="min-h-14 flex-1 sm:flex-none">
           Buen día
         </Button>
@@ -405,13 +405,13 @@ export function FormularioReporte({
         {completo.length > 0 && <div className="flex flex-col gap-5 lg:col-span-2">{pintar(completo)}</div>}
       </div>
 
-      <section className="flex flex-col gap-4 rounded-2xl border-2 border-n-200 bg-white p-4" aria-label="Imagen y envío">
-        <h2 className="text-lg font-bold text-n-900">Imagen para el dueño</h2>
+      <section className="flex flex-col gap-4 rounded-2xl border-2 border-border bg-white p-4" aria-label="Imagen y envío">
+        <h2 className="text-lg font-semibold text-foreground">Imagen para el dueño</h2>
 
         {meta.tarjetaVigente && meta.tarjetaUrl ? (
           <div className="flex flex-col items-start gap-4 md:flex-row">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={meta.tarjetaUrl} alt={`Reporte de ${perroNombre}`} width={1080} height={1350} className="w-full max-w-sm rounded-xl border border-n-200" />
+            <img src={meta.tarjetaUrl} alt={`Reporte de ${perroNombre}`} width={1080} height={1350} className="w-full max-w-sm rounded-xl border border-border" />
             <div className="flex flex-col gap-3 md:flex-1">
               <p className="text-sm text-n-700">
                 {meta.estado === "enviado" && meta.enviadoAt
@@ -450,7 +450,7 @@ export function FormularioReporte({
         )}
       </section>
 
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-n-200 bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/85" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-white/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-white/85" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
           <p className="hidden text-sm text-n-600 sm:block">{vacio ? "Marca algo para empezar." : textoGuardado}</p>
           <AccionesFormulario error={!meta.tarjetaVigente ? errorAccion : null} exito={!meta.tarjetaVigente ? exito : null} className="w-full sm:w-auto">

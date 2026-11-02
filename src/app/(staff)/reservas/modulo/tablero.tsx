@@ -11,6 +11,8 @@ import { PasesTablero } from "./pases-tablero";
 import { LlegadasAtrasadas, type LlegadaAtrasada } from "./llegadas-atrasadas";
 import { zonaActual } from "@/lib/negocio/actual";
 import { Enlace } from "@/components/ui/enlace";
+import { MovimientosDia } from "@/components/estancias/movimientos-dia";
+import { Camera, LogIn, LogOut, CalendarPlus, Repeat } from "lucide-react";
 
 const DIAS_CALENDARIO = 14;
 const TOPE_ATRASADAS = 30;
@@ -24,32 +26,6 @@ type FilaPerro = {
   categoria: string;
   servicio_nombre: string;
 };
-
-function ListaPerros({
-  filas,
-  vacio,
-  destino,
-}: {
-  filas: FilaPerro[];
-  vacio: string;
-  destino: (fila: FilaPerro) => string;
-}) {
-  if (filas.length === 0) {
-    return <p className="text-sm text-n-500">{vacio}</p>;
-  }
-  return (
-    <ul className="flex flex-col gap-2">
-      {filas.map((f) => (
-        <li key={f.estancia_id}>
-          <Enlace href={destino(f)} className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
-            <span className="font-semibold text-n-900">{f.perro_nombre}</span>
-            <span className="text-xs text-n-500">{f.servicio_nombre}</span>
-          </Enlace>
-        </li>
-      ))}
-    </ul>
-  );
-}
 
 // El tablero del día de un módulo. Las tres listas van filtradas por su
 // categoría (el staff que atiende guardería no quiere ver a los de hotel
@@ -106,29 +82,37 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
   const error = errorLlegadas ?? errorSalidas ?? errorAdentro ?? errorCalendario ?? errorAtrasadas;
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-col gap-6">
+      {/* Rediseño (docs/diseno/DESIGN.md; Mobbin panel-hotel-guarderia): la fecha arriba, el título del módulo y las
+          acciones de todos los días a la derecha, igual que el tablero de recepción. */}
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div>
-          <h1 className="text-2xl font-bold text-n-900">{modulo.etiqueta}</h1>
-          <p className="mt-1 text-n-600">
-            {formatearFechaCalendario(hoy)} — quién llega, quién se va y quién sigue aquí.
-          </p>
+          <p className="text-sm font-medium text-muted-foreground first-letter:uppercase">{formatearFechaCalendario(hoy)}</p>
+          <h1 className="mt-0.5 text-2xl font-bold text-foreground">{modulo.etiqueta}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Quién llega, quién se va y quién sigue aquí.</p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <BotonNuevoCliente tipo={tipoLinkDeModulo(modulo.categoria)} />
           <Enlace href={`${modulo.base}/checkin`}>
-              Check-in
-            </Enlace>
+            <LogIn aria-hidden="true" className="size-4" />
+            Check-in
+          </Enlace>
           <Enlace href={`${modulo.base}/checkout`}>
-              Check-out
-            </Enlace>
+            <LogOut aria-hidden="true" className="size-4" />
+            Check-out
+          </Enlace>
           <Enlace href="/adentro">
-              Fotos, videos y reporte
-            </Enlace>
+            <Camera aria-hidden="true" className="size-4" />
+            Fotos, videos y reporte
+          </Enlace>
           <Enlace href={`${modulo.base}/series`}>
-              Series recurrentes
-            </Enlace>
-          <Enlace href={`${modulo.base}/nueva`}>Nueva reserva</Enlace>
+            <Repeat aria-hidden="true" className="size-4" />
+            Series recurrentes
+          </Enlace>
+          <Enlace href={`${modulo.base}/nueva`}>
+            <CalendarPlus aria-hidden="true" className="size-4" />
+            Nueva reserva
+          </Enlace>
         </div>
       </div>
 
@@ -140,36 +124,11 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
         <>
           <LlegadasAtrasadas filas={atrasadas} hayMas={(atrasadasCrudas ?? []).length > TOPE_ATRASADAS} />
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Llegan hoy</h2>
-              <ListaPerros
-                filas={(llegadas as FilaPerro[]) ?? []}
-                vacio="Nadie más por llegar."
-                destino={(f) => `/reservas/estancias/${f.estancia_id}/checkin`}
-              />
-            </section>
-
-            <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Se van hoy</h2>
-              <ListaPerros
-                filas={(salidas as FilaPerro[]) ?? []}
-                vacio="Nadie más por salir."
-                destino={(f) => `/reservas/estancias/${f.estancia_id}/checkout`}
-              />
-            </section>
-
-            <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">
-                Siguen aquí ahora
-              </h2>
-              <ListaPerros
-                filas={(adentro as FilaPerro[]) ?? []}
-                vacio="No hay nadie dentro."
-                destino={(f) => `/reservas/estancias/${f.estancia_id}/checkout`}
-              />
-            </section>
-          </div>
+          <MovimientosDia
+            llegan={(llegadas as FilaPerro[]) ?? []}
+            seVan={(salidas as FilaPerro[]) ?? []}
+            dentro={(adentro as FilaPerro[]) ?? []}
+          />
 
           {modulo.categoria === "guarderia" && (sesion?.modulos ?? []).includes("bonos") && <PasesTablero hoy={hoy} />}
 

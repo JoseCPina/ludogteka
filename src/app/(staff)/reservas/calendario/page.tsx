@@ -52,8 +52,8 @@ const SELECT_ESTANCIA =
   "id, reserva_id, fecha_entrada, fecha_salida, estado, updated_at, perros(nombre), servicios!inner(nombre, categoria), reservas(clientes(nombre))";
 
 const ESTILO_NIVEL: Record<NivelOcupacion, string> = {
-  sin_cupo: "border-n-200 bg-n-50",
-  libre: "border-n-200 bg-white",
+  sin_cupo: "border-border bg-muted",
+  libre: "border-border bg-white",
   normal: "border-menta bg-menta-suave",
   alto: "border-ambar bg-ambar-suave",
   lleno: "border-coral-oscuro bg-coral-suave",
@@ -123,7 +123,7 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
 
       <section aria-label="Ocupación por día" className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold capitalize text-n-900">{titulo}</h2>
+          <h2 className="text-lg font-semibold capitalize text-foreground">{titulo}</h2>
           <nav aria-label="Vista del calendario" className="flex flex-wrap items-center gap-2 text-sm font-semibold">
             <EnlacePestana href={enlace({ vista: "semana", dia: f.dia ?? undefined })} data-vista="semana" activo={f.vista === "semana"}>
               Semana
@@ -196,7 +196,7 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
         {f.dia ? (
           <>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-lg font-bold capitalize text-n-900">Reservas del {NOMBRE_DIA_LARGO.format(aFecha(f.dia))}</h2>
+              <h2 className="text-lg font-semibold capitalize text-foreground">Reservas del {NOMBRE_DIA_LARGO.format(aFecha(f.dia))}</h2>
               <div className="flex flex-wrap items-center gap-3 text-sm font-semibold">
                 {/* N121: la reserva nueva arranca en el día elegido (si ya pasó, en hoy). */}
                 {f.dia >= hoy && conHotel && (
@@ -235,15 +235,15 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
       </section>
 
       <section aria-label="Próximas reservas" className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Próximas reservas</h2>
-        <form method="get" action="/reservas/calendario" className="grid grid-cols-1 gap-3 rounded-lg border border-n-200 bg-n-50 p-3 sm:grid-cols-5 sm:items-end" data-filtros>
+        <h2 className="text-lg font-semibold text-foreground">Próximas reservas</h2>
+        <form method="get" action="/reservas/calendario" className="grid grid-cols-1 gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-3 sm:grid-cols-5 sm:items-end" data-filtros>
           <input type="hidden" name="vista" value={f.vista} />
           <input type="hidden" name="fecha" value={f.fecha} />
           {f.dia && <input type="hidden" name="dia" value={f.dia} />}
           {conGuarderia && conHotel && (
             <label className="flex flex-col gap-1 text-sm font-medium text-n-800">
               Módulo
-              <select name="modulo" defaultValue={f.modulo} className="min-h-12 rounded-md border-[1.5px] border-borde bg-white px-3 text-base text-n-900">
+              <select name="modulo" defaultValue={f.modulo} className="min-h-11 rounded-md border-[1.5px] border-input bg-card px-3 text-base text-n-900">
                 <option value="todos">Guardería y hotel</option>
                 <option value="guarderia">Guardería</option>
                 <option value="hotel">Hotel</option>
@@ -252,7 +252,7 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
           )}
           <label className="flex flex-col gap-1 text-sm font-medium text-n-800">
             Estado
-            <select name="estado" defaultValue={f.estado} className="min-h-12 rounded-md border-[1.5px] border-borde bg-white px-3 text-base text-n-900">
+            <select name="estado" defaultValue={f.estado} className="min-h-11 rounded-md border-[1.5px] border-input bg-card px-3 text-base text-n-900">
               {ESTADOS_FILTRO.map((e) => (
                 <option key={e.clave} value={e.clave}>
                   {e.etiqueta}
@@ -262,7 +262,7 @@ export default async function CalendarioReservasPage({ searchParams }: { searchP
           </label>
           <label className="flex flex-col gap-1 text-sm font-medium text-n-800">
             Desde
-            <input type="date" name="desde" defaultValue={f.desde} className="min-h-12 rounded-md border-[1.5px] border-borde bg-white px-3 text-base text-n-900" />
+            <input type="date" name="desde" defaultValue={f.desde} className="min-h-11 rounded-md border-[1.5px] border-input bg-card px-3 text-base text-n-900" />
           </label>
           <Button type="submit" sinBloqueo>
             Filtrar

@@ -485,7 +485,7 @@ export function NuevaReservaForm({
   // Paso 2: elegir perros y capturar cada línea.
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <div>
           <p className="text-sm text-n-600">Cliente</p>
           <p className="font-bold text-n-900">{clienteElegido.nombre}</p>
@@ -504,7 +504,7 @@ export function NuevaReservaForm({
         </Alert>
       ) : (
         <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">{vm.Plural}</h2>
+          <h2 className="text-[0.9375rem] font-semibold text-foreground">{vm.Plural}</h2>
           {perrosDelCliente.map((perro) => {
             const linea = lineas.find((l) => l.perroId === perro.id);
             const marcado = Boolean(linea);
@@ -512,7 +512,7 @@ export function NuevaReservaForm({
             const esGuarderia = servicioActual?.categoria === "guarderia";
             const seriesDelPerro = seriesActivas.filter((s) => s.perroId === perro.id);
             return (
-              <div key={perro.id} className="rounded-lg border border-n-200 bg-white p-4">
+              <div key={perro.id} className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <label className="flex items-center gap-2 font-semibold text-n-900">
                   <input
                     type="checkbox"
@@ -560,7 +560,7 @@ export function NuevaReservaForm({
                 )}
 
                 {linea && (recomendados[perro.id]?.length ?? 0) > 0 && (
-                  <p className="mt-3 rounded-md bg-n-50 px-3 py-2 text-sm text-n-700" data-datos-recomendados>
+                  <p className="mt-3 rounded-md bg-muted px-3 py-2 text-sm text-n-700" data-datos-recomendados>
                     Recomendado para hotel y guardería: a {perro.nombre} le faltan {recomendados[perro.id].join(", ")}. No impide reservar.{" "}
                     <Enlace href={`/perros/${perro.id}`} enTexto>
                       Completarlos en su expediente →

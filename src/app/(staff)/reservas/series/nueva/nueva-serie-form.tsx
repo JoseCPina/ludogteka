@@ -121,7 +121,7 @@ export function NuevaSerieForm({
           </div>
         )}
         {creadas.length > 0 && (
-          <div className="rounded-lg border border-n-200 bg-white p-4">
+          <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
             <p className="font-semibold text-n-900">Fechas generadas</p>
             <p className="mt-0.5 text-sm text-n-600">
               {creadas.filter((r) => r.bono?.aplicado).length} con pase ·{" "}
@@ -157,7 +157,7 @@ export function NuevaSerieForm({
 
   return (
     <div className="flex max-w-2xl flex-col gap-4">
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <div>
           <p className="text-sm text-n-600">Cliente</p>
           <p className="font-bold text-n-900">{clienteElegido.nombre}</p>

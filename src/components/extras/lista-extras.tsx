@@ -89,7 +89,7 @@ export function ListaExtras({
           const traslado = f.tipo === "traslado";
           const cerrada = f.estado === "hecho" || f.estado === "cancelado";
           return (
-            <li key={f.id} data-extra-id={f.id} className={`rounded-lg border bg-white p-3 ${f.atrasada ? "border-coral" : "border-n-200"}`}>
+            <li key={f.id} data-extra-id={f.id} className={`rounded-lg border bg-white p-3 ${f.atrasada ? "border-coral" : "border-border"}`}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-semibold text-n-900">

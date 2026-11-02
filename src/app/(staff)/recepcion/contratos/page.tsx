@@ -82,10 +82,10 @@ export default async function ContratosPorAtenderPage() {
         <>
           {porRegenerar.length > 0 && (
             <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-bold text-n-900">Hay que volver a generarlos</h2>
+              <h2 className="text-lg font-semibold text-foreground">Hay que volver a generarlos</h2>
               <ul className="flex flex-col gap-3">
                 {porRegenerar.map((f) => (
-                  <li key={f.contrato_id} className="rounded-lg border border-n-200 border-l-4 border-l-coral bg-white p-4">
+                  <li key={f.contrato_id} className="rounded-lg border border-border border-l-4 border-l-coral bg-white p-4">
                     <p className="font-bold text-n-900">
                       {f.tipo_nombre} · {f.perro_nombre}
                     </p>
@@ -110,14 +110,14 @@ export default async function ContratosPorAtenderPage() {
           )}
 
           <section className="flex flex-col gap-3">
-            <h2 className="text-lg font-bold text-n-900">Pendientes de firma</h2>
+            <h2 className="text-lg font-semibold text-foreground">Pendientes de firma</h2>
             {porFirmar.length === 0 ? (
-              <p className="rounded-lg border border-n-200 bg-white p-4 text-n-600">
+              <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-600">
                 Nadie debe firma. Cuando se venda un paquete de guardería, su contrato aparece aquí
                 hasta que el dueño lo firme.
               </p>
             ) : (
-              <ul className="divide-y divide-n-200 rounded-lg border border-n-200 bg-white">
+              <ul className="divide-y divide-border rounded-lg border border-border bg-card shadow-tarjeta">
                 {porFirmar.map((f) => {
                   const wa = recordatorioWhatsApp(f, urlPublica);
                   return (

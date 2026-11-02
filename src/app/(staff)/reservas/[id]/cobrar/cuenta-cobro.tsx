@@ -621,24 +621,24 @@ export function CuentaCobro({
         </Alert>
       )}
 
-      <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
+      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
         {/* En celular, cada concepto es una tarjeta (tabla-tarjetas, QA N27): con 560 px fijos el TOTAL salía cortado. */}
         <TablaResponsiva className="tabla-tarjetas w-full border-collapse text-sm sm:min-w-[560px]">
           <thead>
             <tr>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground">
                 Concepto
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-n-100 px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                 Cantidad
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-n-100 px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                 Precio unit.
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-n-100 px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                 Total
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-n-100 px-4 py-2.5 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                 Bono
               </th>
             </tr>
@@ -655,7 +655,7 @@ export function CuentaCobro({
                 const opcionesBono = l.tipo === "bono" || l.tipo === "venta" ? [] : bonosParaLinea(l);
                 return (
                   <tr key={i}>
-                    <td className="border-b border-n-200 px-4 py-2.5 text-n-900">
+                    <td className="border-b border-border px-4 py-2.5 text-n-900">
                       <span className="mr-2 rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">
                         {ETIQUETA_TIPO[l.tipo] ?? l.tipo}
                       </span>
@@ -677,16 +677,16 @@ export function CuentaCobro({
                         ) : null;
                       })()}
                     </td>
-                    <td data-label="Cantidad" className="border-b border-n-200 px-4 py-2.5 text-right tabular-nums text-n-700">
+                    <td data-label="Cantidad" className="border-b border-border px-4 py-2.5 text-right tabular-nums text-n-700">
                       {l.cantidad}
                     </td>
-                    <td data-label="Precio unit." className="border-b border-n-200 px-4 py-2.5 text-right tabular-nums text-n-700">
+                    <td data-label="Precio unit." className="border-b border-border px-4 py-2.5 text-right tabular-nums text-n-700">
                       {dinero(l.precioUnitario)}
                     </td>
-                    <td data-label="Total" className="border-b border-n-200 px-4 py-2.5 text-right tabular-nums font-semibold text-n-900">
+                    <td data-label="Total" className="border-b border-border px-4 py-2.5 text-right tabular-nums font-semibold text-n-900">
                       {dinero(l.total)}
                     </td>
-                    <td data-label="Bono" className="border-b border-n-200 px-4 py-2.5 text-right">
+                    <td data-label="Bono" className="border-b border-border px-4 py-2.5 text-right">
                       <div className="flex flex-wrap items-center justify-end gap-2">
                       {l.cantidadCubiertaPorBono > 0 && (
                         <span className="text-xs font-semibold text-menta-oscuro">
@@ -770,7 +770,7 @@ export function CuentaCobro({
         </div>
       )}
 
-      <div className="flex flex-wrap justify-end gap-6 rounded-lg border border-n-200 bg-n-50 p-4 text-sm">
+      <div className="flex flex-wrap justify-end gap-6 rounded-lg border border-border bg-card shadow-tarjeta p-4 text-sm">
         <span className="text-n-600">
           Total cuenta: <span className="font-semibold text-n-900">{dinero(totales.totalCuenta)}</span>
         </span>
@@ -795,7 +795,7 @@ export function CuentaCobro({
         </span>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="font-semibold text-n-900">Descuentos</p>
           {porCobrar && !aplicandoDescuento && saldoDisponibleParaDescuento > 0 && catalogoDescuentos.length > 0 && (
@@ -806,7 +806,7 @@ export function CuentaCobro({
         </div>
 
         {aplicandoDescuento && (
-          <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3">
+          <div className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Select
                 label="Motivo"
@@ -877,7 +877,7 @@ export function CuentaCobro({
             {descuentos.map((d) => (
               <li
                 key={d.id}
-                className={`rounded-md border px-3 py-2 ${d.cancelado ? "border-n-200 bg-n-50" : "border-n-200 bg-white"}`}
+                className={`rounded-md border px-3 py-2 ${d.cancelado ? "border-border bg-muted" : "border-border bg-white"}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className={d.cancelado ? "text-n-500 line-through" : "font-semibold text-n-900"}>
@@ -903,7 +903,7 @@ export function CuentaCobro({
                   <p className="mt-1 text-xs text-n-500">Cancelado: {d.motivoCancelacion}</p>
                 )}
                 {cancelandoDescuentoId === d.id && (
-                  <div className="mt-2 flex flex-col gap-2 border-t border-n-200 pt-2">
+                  <div className="mt-2 flex flex-col gap-2 border-t border-border pt-2">
                     <Field
                       label="Motivo de la cancelación"
                       value={motivoCancelarDescuento}
@@ -982,7 +982,7 @@ export function CuentaCobro({
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <p className="font-semibold text-n-900">Registrar cobro</p>
           {mp.terminalManualBloqueada && (
             <p data-terminal-bloqueada className="text-sm text-n-600">
@@ -1104,13 +1104,13 @@ export function CuentaCobro({
       />
 
       <div className="flex flex-col gap-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Cobros de esta reserva</h2>
+        <h2 className="text-[0.9375rem] font-semibold text-foreground">Cobros de esta reserva</h2>
         {cobrosIniciales.length === 0 && !(refrescando && cobroNuevo) ? (
           <p className="text-sm text-n-500">Todavía no hay ningún cobro.</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {refrescando && cobroNuevo && (
-              <li data-cobro-provisional className="rounded-lg border border-n-200 bg-white p-4">
+              <li data-cobro-provisional className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-semibold text-n-900">
                     {dinero(cobroNuevo.metodos.reduce((s, m) => s + m.monto, 0))}
@@ -1135,7 +1135,7 @@ export function CuentaCobro({
                 0
               );
               return (
-                <li key={c.id} data-cobro-id={c.id} data-cobro-anulado={c.anulado ? "si" : "no"} className={`rounded-lg border bg-white p-4 ${c.anulado ? "border-coral opacity-90" : "border-n-200"}`}>
+                <li key={c.id} data-cobro-id={c.id} data-cobro-anulado={c.anulado ? "si" : "no"} className={`rounded-lg border bg-white p-4 ${c.anulado ? "border-coral opacity-90" : "border-border"}`}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className={`font-semibold ${c.anulado ? "text-n-500 line-through" : "text-n-900"}`}>
                       {dinero(c.anulado ? c.montoOriginal : totalCobro)}
@@ -1194,7 +1194,7 @@ export function CuentaCobro({
                   ))}
 
                   {c.correcciones.length > 0 && (
-                    <ul data-correcciones-historial className="mt-2 flex flex-col gap-1 border-t border-n-200 pt-2">
+                    <ul data-correcciones-historial className="mt-2 flex flex-col gap-1 border-t border-border pt-2">
                       {c.correcciones.map((x, k) => (
                         <li key={k} className="text-sm text-n-700">
                           <span className="font-semibold">{x.tipo === "anulacion" ? "Anulación" : "Monto corregido"}</span> — {x.detalle} · {x.motivo} ({x.porNombre}, {formatearFecha(x.creadoEn, zona)})
@@ -1204,7 +1204,7 @@ export function CuentaCobro({
                   )}
 
                   {!c.anulado && c.origen === "manual" && c.metodos.every((m) => m.metodo !== "terminal") && (puedeAnular || puedeEditarMonto) && (
-                    <div className="mt-2 border-t border-n-200 pt-2">
+                    <div className="mt-2 border-t border-border pt-2">
                       <CorregirCobro
                         reservaId={reservaId}
                         cobroId={c.id}
@@ -1221,7 +1221,7 @@ export function CuentaCobro({
                   )}
 
                   {devolucionesDeEste.length > 0 && (
-                    <div className="mt-2 border-t border-n-200 pt-2">
+                    <div className="mt-2 border-t border-border pt-2">
                       {devolucionesDeEste.map((d) => (
                         <p key={d.id} className="text-sm text-coral-oscuro">
                           Devuelto {dinero(d.metodos.reduce((s, m) => s + m.monto, 0))} — {d.motivo} (autorizó{" "}
@@ -1232,7 +1232,7 @@ export function CuentaCobro({
                   )}
 
                   {esAdmin && c.origen === "manual" && totalDevuelto === 0 && c.metodos.some((m) => m.metodo === "terminal") && c.metodos.every((m) => m.metodo !== "terminal" || Number(m.propina) === 0) && (
-                    <div className="mt-2 border-t border-n-200 pt-2">
+                    <div className="mt-2 border-t border-border pt-2">
                       <MarcarNoRecibido
                         reservaId={reservaId}
                         cobroId={c.id}
@@ -1243,7 +1243,7 @@ export function CuentaCobro({
                   )}
 
                   {esAdmin && totalDevuelto < totalCobro && (c.origen === "mercadopago_point" || c.origen === "mercadopago_link") && (
-                    <div className="mt-2 border-t border-n-200 pt-2">
+                    <div className="mt-2 border-t border-border pt-2">
                       {devolviendoCobroId !== c.id ? (
                         <Button type="button" variante="secundario" onClick={() => setDevolviendoCobroId(c.id)}>
                           Devolver con Mercado Pago
@@ -1261,7 +1261,7 @@ export function CuentaCobro({
                   )}
 
                   {esAdmin && totalDevuelto < totalCobro && c.origen !== "mercadopago_point" && c.origen !== "mercadopago_link" && (
-                    <div className="mt-2 border-t border-n-200 pt-2">
+                    <div className="mt-2 border-t border-border pt-2">
                       {devolviendoCobroId !== c.id ? (
                         <Button
                           type="button"
@@ -1280,7 +1280,7 @@ export function CuentaCobro({
                           Registrar devolución
                         </Button>
                       ) : (
-                        <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3">
+                        <div className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3">
                           {c.origen === "clip_terminal" && (
                             <p className="text-sm text-n-700">
                               Este cobro entró por la terminal Clip. La devolución se hace en Clip (en la terminal o en tu panel de Clip); aquí solo se

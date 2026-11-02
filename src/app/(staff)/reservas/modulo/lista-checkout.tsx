@@ -37,7 +37,7 @@ export async function ListaCheckout({ modulo }: { modulo: ModuloEstancia }) {
         <ul className="flex flex-col gap-2">
           {adentro.map((a) => (
             <li key={a.estancia_id}>
-              <Enlace href={`/reservas/estancias/${a.estancia_id}/checkout`} className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
+              <Enlace href={`/reservas/estancias/${a.estancia_id}/checkout`} className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-4 py-3 hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
                 <span className="font-semibold text-n-900">{a.perro_nombre}</span>
                 <span className="flex items-center gap-3 text-xs text-n-500">
                   {a.servicio_nombre}

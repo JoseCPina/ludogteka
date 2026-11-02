@@ -150,7 +150,7 @@ export function CheckoutForm({
   return (
     <div className="flex flex-col gap-6">
       {esHotel && (
-        <div className="flex items-center gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <div>
             <p className="text-sm text-n-600">Salida programada</p>
             <p className="font-bold text-n-900">{formatearFechaCalendario(salidaActual)}</p>
@@ -200,7 +200,7 @@ export function CheckoutForm({
           <ul className="flex flex-col gap-2">
             {pertenencias.map((p) => (
               <li key={p.id}>
-                <label className="flex items-center gap-2 rounded-md border border-n-200 bg-white px-3 py-2">
+                <label className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
                   <input
                     type="checkbox"
                     checked={p.devuelto}

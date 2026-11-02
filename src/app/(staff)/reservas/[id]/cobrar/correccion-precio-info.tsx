@@ -80,7 +80,7 @@ export function CorreccionPrecioInfo({
         )}
       </div>
       {verHistorial && (
-        <ol className="flex flex-col gap-1 rounded-md bg-n-50 p-2 text-xs text-n-700" data-historial-precio>
+        <ol className="flex flex-col gap-1 rounded-md bg-muted p-2 text-xs text-n-700" data-historial-precio>
           {historial.map((h) => (
             <li key={h.id} className={h.vigente ? "font-semibold text-n-900" : ""}>
               {dinero(h.precioAntes)} → {dinero(h.precioDespues)} · {h.motivo} · {h.porNombre}, {formatearFecha(h.creadaEn, zona)} {formatearHoraNegocio(h.creadaEn, zona)}

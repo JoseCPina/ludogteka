@@ -47,7 +47,7 @@ export function DevolucionIntegrada({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3">
+    <div className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3">
       <p className="text-sm text-n-700">
         Este cobro entró por Mercado Pago. El dinero se le regresa al cliente en su tarjeta o cuenta de Mercado Pago, y la devolución queda en caja
         en el mismo paso. Si Mercado Pago no lo acepta, no se registra nada.
