@@ -28,7 +28,7 @@ export function CamposEmpleado({
         <Field label="Fecha de ingreso" name="fecha_ingreso" type="date" defaultValue={v("fecha_ingreso")} required />
         <Field label="Teléfono (opcional)" name="telefono" type="tel" defaultValue={v("telefono")} />
       </div>
-      <fieldset className="grid gap-4 rounded-md border border-n-200 p-4 sm:grid-cols-3">
+      <fieldset className="grid gap-4 rounded-md border border-border p-4 sm:grid-cols-3">
         <legend className="px-1 text-sm font-semibold text-n-800">Contacto de emergencia (opcional)</legend>
         <Field label="Nombre" name="emergencia_nombre" defaultValue={v("emergencia_nombre")} />
         <Field label="Teléfono" name="emergencia_telefono" type="tel" defaultValue={v("emergencia_telefono")} />

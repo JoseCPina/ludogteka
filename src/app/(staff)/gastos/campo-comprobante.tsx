@@ -64,7 +64,7 @@ export function CampoComprobante({ etiqueta = "Foto del comprobante o ticket (op
       {estado === "error" && <p className="text-xs text-coral-oscuro">No pudimos leer esa foto. Prueba con otra.</p>}
       {vista && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={vista} alt="Vista previa del comprobante" className="mt-1 max-h-40 w-fit rounded-md border border-n-200" />
+        <img src={vista} alt="Vista previa del comprobante" className="mt-1 max-h-40 w-fit rounded-md border border-border" />
       )}
     </div>
   );

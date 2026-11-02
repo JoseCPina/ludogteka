@@ -61,7 +61,7 @@ export default async function EmpleadosPage() {
           Todavía no hay empleados capturados.{puedeNomina ? " Empieza con «Nuevo empleado»." : " Un admin los da de alta."}
         </p>
       ) : (
-        <ul className="divide-y divide-n-200 rounded-lg border border-n-200 bg-white">
+        <ul className="divide-y divide-border rounded-lg border border-border bg-card shadow-tarjeta">
           {activos.map((e) => {
             const d = hoyDe.get(e.id);
             let estado = d ? ESTADOS_DIA[d.estado] : null;
@@ -109,7 +109,7 @@ export default async function EmpleadosPage() {
       )}
 
       {bajas.length > 0 && (
-        <details className="rounded-lg border border-n-200 bg-white p-4">
+        <details className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <summary className="cursor-pointer font-semibold text-n-700">Dados de baja ({bajas.length})</summary>
           <ul className="mt-3 flex flex-col gap-1 text-sm">
             {bajas.map((e) => (

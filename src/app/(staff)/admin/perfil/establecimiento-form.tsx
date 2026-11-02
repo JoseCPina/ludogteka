@@ -80,7 +80,7 @@ export function EstablecimientoForm(props: {
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-borde bg-white p-4 sm:p-5" aria-labelledby="titulo-establecimiento">
       <header>
-        <h2 id="titulo-establecimiento" className="text-lg font-bold text-n-900">Establecimiento veterinario</h2>
+        <h2 id="titulo-establecimiento" className="text-lg font-semibold text-foreground">Establecimiento veterinario</h2>
         <p className="mt-1 text-sm text-n-700">
           Estos datos son para tenerlos a la mano; PeluDesk te avisa en el tablero cuando un permiso está por vencer.
         </p>

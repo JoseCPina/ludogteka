@@ -71,7 +71,7 @@ export function PreciosPorDia({ servicioId, precios, hoy, versionPrecios = null 
       {vigentes.size === 0 && programados.length === 0 ? (
         <p className="text-n-600">Este servicio cuesta lo mismo todos los días.</p>
       ) : (
-        <ul className="divide-y divide-n-200 rounded-lg border border-n-200 bg-white">
+        <ul className="divide-y divide-border rounded-lg border border-border bg-card shadow-tarjeta">
           {[...vigentes.values(), ...programados].map((p) => (
             <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
               <span className="text-n-900">

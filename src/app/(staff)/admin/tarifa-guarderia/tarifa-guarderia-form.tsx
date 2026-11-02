@@ -37,7 +37,7 @@ export function TarifaGuarderiaForm({
   return (
     <form method="post"
       data-tarifa-guarderia-form
-      className="flex flex-col gap-5 rounded-lg border border-n-200 bg-white p-5"
+      className="flex flex-col gap-5 rounded-lg border border-border bg-card shadow-tarjeta p-5"
       onSubmit={async (e) => {
         e.preventDefault();
         const r = await envio.ejecutar(() => guardarTarifaGuarderia(activa, servicio, incluidos, Number(dias)));

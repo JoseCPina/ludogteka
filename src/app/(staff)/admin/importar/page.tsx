@@ -54,7 +54,7 @@ export default async function ImportarPage() {
       </header>
       <Importador conClinicos={conClinicos} conVet={conVet} />
       <section className="flex flex-col gap-3" aria-labelledby="historial">
-        <h2 id="historial" className="text-lg font-bold text-n-900">
+        <h2 id="historial" className="text-lg font-semibold text-foreground">
           Historial de importaciones
         </h2>
         {historial.length === 0 ? (

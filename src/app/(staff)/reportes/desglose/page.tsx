@@ -118,7 +118,7 @@ export default async function DesglosePage({
         </p>
       </div>
 
-      <form method="get" action="/reportes/desglose" className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-4">
+      <form method="get" action="/reportes/desglose" className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <input type="hidden" name="t" value={tarjeta} />
         <input type="hidden" name="desde" value={desde} />
         <input type="hidden" name="hasta" value={hasta} />
@@ -136,7 +136,7 @@ export default async function DesglosePage({
         <Enlace href={excel} className="pb-3 text-sm" data-desglose-excel>Descargar en Excel</Enlace>
       </form>
 
-      <div className="rounded-lg border border-n-200 bg-white p-4 text-sm text-n-700" data-desglose-resumen>
+      <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-sm text-n-700" data-desglose-resumen>
         <strong className="text-n-900" data-desglose-total-tarjeta>
           {d.signo < 0 && esDinero ? "−" : ""}{valor(Number(d.total))}
         </strong>{" "}
@@ -149,36 +149,36 @@ export default async function DesglosePage({
       </div>
 
       {d.filas.length === 0 ? (
-        <p className="rounded-lg border border-n-200 bg-white p-6 text-center text-n-600">No hay operaciones{q ? " con esa búsqueda" : " en este periodo"}.</p>
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-6 text-center text-n-600">No hay operaciones{q ? " con esa búsqueda" : " en este periodo"}.</p>
       ) : (
         <>
-          <div className="hidden overflow-x-auto rounded-lg border border-n-200 bg-white sm:block">
+          <div className="hidden overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta sm:block">
             <TablaResponsiva className="w-full min-w-[900px] border-collapse text-sm">
               <thead>
                 <tr>
                   {columnas.map((c) => (
-                    <th key={c} className={`border-b border-n-200 bg-n-100 px-3 py-3 text-xs font-bold uppercase tracking-wide text-n-600 ${c === "monto" || c === "descuento" ? "text-right" : "text-left"}`}>
+                    <th key={c} className={`border-b border-border bg-n-100 px-3 py-3 text-xs font-bold uppercase tracking-wide text-n-600 ${c === "monto" || c === "descuento" ? "text-right" : "text-left"}`}>
                       <Enlace href={ordenarPor(c)}>{c === "monto" && !esDinero ? "Cantidad" : ETIQUETA_COLUMNA[c]}{flecha(c)}</Enlace>
                     </th>
                   ))}
-                  <th className="border-b border-n-200 bg-n-100 px-3 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">Cuenta</th>
+                  <th className="border-b border-border bg-muted px-3 py-3 text-left text-xs font-semibold text-muted-foreground">Cuenta</th>
                 </tr>
               </thead>
               <tbody className="text-n-800">
                 {d.filas.map((f) => (
                   <tr key={f.id} className="align-top" data-desglose-fila>
-                    <td className="whitespace-nowrap border-b border-n-200 px-3 py-2">{fechaLocalDeInstante(f.fecha, zona)} · {horaLocalDeInstante(f.fecha, zona)}</td>
-                    <td className="border-b border-n-200 px-3 py-2">{f.cliente || "—"}</td>
-                    <td className="border-b border-n-200 px-3 py-2">{f.mascota || "—"}</td>
-                    <td className="border-b border-n-200 px-3 py-2">
+                    <td className="whitespace-nowrap border-b border-border px-3 py-2">{fechaLocalDeInstante(f.fecha, zona)} · {horaLocalDeInstante(f.fecha, zona)}</td>
+                    <td className="border-b border-border px-3 py-2">{f.cliente || "—"}</td>
+                    <td className="border-b border-border px-3 py-2">{f.mascota || "—"}</td>
+                    <td className="border-b border-border px-3 py-2">
                       {f.concepto || "—"}
                       {f.detalle && <span className="block text-xs text-n-500">{f.detalle}</span>}
                     </td>
-                    <td className="border-b border-n-200 px-3 py-2">{f.usuario || "—"}</td>
-                    <td className="border-b border-n-200 px-3 py-2">{f.metodo ? etiquetaMetodos(f.metodo) : "—"}</td>
-                    <td className="whitespace-nowrap border-b border-n-200 px-3 py-2 text-right font-semibold tabular-nums">{valor(Number(f.monto))}</td>
-                    <td className="whitespace-nowrap border-b border-n-200 px-3 py-2 text-right tabular-nums text-n-600">{Number(f.descuento) > 0 ? dinero(Number(f.descuento)) : "—"}</td>
-                    <td className="border-b border-n-200 px-3 py-2">
+                    <td className="border-b border-border px-3 py-2">{f.usuario || "—"}</td>
+                    <td className="border-b border-border px-3 py-2">{f.metodo ? etiquetaMetodos(f.metodo) : "—"}</td>
+                    <td className="whitespace-nowrap border-b border-border px-3 py-2 text-right font-semibold tabular-nums">{valor(Number(f.monto))}</td>
+                    <td className="whitespace-nowrap border-b border-border px-3 py-2 text-right tabular-nums text-n-600">{Number(f.descuento) > 0 ? dinero(Number(f.descuento)) : "—"}</td>
+                    <td className="border-b border-border px-3 py-2">
                       {f.href ? <Enlace href={f.href}>Abrir</Enlace> : "—"}
                     </td>
                   </tr>
@@ -196,7 +196,7 @@ export default async function DesglosePage({
 
           <ul className="flex flex-col gap-3 sm:hidden">
             {d.filas.map((f) => (
-              <li key={f.id} className="rounded-lg border border-n-200 bg-white p-3 text-sm" data-desglose-fila>
+              <li key={f.id} className="rounded-lg border border-border bg-card shadow-tarjeta p-3 text-sm" data-desglose-fila>
                 <div className="flex items-start justify-between gap-3">
                   <p className="font-semibold text-n-900">{f.concepto || f.cliente || "—"}</p>
                   <p className="whitespace-nowrap font-bold tabular-nums text-n-900">{valor(Number(f.monto))}</p>

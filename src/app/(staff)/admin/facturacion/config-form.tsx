@@ -43,7 +43,7 @@ export function ConfigFiscalForm({ inicial, catalogos, editable }: { inicial: Co
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-4">
+    <div className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <p className="text-sm text-n-600">Tal como vienen en la constancia de situación fiscal del negocio. Con estos datos se emiten todas las facturas.</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="RFC" value={c.rfc} onChange={(e) => poner("rfc", e.target.value.toUpperCase())} maxLength={13} disabled={!editable} />

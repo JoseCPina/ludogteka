@@ -39,9 +39,9 @@ type Esquema = {
 
 function Seccion({ titulo, sub, children }: { titulo: string; sub?: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
+    <section className="flex flex-col gap-3 border-t border-border pt-6">
       <div>
-        <h2 className="text-lg font-bold text-n-900">{titulo}</h2>
+        <h2 className="text-lg font-semibold text-foreground">{titulo}</h2>
         {sub && <p className="text-sm text-n-600">{sub}</p>}
       </div>
       {children}
@@ -234,7 +234,7 @@ export default async function EmpleadoPage({
         <>
           <Seccion titulo="Cómo se le paga" sub="Cambiarlo es capturar un esquema nuevo con su fecha: el anterior queda en el historial y los pagos hechos no cambian.">
             {vigente ? (
-              <p className="rounded-md border border-n-200 bg-white p-3 text-n-800">
+              <p className="rounded-md border border-border bg-card p-3 text-n-800">
                 {textoEsquema(vigente)} <span className="text-sm text-n-500">· desde el {formatearFechaCalendario(vigente.vigente_desde)}</span>
               </p>
             ) : (
@@ -293,7 +293,7 @@ export default async function EmpleadoPage({
             ) : (
               <ul className="flex flex-col gap-2">
                 {adelantos.map((a) => (
-                  <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-n-200 bg-white p-3 text-sm">
+                  <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card p-3 text-sm">
                     <span className={a.cancelado ? "text-n-500 line-through" : "text-n-800"}>
                       {formatearFechaCalendario(a.fecha)} · {moneda(a.monto)} · {METODOS_PAGO[a.metodo] ?? a.metodo}
                       {a.motivo && ` · ${a.motivo}`}

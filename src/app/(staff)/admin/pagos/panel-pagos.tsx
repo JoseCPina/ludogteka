@@ -105,12 +105,12 @@ export function PanelPagos({
       {error && <Alert variante="error" titulo="No se pudo completar">{error}</Alert>}
       {aviso && <Alert variante="exito" titulo={aviso} />}
 
-      <section className="rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">¿Con qué cobras en el mostrador?</h2>
+      <section className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">¿Con qué cobras en el mostrador?</h2>
         <div className="mt-4 grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Con qué cobras">
           {OPCIONES.map((o) => (
             <Alternar key={o.valor} type="button" role="radio" aria-checked={elegido === o.valor} onClick={() => elegir(o.valor)} className={`flex min-h-20 flex-col items-start justify-center rounded-md border-[1.5px] px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado ${
-                elegido === o.valor ? "border-morado bg-morado-suave" : "border-n-200 bg-white hover:border-morado/50"
+                elegido === o.valor ? "border-morado bg-morado-suave" : "border-border bg-white hover:border-morado/50"
               }`} cargando={eligiendo.cargando}>
               <span className="font-semibold text-n-900">{NOMBRE_PROVEEDOR[o.valor]}</span>
               <span className="text-sm text-n-600">{o.texto}</span>
@@ -120,9 +120,9 @@ export function PanelPagos({
       </section>
 
       {elegido === "mercadopago" && (
-        <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
+        <section className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-bold text-n-900">Mercado Pago</h2>
+            <h2 className="text-lg font-semibold text-foreground">Mercado Pago</h2>
             {mp.conectada ? (
               <Etiqueta tono={mp.simulada ? "sim" : "ok"}>{mp.simulada ? "Simulación: no mueve dinero" : "Conectado"}</Etiqueta>
             ) : legado ? (
@@ -182,7 +182,7 @@ export function PanelPagos({
           )}
 
           {mp.conectada && (
-            <div className="flex flex-col gap-3 border-t border-n-200 pt-4">
+            <div className="flex flex-col gap-3 border-t border-border pt-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-semibold text-n-900">Tu terminal</p>
                 <Button sinBloqueo type="button" variante="secundario" cargando={buscando.cargando} onClick={buscarTerminales}>
@@ -200,7 +200,7 @@ export function PanelPagos({
               {terminales && terminales.length > 0 && (
                 <ul className="flex flex-col gap-2">
                   {terminales.map((t) => (
-                    <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-n-200 px-4 py-3">
+                    <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border px-4 py-3">
                       <span>
                         <span className="block font-semibold text-n-900">{t.nombre}</span>
                         <span className="block break-all text-xs text-n-600">{t.id}</span>
@@ -229,9 +229,9 @@ export function PanelPagos({
       )}
 
       {elegido === "clip" && (
-        <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
+        <section className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-lg font-bold text-n-900">Clip</h2>
+            <h2 className="text-lg font-semibold text-foreground">Clip</h2>
             {clip.conectada ? (
               <Etiqueta tono={clip.simulada ? "sim" : "ok"}>{clip.simulada ? "Simulación: no mueve dinero" : "Conectado"}</Etiqueta>
             ) : (

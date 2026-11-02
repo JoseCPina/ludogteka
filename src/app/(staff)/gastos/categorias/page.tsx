@@ -23,7 +23,7 @@ export default async function CategoriasGastoPage() {
         </Enlace>
         <h1 className="mt-1 text-2xl font-bold text-n-900">Categorías de gasto</h1>
       </div>
-      <ul className="divide-y divide-n-200 rounded-lg border border-n-200 bg-white">
+      <ul className="divide-y divide-border rounded-lg border border-border bg-card shadow-tarjeta">
         {(categorias ?? []).map((c) => (
           <li key={c.id} className="flex flex-col gap-2 px-4 py-3">
             <div>
@@ -43,7 +43,7 @@ export default async function CategoriasGastoPage() {
         ))}
       </ul>
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Nueva categoría</h2>
+        <h2 className="text-lg font-semibold text-foreground">Nueva categoría</h2>
         <FormularioAccion accion={crearCategoria} textoBoton="Agregar" reiniciar>
           <Field label="Nombre" name="nombre" required />
           <Field label="Descripción (opcional)" name="descripcion" />

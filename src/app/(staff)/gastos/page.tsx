@@ -116,7 +116,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Por pagar</h2>
+        <h2 className="text-lg font-semibold text-foreground">Por pagar</h2>
         {errorAtender ? (
           <Alert variante="error" titulo="No pudimos cargar los pendientes">{errorAtender.message}</Alert>
         ) : pendientes.length === 0 ? (
@@ -126,7 +126,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
             {pendientes.map((p) => {
               const per = periodoDe.get(p.id);
               return (
-                <li key={p.id} className={`flex flex-col gap-2 rounded-lg border bg-white p-3 ${p.vencido ? "border-coral" : "border-n-200"}`}>
+                <li key={p.id} className={`flex flex-col gap-2 rounded-lg border bg-white p-3 ${p.vencido ? "border-coral" : "border-border"}`}>
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div className="flex flex-col gap-1">
                       <p className="font-semibold text-n-900">
@@ -168,8 +168,8 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
         )}
       </section>
 
-      <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Registrar un gasto</h2>
+      <section className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Registrar un gasto</h2>
         {!turno && <p className="text-sm text-n-600">No hay turno de caja abierto: para pagar con efectivo del cajón, primero abre el turno.</p>}
         <FormularioAccion accion={registrarGasto} textoBoton="Registrar gasto" textoExito="Gasto registrado" reiniciar>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -189,15 +189,15 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
         </FormularioAccion>
       </section>
 
-      <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
+      <section className="flex flex-col gap-3 border-t border-border pt-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 className="text-lg font-bold capitalize text-n-900">{nombreMes(mes)}</h2>
+          <h2 className="text-lg font-semibold capitalize text-foreground">{nombreMes(mes)}</h2>
           <form method="get" className="flex items-end gap-2">
             <Field label="Mes" name="mes" type="month" defaultValue={mes} />
             <Button type="submit" variante="secundario">Ver</Button>
           </form>
         </div>
-        <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
           <TablaResponsiva className="w-full min-w-[480px] border-collapse text-sm">
             <thead>
               <tr className="bg-n-100 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -213,7 +213,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                 .map((r) => {
                   const dif = Number(r.monto) - r.anterior;
                   return (
-                    <tr key={r.categoria_id} className="border-t border-n-200">
+                    <tr key={r.categoria_id} className="border-t border-border">
                       <td className="px-3 py-2 font-semibold text-n-900">{r.categoria}</td>
                       <td className="px-3 py-2 text-right tabular-nums">{moneda(r.monto)}</td>
                       <td className="px-3 py-2 text-right tabular-nums text-n-600">{moneda(r.anterior)}</td>
@@ -251,7 +251,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                 const cancelado = g.estado === "cancelado";
                 const url = g.comprobante_path ? urlDe.get(g.comprobante_path) : null;
                 return (
-                  <li key={g.id} className={`flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-3 ${cancelado ? "opacity-70" : ""}`}>
+                  <li key={g.id} className={`flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-3 ${cancelado ? "opacity-70" : ""}`}>
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="flex flex-col gap-0.5">
                         <p className={`font-semibold text-n-900 ${cancelado ? "line-through" : ""}`}>

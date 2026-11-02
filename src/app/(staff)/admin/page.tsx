@@ -88,9 +88,9 @@ async function SeccionesAdmin() {
     <>
 
       {esAdmin && (
-        <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-n-200 bg-white p-5">
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
           <div>
-            <h2 className="text-lg font-bold text-n-900">Permisos de recepción</h2>
+            <h2 className="text-lg font-semibold text-foreground">Permisos de recepción</h2>
             <p className="mt-1 text-sm text-n-600">
               Dale a una persona de recepción permisos extra para que te ayude a administrar.
             </p>
@@ -102,9 +102,9 @@ async function SeccionesAdmin() {
       )}
 
       {esAdmin && (
-        <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-n-200 bg-white p-5">
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
           <div>
-            <h2 className="text-lg font-bold text-n-900">Importar clientes y mascotas</h2>
+            <h2 className="text-lg font-semibold text-foreground">Importar clientes y mascotas</h2>
             <p className="mt-1 text-sm text-n-600">
               Pasa tu lista de un Excel o CSV al sistema, con vista previa y con opción de deshacer.
             </p>
@@ -116,15 +116,15 @@ async function SeccionesAdmin() {
       )}
 
       {puedeConfig && (
-        <section id="configuracion" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="mb-4 text-lg font-bold text-n-900">Configuración del negocio</h2>
+        <section id="configuracion" className="scroll-mt-20 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Configuración del negocio</h2>
           <ConfiguracionNegocio vigente={configVigente} conCupo={usaEstancias(sesion?.modulos ?? [])} />
         </section>
       )}
 
       {ubicacion && (
-        <section id="ubicacion" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="mb-4 text-lg font-bold text-n-900">Ubicación para recolección</h2>
+        <section id="ubicacion" className="scroll-mt-20 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Ubicación para recolección</h2>
           <UbicacionNegocio
             direccion={direccionNegocio}
             base={cupoUbic?.base_direccion ?? ""}
@@ -135,37 +135,37 @@ async function SeccionesAdmin() {
       )}
 
       {puedeConfig && (
-        <section id="horario" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="mb-4 text-lg font-bold text-n-900">Horario de atención</h2>
+        <section id="horario" className="scroll-mt-20 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Horario de atención</h2>
           <HorarioNegocio vigente={(horarioVigente ?? []) as DiaHorario[]} negocioId={negocioIdActual} version={(horarioUltimo?.updated_at as string | undefined) ?? null} />
         </section>
       )}
 
       {puedeTarifas && (
-        <section className="rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="mb-4 text-lg font-bold text-n-900">Precios sin capturar</h2>
+        <section className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Precios sin capturar</h2>
           <TarifasFaltantes servicios={serviciosSinTarifa} />
         </section>
       )}
 
       {puedePersonal && (
-        <section id="invitar" className="scroll-mt-20 rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="mb-4 text-lg font-bold text-n-900">Invitar personal</h2>
+        <section id="invitar" className="scroll-mt-20 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Invitar personal</h2>
           <InvitarStaff />
         </section>
       )}
 
       {!esAdmin && puedePersonal && (
-        <section className="rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="mb-4 text-lg font-bold text-n-900">Personal</h2>
+        <section className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">Personal</h2>
           <ListaPersonal zona={zona} personas={(personal as PersonaStaff[] | null) ?? []} />
         </section>
       )}
 
       {esAdmin && (
       <>
-      <section className="rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-bold text-n-900">Tope de descuentos de recepción</h2>
+      <section className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Tope de descuentos de recepción</h2>
         <DescuentoConfig
           topeActual={topeFila?.estado === "configurado" ? Number(topeFila.tope_recepcion) : null}
           vigenteDesde={topeFila?.vigencia_desde ?? null}
@@ -173,9 +173,9 @@ async function SeccionesAdmin() {
       </section>
 
       {cobroIntegrado && (
-        <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-n-200 bg-white p-5">
+        <section className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
           <div>
-            <h2 className="text-lg font-bold text-n-900">Cobro con terminal</h2>
+            <h2 className="text-lg font-semibold text-foreground">Cobro con terminal</h2>
             <p className="mt-1 text-sm text-n-700">
               {cobroIntegrado.proveedor === "manual"
                 ? "Hoy registras los cobros a mano."
@@ -190,8 +190,8 @@ async function SeccionesAdmin() {
         </section>
       )}
 
-      <section className="rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-bold text-n-900">Conexión con Google Maps</h2>
+      <section className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Conexión con Google Maps</h2>
         <DiagnosticoGoogle />
       </section>
       </>
@@ -199,7 +199,7 @@ async function SeccionesAdmin() {
 
       {esAdmin && (
       <section>
-        <h2 className="mb-4 text-lg font-bold text-n-900">Cuentas</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Cuentas</h2>
         {error ? (
           <Alert variante="error" titulo="No pudimos cargar las cuentas">
             Recarga la página. Si el problema sigue, avísale al equipo técnico.
@@ -242,7 +242,7 @@ export default async function AdminPage() {
       {esAdmin && <AvanceWeb compacto />}
       {esAdmin && <VideosInicio />}
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-bold text-n-900">Hoy</h2>
+        <h2 className="text-lg font-semibold text-foreground">Hoy</h2>
         {esAdmin && <RecordatorioPagoSiToca />}
         <TableroDia compacto />
         <ExtrasTablero />

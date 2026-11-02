@@ -127,13 +127,13 @@ export function SubirLogo({ nombre, color, logoUrl, ancho, alto }: { nombre: str
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-xs uppercase tracking-wide text-n-500">Encabezado de un recibo</span>
-            <div className="max-w-sm rounded-lg border border-n-200 bg-white p-4">
+            <div className="max-w-sm rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <LogoNegocio nombre={nombre} marca={marca} variante="recibo" />
             </div>
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-xs uppercase tracking-wide text-n-500">Portal de tus clientes</span>
-            <div className="max-w-sm rounded-lg border border-n-200 bg-white px-4 py-3">
+            <div className="max-w-sm rounded-lg border border-border bg-card shadow-tarjeta px-4 py-3">
               <LogoNegocio nombre={nombre} marca={marca} variante="barra" />
             </div>
           </div>

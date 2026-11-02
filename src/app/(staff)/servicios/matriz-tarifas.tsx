@@ -444,7 +444,7 @@ export function MatrizTarifas({
   if (previsualizando) {
     return (
       <div className="flex flex-col gap-4">
-        <h2 className="text-lg font-bold text-n-900">Confirmar cambios</h2>
+        <h2 className="text-lg font-semibold text-foreground">Confirmar cambios</h2>
         {error && (
           <Alert variante="error" titulo="No se pudo guardar">
             {error}
@@ -453,17 +453,17 @@ export function MatrizTarifas({
         <p className="text-n-600">
           Va a quedar vigente desde el <strong>{formatearFechaCalendario(vigenciaDesde)}</strong>.
         </p>
-        <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
           <TablaResponsiva className="w-full min-w-[560px] border-collapse">
             <thead>
               <tr>
-                <th className="border-b border-n-200 bg-n-100 px-4 py-2 text-left text-xs font-bold uppercase text-n-600">
+                <th className="border-b border-border bg-n-100 px-4 py-2 text-left text-xs font-bold uppercase text-n-600">
                   Celda
                 </th>
-                <th className="border-b border-n-200 bg-n-100 px-4 py-2 text-left text-xs font-bold uppercase text-n-600">
+                <th className="border-b border-border bg-n-100 px-4 py-2 text-left text-xs font-bold uppercase text-n-600">
                   Antes
                 </th>
-                <th className="border-b border-n-200 bg-n-100 px-4 py-2 text-left text-xs font-bold uppercase text-n-600">
+                <th className="border-b border-border bg-n-100 px-4 py-2 text-left text-xs font-bold uppercase text-n-600">
                   Después
                 </th>
               </tr>
@@ -471,15 +471,15 @@ export function MatrizTarifas({
             <tbody>
               {cambios.map((c, i) => (
                 <tr key={i}>
-                  <td className="border-b border-n-200 px-4 py-2 text-n-900">
+                  <td className="border-b border-border px-4 py-2 text-n-900">
                     {[c.filaEtiqueta, c.pelajeEtiqueta, dependeCantidad ? c.tramoEtiqueta : null]
                       .filter((v) => v && v !== "—")
                       .join(" · ")}
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2 tabular-nums text-n-600">
+                  <td className="border-b border-border px-4 py-2 tabular-nums text-n-600">
                     {c.anterior}
                   </td>
-                  <td className="border-b border-n-200 px-4 py-2 tabular-nums font-semibold text-n-900">
+                  <td className="border-b border-border px-4 py-2 tabular-nums font-semibold text-n-900">
                     {c.no_aplica ? "No aplica" : `$${c.precio!.toFixed(2)}`}
                     {c.precio_pelo_maltratado !== null && (
                       <span className="block text-xs font-normal text-n-600">
@@ -538,7 +538,7 @@ export function MatrizTarifas({
         </Alert>
       )}
 
-      <div className="flex flex-wrap items-end gap-4 rounded-lg border border-n-200 bg-white p-4">
+      <div className="flex flex-wrap items-end gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <Field
           label="Vigente desde"
           type="date"
@@ -632,7 +632,7 @@ export function MatrizTarifas({
       )}
 
       {dependeCantidad && (
-        <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-n-900">Tramos de cantidad</h3>
             <Button type="button" variante="secundario" onClick={agregarTramo}>
@@ -744,7 +744,7 @@ export function MatrizTarifas({
                   // lee como si fueran grupos distintos.
                   const abreGrupo = i === 0 || filas[i - 1].etiqueta !== fila.etiqueta;
                   return (
-                    <tr key={fila.key} className={abreGrupo && i > 0 ? "border-t border-n-200" : ""}>
+                    <tr key={fila.key} className={abreGrupo && i > 0 ? "border-t border-border" : ""}>
                       <td className="py-1 pr-3 align-middle text-sm font-semibold text-n-900">
                         {abreGrupo ? fila.etiqueta : ""}
                       </td>

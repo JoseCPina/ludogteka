@@ -62,8 +62,8 @@ export default async function FacturacionAdminPage() {
       </div>
 
       {t && (
-        <section className={`rounded-lg border p-4 ${t.cerca ? "border-ambar bg-ambar-suave" : "border-n-200 bg-white"}`}>
-          <h2 className="text-lg font-bold text-n-900">Timbres de este mes</h2>
+        <section className={`rounded-lg border p-4 ${t.cerca ? "border-ambar bg-ambar-suave" : "border-border bg-white"}`}>
+          <h2 className="text-lg font-semibold text-foreground">Timbres de este mes</h2>
           <p className="text-n-800">
             Llevas <span className="font-bold">{t.usados}</span> de <span className="font-bold">{t.tope}</span>.
             {t.agotado
@@ -77,7 +77,7 @@ export default async function FacturacionAdminPage() {
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Datos fiscales del negocio</h2>
+        <h2 className="text-lg font-semibold text-foreground">Datos fiscales del negocio</h2>
         <ConfigFiscalForm
           editable={puede}
           catalogos={(cats ?? []) as ItemCatalogo[]}
@@ -102,18 +102,18 @@ export default async function FacturacionAdminPage() {
 
       {puede && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">Llave del servicio de timbrado</h2>
+          <h2 className="text-lg font-semibold text-foreground">Llave del servicio de timbrado</h2>
           <LlavePac hay={llave.hay} modo={llave.modo} origen={llave.origen} guardadaAt={(cfg?.llave_guardada_at as string | null) ?? null} />
         </section>
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">IVA y claves del SAT por tipo de concepto</h2>
+        <h2 className="text-lg font-semibold text-foreground">IVA y claves del SAT por tipo de concepto</h2>
         <TablaIva editable={puede} tipoPersona={(cfg?.tipo_persona as string | null) ?? null} guardadas={(clases ?? []) as ClaseGuardada[]} />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Productos y servicios</h2>
+        <h2 className="text-lg font-semibold text-foreground">Productos y servicios</h2>
         <Clasificacion
           editable={puede}
           insumos={(insumos ?? []) as { id: string; nombre: string }[]}

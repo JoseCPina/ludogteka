@@ -22,8 +22,8 @@ export function PoliticaSalidaForm({ completa: inicial }: { completa: boolean })
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
-      <h2 className="text-lg font-bold text-n-900">Salida anticipada</h2>
+    <div className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+      <h2 className="text-lg font-semibold text-foreground">Salida anticipada</h2>
       <p className="text-sm text-n-700">
         Cuando un perro sale antes de su salida prevista, por omisión la cuenta baja a las noches que usó (en guardería, a los días): lo no usado se quita con el motivo
         «Salida anticipada», y el check-out lo dice antes de confirmar («Sale 1 noche antes: la cuenta baja de $450 a $270»).

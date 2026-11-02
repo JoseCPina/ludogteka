@@ -53,7 +53,7 @@ export function LlavePac({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       {hay ? (
         <Alert variante="exito" titulo={`Hay una llave ${modo === "produccion" ? "de producción" : "de pruebas"}`}>
           {origen === "entorno"

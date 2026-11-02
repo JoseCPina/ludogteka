@@ -58,7 +58,7 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
       </div>
       <SubnavEmpleados activa="nomina" puedeNomina ausenciasPorAprobar={porAprobar ?? 0} />
 
-      <form method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-4">
+      <form method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <Field label="Desde" name="desde" type="date" defaultValue={desde} />
         <Field label="Hasta" name="hasta" type="date" defaultValue={hasta} />
         <Button type="submit" variante="secundario">Calcular</Button>
@@ -76,7 +76,7 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
       {enPeriodo.length === 0 ? (
         <p className="rounded-lg border-[1.5px] border-dashed border-n-300 bg-white p-8 text-center text-n-600">Nadie trabajó en este periodo.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
           <TablaResponsiva className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
               <tr className="bg-n-100 text-left text-xs font-bold uppercase tracking-wide text-n-600">
@@ -94,7 +94,7 @@ export default async function NominaPage({ searchParams }: { searchParams: Promi
                 const d = calculos[i].data as Desglose | null;
                 const pagado = pagoVigente(e.id);
                 return (
-                  <tr key={e.id} className="border-t border-n-200">
+                  <tr key={e.id} className="border-t border-border">
                     <td className="px-3 py-2">
                       <Enlace href={`/empleados/nomina/${e.id}?desde=${desde}&hasta=${hasta}`}>
                         {e.nombre}

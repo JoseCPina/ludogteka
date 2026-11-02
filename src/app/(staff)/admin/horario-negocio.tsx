@@ -92,7 +92,7 @@ export function HorarioNegocio({
         cuántos días trae una mensualidad y el horario que dice el contrato.
       </p>
 
-      <ul className="divide-y divide-n-200 rounded-lg border border-n-200">
+      <ul className="divide-y divide-border rounded-lg border border-border">
         {DIAS.map((d) => {
           const f = filas[d.num];
           return (

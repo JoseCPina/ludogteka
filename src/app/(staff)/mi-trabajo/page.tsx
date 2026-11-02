@@ -56,8 +56,8 @@ export default async function MiTrabajoPage() {
         </p>
       </div>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
-        <h2 className="text-lg font-bold text-n-900">Hoy, {formatearFechaCalendario(hoy)}</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
+        <h2 className="text-lg font-semibold text-foreground">Hoy, {formatearFechaCalendario(hoy)}</h2>
         <p className="text-n-700">
           {deHoy?.hora_entrada_prog
             ? unirFrases(`Tu horario: ${hora(deHoy.hora_entrada_prog)} a ${hora(deHoy.hora_salida_prog)}`, `Después de ${MINUTOS_TOLERANCIA} minutos cuenta como retardo.`)
@@ -84,26 +84,26 @@ export default async function MiTrabajoPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Últimos 30 días</h2>
+        <h2 className="text-lg font-semibold text-foreground">Últimos 30 días</h2>
         <ResumenAsistencia dias={diasAsistencia} />
         <TablaAsistencia zona={zona} dias={diasAsistencia} empleadoId={empleadoId} puedeCorregir={false} correcciones={[]} />
         <p className="text-xs text-n-500">Si un registro está mal, pídele a un admin que lo corrija.</p>
       </section>
 
-      <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Mis ausencias</h2>
+      <section className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Mis ausencias</h2>
         <p className="text-n-800">
           Saldo de vacaciones: <strong>{Number(saldo ?? 0)} {Number(saldo ?? 0) === 1 ? "día" : "días"}</strong>
         </p>
         <ListaAusencias zona={zona} ausencias={(ausencias ?? []) as unknown as Ausencia[]} esAdmin={false} puedeCancelarSolicitadas vacio="No has pedido ausencias." />
-        <div className="rounded-lg border border-n-200 bg-white p-4">
+        <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <h3 className="mb-3 font-bold text-n-900">Pedir una ausencia</h3>
           <FormularioSolicitarAusencia empleadoId={null} hoy={hoy} />
         </div>
       </section>
 
-      <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Mis pagos</h2>
+      <section className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Mis pagos</h2>
         <ListaPagos zona={zona} pagos={(pagos ?? []) as PagoNomina[]} puedeRevertir={false} />
         {(adelantos ?? []).length > 0 && (
           <>

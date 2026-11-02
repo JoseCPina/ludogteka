@@ -78,7 +78,7 @@ export function EventosEquipo({
       {exito && !abierto && <p className="text-sm font-semibold text-menta-oscuro">{exito}</p>}
 
       {abierto && (
-        <div className="flex max-w-lg flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+        <div className="flex max-w-lg flex-col gap-3 rounded-lg border-[1.5px] border-border bg-muted p-4">
           {abierto === "mantenimiento" && (
             <>
               <p className="text-sm text-n-700">

@@ -42,13 +42,13 @@ export default async function ProveedoresPage({
         </Alert>
       ) : !proveedores || proveedores.length === 0 ? (
         <div className="rounded-lg border-[1.5px] border-dashed border-n-300 bg-white p-10 text-center">
-          <h3 className="text-lg font-bold text-n-900">Todavía no hay proveedores</h3>
+          <h3 className="text-lg font-semibold text-foreground">Todavía no hay proveedores</h3>
         </div>
       ) : (
         <ul className="flex flex-col gap-2">
           {proveedores.map((p) => (
             <li key={p.id}>
-              <Enlace href={`/inventario/proveedores/${p.id}`} className={`flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave ${
+              <Enlace href={`/inventario/proveedores/${p.id}`} className={`flex items-center justify-between gap-3 rounded-md border border-border bg-card px-4 py-3 hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave ${
                   p.deleted_at ? "opacity-60" : ""
                 }`} forma="bloque">
                 <div>

@@ -51,7 +51,7 @@ export function UbicacionNegocio({
       </p>
       <div className="flex flex-col gap-1" data-direccion-negocio-lectura="">
         <span className="text-sm font-semibold text-n-800">Dirección del negocio</span>
-        <p className="rounded-md border-[1.5px] border-n-200 bg-n-50 px-3 py-2.5 text-n-900">
+        <p className="rounded-md border-[1.5px] border-border bg-muted px-3 py-2.5 text-n-900">
           {direccion || <span className="text-n-500">Todavía no la escribes.</span>}
         </p>
         <p className="text-xs text-n-600">

@@ -33,7 +33,7 @@ export function EditorAreas({ areas }: { areas: AreaFila[] }) {
 
   return (
     <div className="flex max-w-2xl flex-col gap-4">
-      <ul className="divide-y divide-n-200 rounded-lg border border-n-200 bg-white">
+      <ul className="divide-y divide-border rounded-lg border border-border bg-card shadow-tarjeta">
         {areas.map((a, i) => (
           <li key={a.id} className="flex flex-wrap items-end gap-2 px-4 py-3">
             <div className="min-w-[12rem] flex-1">

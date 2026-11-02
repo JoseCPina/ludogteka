@@ -131,8 +131,8 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
         </Alert>
       )}
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Movimientos</h2>
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Movimientos</h2>
         {movimientos.length >= MOVIMIENTOS_MOSTRADOS && (
           <p className="text-sm text-n-600">Se muestran los últimos {MOVIMIENTOS_MOSTRADOS} movimientos. La existencia de arriba cuenta todos.</p>
         )}
@@ -149,8 +149,8 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
       </div>
 
       {puedeCostos && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-          <h2 className="text-lg font-bold text-n-900">Costo</h2>
+        <div className="flex flex-col gap-3 border-t border-border pt-6">
+          <h2 className="text-lg font-semibold text-foreground">Costo</h2>
           <CostoReferencia
             insumoId={id}
             costoActual={costoReferencia}
@@ -160,8 +160,8 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
         </div>
       )}
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Datos del consumible</h2>
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Datos del consumible</h2>
         <InsumoForm
           action={actualizarConId}
           insumoId={id}
@@ -186,8 +186,8 @@ export default async function EditarInsumoPage({ params }: { params: Promise<{ i
       </div>
 
       {!insumo.deleted_at && puedeEditar && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-          <h2 className="text-lg font-bold text-n-900">Dar de baja</h2>
+        <div className="flex flex-col gap-3 border-t border-border pt-6">
+          <h2 className="text-lg font-semibold text-foreground">Dar de baja</h2>
           <p className="text-n-600">
             Un insumo dado de baja deja de aparecer para registrar consumo nuevo; su historial de
             movimientos no se afecta.

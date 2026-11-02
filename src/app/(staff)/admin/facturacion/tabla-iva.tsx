@@ -78,7 +78,7 @@ function Fila({ clase, inicial, personalizada, editable }: { clase: string; inic
   }
 
   return (
-    <li className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+    <li className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-semibold text-n-900">{ETIQUETA_CLASE[clase]}</p>
         <span className="text-xs text-n-500">{personalizada ? "Personalizado" : "Valor por omisión"}</span>
@@ -102,7 +102,7 @@ function Fila({ clase, inicial, personalizada, editable }: { clase: string; inic
             </Button>
           </div>
           {resultados.length > 0 && (
-            <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto rounded-md border border-n-200 p-1 text-sm">
+            <ul className="flex max-h-48 flex-col gap-1 overflow-y-auto rounded-md border border-border p-1 text-sm">
               {resultados.map((r) => (
                 <li key={r.clave}>
                   <Alternar type="button" onClick={() => {

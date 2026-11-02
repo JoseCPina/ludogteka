@@ -35,7 +35,7 @@ export default async function SinCostoPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {filas.map((f) => (
-            <li key={f.id} className="rounded-lg border border-n-200 bg-white p-4">
+            <li key={f.id} className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <p className="font-semibold text-n-900">
                 <Enlace href={`/inventario/${f.id}`}>
                   {f.nombre}

@@ -31,8 +31,8 @@ export function RestablecerPasswordPersonal({ empleadoId, profileId, nombre, com
 
 
   return (
-    <div className={compacto ? "flex flex-col gap-2" : "flex flex-col gap-3 border-t border-n-200 pt-6"}>
-      {!compacto && <h2 className="text-lg font-bold text-n-900">Contraseña de la app</h2>}
+    <div className={compacto ? "flex flex-col gap-2" : "flex flex-col gap-3 border-t border-border pt-6"}>
+      {!compacto && <h2 className="text-lg font-semibold text-foreground">Contraseña de la app</h2>}
 
       <>
           {!compacto && <p className="text-n-600" data-texto-recuperacion>
