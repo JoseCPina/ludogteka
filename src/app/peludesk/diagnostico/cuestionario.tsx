@@ -67,7 +67,7 @@ export function Cuestionario({ giroInicial }: { giroInicial: GiroMercado }) {
                 {d.lineas.length > 0 && (
                   <ul className="mt-3 flex flex-col gap-2 text-sm text-n-700">
                     {d.lineas.map((l) => (
-                      <li key={l.concepto} className="border-t border-n-200 pt-2"><b className="text-n-900">{pesos(l.monto)}</b> · {l.concepto}<br /><span className="text-xs text-n-600">Cómo: {l.como}</span></li>
+                      <li key={l.concepto} className="border-t border-border pt-2"><b className="text-n-900">{pesos(l.monto)}</b> · {l.concepto}<br /><span className="text-xs text-n-600">Cómo: {l.como}</span></li>
                     ))}
                   </ul>
                 )}

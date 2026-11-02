@@ -61,7 +61,7 @@ export default async function Guia({ params }: Props) {
         </div>
       </section>
 
-      {recordatorios && <SeccionRecordatorios textos={recordatorios} className="border-y border-n-200 bg-white" />}
+      {recordatorios && <SeccionRecordatorios textos={recordatorios} className="border-y border-border bg-white" />}
 
       <article className="mx-auto max-w-3xl px-4 pb-6 sm:px-6">
         {g.secciones.map((s) => (
@@ -87,8 +87,8 @@ export default async function Guia({ params }: Props) {
         <h2 id="preguntas" className="text-2xl font-bold text-n-900">Preguntas frecuentes</h2>
         <dl className="mt-6 flex flex-col gap-3">
           {g.preguntas.map(([q, r]) => (
-            <div key={q} className="rounded-2xl border border-n-200 bg-white p-5">
-              <dt className="text-lg font-bold text-n-900">{q}</dt>
+            <div key={q} className="rounded-2xl border border-border bg-white p-5">
+              <dt className="text-lg font-semibold text-foreground">{q}</dt>
               <dd className="mt-2 text-n-700">{r}</dd>
             </div>
           ))}

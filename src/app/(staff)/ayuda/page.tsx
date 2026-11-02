@@ -42,20 +42,20 @@ export default async function AyudaPage({ searchParams }: { searchParams: Promis
         <Enlace href={`/ayuda/tickets/nuevo${pantalla ? `?desde=${encodeURIComponent(pantalla)}` : ""}`}>Crear ticket</Enlace>
       </div>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
-        <h2 className="text-lg font-bold text-n-900">Asistente</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
+        <h2 className="text-lg font-semibold text-foreground">Asistente</h2>
         <Asistente pantalla={pantalla} disponible={landing.plan !== "demo"} />
       </section>
 
       {(tickets ?? []).length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-bold text-n-900">{sesion?.rol === "admin" ? "Tickets del negocio" : "Tus tickets"}</h2>
+          <h2 className="text-lg font-semibold text-foreground">{sesion?.rol === "admin" ? "Tickets del negocio" : "Tus tickets"}</h2>
           <ul className="flex flex-col gap-2">
             {(tickets ?? []).map((t) => {
               const nueva = t.ultimo_de === "plataforma" && t.profile_id === sesion?.user.id && (!t.visto_creador_at || t.visto_creador_at < t.ultimo_mensaje_at);
               return (
                 <li key={t.id as string}>
-                  <Enlace href={`/ayuda/tickets/${t.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-n-200 bg-white px-4 py-3 hover:border-morado" forma="bloque">
+                  <Enlace href={`/ayuda/tickets/${t.id}`} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card shadow-tarjeta px-4 py-3 hover:border-morado" forma="bloque">
                     <span className="font-semibold text-n-900">
                       #{t.numero as number} · {t.asunto as string}
                     </span>
@@ -74,16 +74,16 @@ export default async function AyudaPage({ searchParams }: { searchParams: Promis
 
       <section className="flex flex-col gap-3" data-seccion-videos>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="text-lg font-bold text-n-900">Videos</h2>
+          <h2 className="text-lg font-semibold text-foreground">Videos</h2>
           {videos.length > 0 && <Enlace href="/ayuda/videos" className="text-sm">Ver todos ({videos.length})</Enlace>}
         </div>
         {videos.length === 0 ? (
-          <p className="rounded-lg border border-n-200 bg-n-50 p-4 text-n-700">Estamos preparando los videos. Mientras tanto, los artículos de abajo te explican cada pantalla.</p>
+          <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">Estamos preparando los videos. Mientras tanto, los artículos de abajo te explican cada pantalla.</p>
         ) : (
           <ul className="grid gap-2 sm:grid-cols-2">
             {videos.slice(0, 4).map((v) => (
               <li key={v.slug}>
-                <Enlace href={`/ayuda/videos/${v.slug}`} className="flex items-center justify-between gap-2 rounded-lg border border-n-200 bg-white px-4 py-3 hover:border-morado" forma="bloque">
+                <Enlace href={`/ayuda/videos/${v.slug}`} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card shadow-tarjeta px-4 py-3 hover:border-morado" forma="bloque">
                   <span className="font-semibold text-n-900">▶ {v.titulo}</span>
                   <span className="text-xs text-n-500">{duracionTexto(v.duracion_s)}</span>
                 </Enlace>
@@ -94,7 +94,7 @@ export default async function AyudaPage({ searchParams }: { searchParams: Promis
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Artículos</h2>
+        <h2 className="text-lg font-semibold text-foreground">Artículos</h2>
         <IndiceAyuda articulos={articulos} />
       </section>
     </div>

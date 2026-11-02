@@ -69,7 +69,7 @@ function Escritorio({ captura, alt, className = "" }: { captura: string; alt: st
       width={ESCRITORIO.ancho}
       height={ESCRITORIO.alto}
       alt={alt}
-      className={`pd-captura h-auto w-full rounded-[18px] border border-n-200 bg-white ${className}`}
+      className={`pd-captura h-auto w-full rounded-[18px] border border-border bg-white ${className}`}
     />
   );
 }
@@ -222,7 +222,7 @@ export default async function PeluDeskLanding() {
       <EventoPixelAlVer nombre="ViewContent" datos={{ content_name: "landing", content_category: "landing" }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(datos).replace(/</g, "\\u003c") }} />
 
-      <header className="sticky top-0 z-20 border-b border-n-200/70 bg-crema/90 backdrop-blur supports-[backdrop-filter]:bg-crema/75">
+      <header className="sticky top-0 z-20 border-b border-border/70 bg-crema/90 backdrop-blur supports-[backdrop-filter]:bg-crema/75">
         <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
           <Link href="/" aria-label="PeluDesk, inicio" className="rounded-md focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">
             <LogoPeluDesk tamano={30} />
@@ -241,7 +241,7 @@ export default async function PeluDeskLanding() {
             <MenuCelular>
               <nav aria-label="Principal" className="flex flex-col">
                 {ENLACES_MENU.map(([href, texto]) => (
-                  <a key={href} href={href} className="flex min-h-12 items-center border-b border-n-200 text-base font-semibold text-n-900">
+                  <a key={href} href={href} className="flex min-h-12 items-center border-b border-border text-base font-semibold text-n-900">
                     {texto}
                   </a>
                 ))}
@@ -305,7 +305,7 @@ export default async function PeluDeskLanding() {
         </section>
 
         {/* ── Marquee: para quién es ── */}
-        <section aria-label="Para quién es PeluDesk" className="border-y border-n-200 bg-white py-4">
+        <section aria-label="Para quién es PeluDesk" className="border-y border-border bg-white py-4">
           <div className="pd-marquee">
             <ul className="pd-marquee-pista">
               {[0, 1].map((copia) =>
@@ -328,7 +328,7 @@ export default async function PeluDeskLanding() {
         <SeccionRecordatorios textos={recordatorios} grande />
 
         {/* ── Lo que te quita de encima ── */}
-        <section aria-labelledby="t-alivio" className="relative border-y border-n-200 bg-white">
+        <section aria-labelledby="t-alivio" className="relative border-y border-border bg-white">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
             <Revelar className="max-w-2xl">
               <Etiqueta>Lo que te quita de encima</Etiqueta>
@@ -340,7 +340,7 @@ export default async function PeluDeskLanding() {
               {ALIVIOS.map((a, i) => (
                 <li key={a.ilus}>
                   <Revelar retraso={i * 90} className="h-full">
-                    <div className="pd-tarjeta flex h-full items-center gap-4 rounded-[22px] border border-n-200 bg-crema p-4 sm:flex-col sm:items-stretch sm:p-5">
+                    <div className="pd-tarjeta flex h-full items-center gap-4 rounded-[22px] border border-border bg-crema p-4 sm:flex-col sm:items-stretch sm:p-5">
                       <Ilustracion diferida nombre={a.ilus} className="h-auto w-[104px] shrink-0 sm:mx-auto sm:w-full sm:max-w-[240px]" sizes="(min-width: 640px) 240px, 104px" />
                       <div>
                         <p className="text-sm font-semibold text-n-500 line-through decoration-coral decoration-2 sm:mt-4">{a.antes}</p>
@@ -355,7 +355,7 @@ export default async function PeluDeskLanding() {
         </section>
 
         {/* ── También hotel, guardería y estética ── */}
-        <section id="tambien" aria-labelledby="t-tambien" className="relative scroll-mt-16 border-b border-n-200 bg-white">
+        <section id="tambien" aria-labelledby="t-tambien" className="relative scroll-mt-16 border-b border-border bg-white">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
             <Revelar className="max-w-2xl">
               <Etiqueta>Todo lo que ofrecemos</Etiqueta>
@@ -370,8 +370,8 @@ export default async function PeluDeskLanding() {
               {MODULOS_TRES.map((m, i) => (
                 <li key={m.clave}>
                   <Revelar retraso={i * 90} className="h-full">
-                    <div className="pd-tarjeta h-full overflow-hidden rounded-[22px] border border-n-200 bg-crema">
-                      <div className="aspect-[16/8] overflow-hidden border-b border-n-200 bg-n-50">
+                    <div className="pd-tarjeta h-full overflow-hidden rounded-[22px] border border-border bg-crema">
+                      <div className="aspect-[16/8] overflow-hidden border-b border-border bg-muted">
                         <ImgDiferida
                           src={`/peludesk/capturas/${CAPTURA_MODULO[m.clave]}-escritorio-800.webp`}
                           width={800}
@@ -426,8 +426,8 @@ export default async function PeluDeskLanding() {
               {FUNCIONES_VET.map((f, i) => (
                 <li key={f.titulo}>
                   <Revelar retraso={(i % 3) * 80} className="h-full">
-                    <div className="pd-tarjeta h-full rounded-[22px] border border-n-200 bg-white p-5">
-                      <h3 className="text-lg font-bold text-n-900">{f.titulo}</h3>
+                    <div className="pd-tarjeta h-full rounded-[22px] border border-border bg-white p-5">
+                      <h3 className="text-lg font-semibold text-foreground">{f.titulo}</h3>
                       <p className="mt-2 leading-snug text-n-700">{f.texto}</p>
                     </div>
                   </Revelar>
@@ -439,7 +439,7 @@ export default async function PeluDeskLanding() {
                 <li key={c.captura} className="flex flex-col gap-3">
                   <Revelar>
                     <Escritorio captura={c.captura} alt={c.alt} />
-                    <h3 className="mt-4 text-lg font-bold text-n-900">{c.titulo}</h3>
+                    <h3 className="mt-4 text-lg font-semibold text-foreground">{c.titulo}</h3>
                     <p className="mt-1 text-n-700">{c.texto}</p>
                   </Revelar>
                 </li>
@@ -456,7 +456,7 @@ export default async function PeluDeskLanding() {
         </section>
 
         {/* ── Míralo trabajar: minidemos animados ── */}
-        <section id="minidemos" aria-labelledby="t-minidemos" className="scroll-mt-16 border-y border-n-200 bg-white">
+        <section id="minidemos" aria-labelledby="t-minidemos" className="scroll-mt-16 border-y border-border bg-white">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:py-24">
             <Revelar className="max-w-2xl">
               <Etiqueta>Míralo trabajar</Etiqueta>
@@ -468,7 +468,7 @@ export default async function PeluDeskLanding() {
             <ul className="mt-10 grid gap-6 lg:grid-cols-2">
               {MINIDEMOS.map((d) => (
                 <li key={d.id} className={d.ancho ? "lg:col-span-2" : ""}>
-                  <div className="pd-tarjeta h-full rounded-[22px] border border-n-200 bg-crema p-4 sm:p-5">
+                  <div className="pd-tarjeta h-full rounded-[22px] border border-border bg-crema p-4 sm:p-5">
                     <div className="flex items-center gap-3">
                       <Mascota tipo={d.mascota} tamano={52} retraso={0.3} />
                       <div>
@@ -567,7 +567,7 @@ export default async function PeluDeskLanding() {
                       <BotonDemo texto="Ver demo" className="w-full" />
                     </div>
                   </div>
-                  <ul className="flex flex-col gap-2 border-t border-n-200 pt-6 text-sm text-n-800 md:border-l md:border-t-0 md:pl-8 md:pt-0">
+                  <ul className="flex flex-col gap-2 border-t border-border pt-6 text-sm text-n-800 md:border-l md:border-t-0 md:pl-8 md:pt-0">
                     {plan.modulos.map((m) => (
                       <li key={m} className="flex items-start gap-2">
                         <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" className="mt-px shrink-0 text-menta-oscuro" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
@@ -584,7 +584,7 @@ export default async function PeluDeskLanding() {
         )}
 
         {/* ── Preguntas ── */}
-        <section id="preguntas" aria-labelledby="t-preguntas" className="scroll-mt-16 border-t border-n-200 bg-white">
+        <section id="preguntas" aria-labelledby="t-preguntas" className="scroll-mt-16 border-t border-border bg-white">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 lg:grid-cols-12 lg:py-24">
             <Revelar className="lg:col-span-4">
               <Etiqueta>Sin letras chiquitas</Etiqueta>
@@ -597,7 +597,7 @@ export default async function PeluDeskLanding() {
             </Revelar>
             <div className="lg:col-span-8">
               {PREGUNTAS.map(([p, r]) => (
-                <details key={p} className="pd-pregunta group border-b border-n-200">
+                <details key={p} className="pd-pregunta group border-b border-border">
                   <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 text-lg font-semibold text-n-900 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">
                     {p}
                     <svg className="pd-mas shrink-0 text-morado" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
@@ -620,7 +620,7 @@ export default async function PeluDeskLanding() {
         </section>
 
         {/* ── Aprende: páginas por tipo de negocio y lo último del blog ── */}
-        <section aria-labelledby="t-aprende" className="border-t border-n-200">
+        <section aria-labelledby="t-aprende" className="border-t border-border">
           <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
             <Etiqueta>Para cada negocio</Etiqueta>
             <h2 id="t-aprende" className="mt-3 text-3xl font-bold leading-tight tracking-[-0.02em] md:text-4xl">
@@ -640,7 +640,7 @@ export default async function PeluDeskLanding() {
                 ["/alternativas", "PeluDesk frente a otras opciones"],
               ].map(([href, texto]) => (
                 <li key={href}>
-                  <Link href={href} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-n-200 bg-white px-5 font-semibold text-n-900 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">
+                  <Link href={href} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-border bg-white px-5 font-semibold text-n-900 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave">
                     {texto}
                     <Flecha />
                   </Link>

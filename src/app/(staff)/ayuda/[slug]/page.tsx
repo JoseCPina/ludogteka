@@ -35,7 +35,7 @@ export default async function ArticuloEnApp({ params, searchParams }: { params: 
       {sesion?.rol === "recepcion" && !a.roles.includes("recepcion") && (
         <p className="max-w-3xl text-sm text-n-600">Esto lo hace el admin del negocio.</p>
       )}
-      <div className="flex max-w-3xl flex-wrap items-center gap-3 border-t border-n-200 pt-4">
+      <div className="flex max-w-3xl flex-wrap items-center gap-3 border-t border-border pt-4">
         <span className="text-n-700">¿No se resolvió?</span>
         <Enlace href={`/ayuda${pantalla ? `?desde=${encodeURIComponent(pantalla)}` : ""}`}>Pregúntale al asistente</Enlace>
         <Enlace href={`/ayuda/tickets/nuevo?${new URLSearchParams({ ...(pantalla ? { desde: pantalla } : {}), asunto: a.titulo }).toString()}`}>Crear ticket</Enlace>

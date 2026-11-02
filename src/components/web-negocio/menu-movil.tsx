@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { List, X } from "@phosphor-icons/react/dist/ssr";
+import { MenuIcon as List, XIcon as X } from "lucide-react";
 
 /**
  * El menú de la página web en el celular: un botón de hamburguesa que abre los enlaces a las secciones. Se cierra
@@ -35,7 +35,7 @@ export function MenuMovil({ enlaces, oscuro }: { enlaces: { href: string; texto:
         className="inline-flex h-10 w-10 items-center justify-center rounded-md"
         data-boton-menu
       >
-        {abierto ? <X size={22} weight="bold" aria-hidden /> : <List size={22} weight="bold" aria-hidden />}
+        {abierto ? <X size={22} aria-hidden /> : <List size={22} aria-hidden />}
       </button>
       {abierto && (
         <nav

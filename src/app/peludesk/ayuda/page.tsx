@@ -16,7 +16,7 @@ export const metadata: Metadata = metaPagina({
 
 export default function CentroDeAyuda() {
   return (
-    <div className="min-h-full bg-n-50">
+    <div className="min-h-full bg-muted">
       <EncabezadoAyuda />
       <main id="contenido" className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8">
         <div>

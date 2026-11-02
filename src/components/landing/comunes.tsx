@@ -1,5 +1,6 @@
 import Image, { type StaticImageData } from "next/image";
-import { PawPrint, WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
+import { PawPrintIcon as PawPrint } from "lucide-react";
+import { IconoWhatsApp as WhatsappLogo } from "@/components/iconos/whatsapp";
 import { datosLanding } from "@/lib/landing/negocio";
 
 // Piezas del lenguaje de la camioneta. Todo es Server Component: la
@@ -45,7 +46,7 @@ export async function BotonWhatsApp({
       rel="noopener noreferrer"
       className={`lp-boton lp-boton-${variante} lp-display inline-flex items-center justify-center gap-2.5 whitespace-nowrap rounded-full font-bold focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--lp-indigo)] ${alto} ${className}`}
     >
-      <WhatsappLogo size={tamano === "grande" ? 26 : 22} weight="fill" aria-hidden />
+      <WhatsappLogo size={tamano === "grande" ? 26 : 22} aria-hidden />
       {children}
     </a>
   );
@@ -137,7 +138,7 @@ export function BandaPerritos({ frases }: { frases: string[] }) {
       {frases.map((f, i) => (
         <li key={`${f}-${i}`} className="flex items-center gap-8 whitespace-nowrap">
           <span>{f}</span>
-          <PawPrint size={22} weight="fill" className="text-[var(--lp-amarillo)]" aria-hidden />
+          <PawPrint size={22} className="text-[var(--lp-amarillo)]" aria-hidden />
         </li>
       ))}
     </ul>

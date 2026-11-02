@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Clock, InfinityIcon } from "@phosphor-icons/react/dist/ssr";
+import { ClockIcon as Clock, InfinityIcon as InfinityIcon } from "lucide-react";
 import { BotonWhatsApp, Cinta } from "./comunes";
 import { datosLanding, pesos } from "@/lib/landing/negocio";
 import fotoPelotas from "./fotos/lugar/patio-pelotas.jpg";
@@ -22,7 +22,7 @@ export async function Guarderia() {
           <ul className="lp-revela mt-6 flex flex-col gap-2">
             {HORARIO.map((h) => (
               <li key={h.dias} className="lp-display inline-flex w-fit items-center gap-2 rounded-full bg-[var(--lp-menta)] px-4 py-2 text-lg font-bold text-[var(--lp-turquesa-hondo)]">
-                <Clock size={20} weight="bold" aria-hidden />
+                <Clock size={20} aria-hidden />
                 {h.dias}: {h.horas}
               </li>
             ))}
@@ -61,7 +61,7 @@ export async function Guarderia() {
             <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="lp-display inline-flex items-center gap-2 text-2xl font-bold">
-                  <InfinityIcon size={28} weight="bold" aria-hidden />
+                  <InfinityIcon size={28} aria-hidden />
                   Mensualidad
                 </p>
                 <p className="mt-1 max-w-[30ch] text-lg text-white/85">

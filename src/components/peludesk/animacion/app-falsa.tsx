@@ -91,17 +91,17 @@ export function AppFalsa() {
         ref={ventana}
         role="img"
         aria-label="Ejemplo animado de PeluDesk: llega una cita por WhatsApp, se agenda, el perro hace check-in con sus vacunas al corriente, se cobra y la caja cuadra."
-        className={`pd-ventana pd-captura relative overflow-hidden rounded-[18px] border border-n-200 bg-crema ${saliendo ? "pd-sale" : ""}`}
+        className={`pd-ventana pd-captura relative overflow-hidden rounded-[18px] border border-border bg-crema ${saliendo ? "pd-sale" : ""}`}
       >
         <div aria-hidden="true" className="pointer-events-none select-none">
-          <div className="flex items-center gap-2 border-b border-n-200 bg-white px-3 py-2">
+          <div className="flex items-center gap-2 border-b border-border bg-white px-3 py-2">
             <span className="h-2.5 w-2.5 rounded-full bg-coral" />
             <span className="h-2.5 w-2.5 rounded-full bg-ambar" />
             <span className="h-2.5 w-2.5 rounded-full bg-menta" />
             <p className="ml-2 truncate text-xs font-semibold text-n-700">PeluDesk · Patitas &amp; Co. · El día de recepción</p>
           </div>
           <div className="flex">
-            <div className="flex w-[52px] shrink-0 flex-col gap-1 border-r border-n-200 bg-white p-1.5 sm:w-[168px] sm:p-2">
+            <div className="flex w-[52px] shrink-0 flex-col gap-1 border-r border-border bg-white p-1.5 sm:w-[168px] sm:p-2">
               {MODULOS.map((m, i) => (
                 <div
                   key={m.tipo}
@@ -172,7 +172,7 @@ export function AppFalsa() {
                   )}
                 </Panel>
               </div>
-              <div className="relative flex min-h-[46px] items-center justify-between gap-2 border-t border-n-200 bg-white px-3 py-2">
+              <div className="relative flex min-h-[46px] items-center justify-between gap-2 border-t border-border bg-white px-3 py-2">
                 <div className="min-w-0 text-[11px] font-semibold">
                   {pendiente && (
                     <p key={pendiente} className="pd-entra flex items-center gap-2 text-n-700">

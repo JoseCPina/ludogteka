@@ -59,7 +59,7 @@ export function MenuCelular({ children }: { children: ReactNode }) {
         onClick={(e) => {
           if ((e.target as HTMLElement).closest("a")) setAbierto(false);
         }}
-        className="pd-menu absolute inset-x-0 top-full border-b border-n-200 bg-crema px-4 pb-6 pt-2 shadow-[0_16px_32px_-16px_rgb(75_63_114/0.25)]"
+        className="pd-menu absolute inset-x-0 top-full border-b border-border bg-crema px-4 pb-6 pt-2 shadow-[0_16px_32px_-16px_rgb(75_63_114/0.25)]"
       >
         {children}
       </div>

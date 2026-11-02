@@ -28,7 +28,7 @@ const ENLACES = [
 
 export function EncabezadoSitio() {
   return (
-    <header className="sticky top-0 z-20 border-b border-n-200/70 bg-crema/90 backdrop-blur supports-[backdrop-filter]:bg-crema/75">
+    <header className="sticky top-0 z-20 border-b border-border/70 bg-crema/90 backdrop-blur supports-[backdrop-filter]:bg-crema/75">
       <a href="#contenido" className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-white focus:px-4 focus:py-2 focus:font-semibold focus:text-morado">
         Saltar al contenido
       </a>
@@ -52,7 +52,7 @@ export function EncabezadoSitio() {
           <MenuCelular>
             <nav aria-label="Principal" className="flex flex-col">
               {ENLACES.map(([href, texto]) => (
-                <Link key={href} href={href} className="flex min-h-12 items-center border-b border-n-200 text-base font-semibold text-n-900">
+                <Link key={href} href={href} className="flex min-h-12 items-center border-b border-border text-base font-semibold text-n-900">
                   {texto}
                 </Link>
               ))}
@@ -71,7 +71,7 @@ const ENLACE_PIE = "hover:text-morado focus-visible:outline-none focus-visible:r
 
 export function PieSitio({ whatsapp = null }: { whatsapp?: string | null }) {
   return (
-    <footer className="border-t border-n-200 bg-white pb-24 md:pb-0">
+    <footer className="border-t border-border bg-white pb-24 md:pb-0">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
         <div>
           <LogoPeluDesk tamano={26} />

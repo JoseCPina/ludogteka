@@ -19,7 +19,7 @@ export default function DemoVet() {
     <Pantalla altura="h-[560px] sm:h-[300px]" tiempos={[300, 2900, 3600, 4300, 5000, 6200, 7200]} etiqueta="Ejemplo animado de Veterinaria: el dictado se convierte en una nota clínica, con su receta y el carnet con código QR.">
       {({ paso, ciclo }) => (
         <div key={ciclo} className="grid h-full gap-3 sm:grid-cols-3">
-          <div className="flex flex-col rounded-xl border border-n-200 bg-white p-3">
+          <div className="flex flex-col rounded-xl border border-border bg-white p-3">
             <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-n-600">Dictado → nota SOAP</p>
             <div className="mt-2 flex h-10 items-center gap-[3px]">
               {ALTURAS.map((h, i) => (
@@ -45,7 +45,7 @@ export default function DemoVet() {
           <div className="flex flex-col rounded-xl border border-dashed border-n-300 bg-white/60 p-3">
             <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-n-600">Receta</p>
             {paso >= 6 && (
-              <div className="pd-pop mt-2 rounded-lg border border-n-200 bg-white p-2.5">
+              <div className="pd-pop mt-2 rounded-lg border border-border bg-card shadow-tarjeta p-2.5">
                 <p className="text-xs font-bold text-n-900">Luna · antiinflamatorio</p>
                 <p className="mt-1 text-[11px] text-n-700">1 tableta cada 12 h por 5 días</p>
                 <p className="mt-2 inline-block rounded-full bg-morado-suave px-2 py-0.5 text-[10px] font-bold tabular-nums text-morado">Folio SITPV 0001234</p>
@@ -56,7 +56,7 @@ export default function DemoVet() {
           <div className="flex flex-col rounded-xl border border-dashed border-n-300 bg-white/60 p-3">
             <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-n-600">Carnet de la mascota</p>
             {paso >= 7 && (
-              <div className="pd-pop mt-2 flex items-center gap-3 rounded-lg border border-n-200 bg-white p-2.5">
+              <div className="pd-pop mt-2 flex items-center gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-2.5">
                 <svg viewBox="0 0 9 9" width="64" height="64" shapeRendering="crispEdges" className="shrink-0">
                   {QR.slice(0, 49).map((on, i) => (on ? <rect key={i} x={i % 7 + 1} y={Math.floor(i / 7) + 1} width={1} height={1} fill="#2b2a33" /> : null))}
                   <rect x={0.2} y={0.2} width={8.6} height={8.6} fill="none" stroke="#2b2a33" strokeWidth={0.4} />

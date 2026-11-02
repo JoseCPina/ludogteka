@@ -53,7 +53,7 @@ export default async function PaginaAlternativa({ params }: Props) {
         <div className="mt-8 overflow-x-auto">
           <TablaResponsiva className="w-full min-w-[560px] border-collapse text-left text-sm">
             <thead>
-              <tr className="border-b border-n-200">
+              <tr className="border-b border-border">
                 <th scope="col" className="p-3"><span className="sr-only">Criterio</span></th>
                 <th scope="col" className="p-3 text-base font-bold text-n-900">{a.nombre}</th>
                 <th scope="col" className="p-3 text-base font-bold text-n-900">PeluDesk</th>
@@ -61,7 +61,7 @@ export default async function PaginaAlternativa({ params }: Props) {
             </thead>
             <tbody>
               {CAMPOS_ALTERNATIVA.map(([campo, etiqueta]) => (
-                <tr key={campo} className={`border-b border-n-200 align-top ${campo === "recordatorios" ? "bg-menta-suave" : ""}`}>
+                <tr key={campo} className={`border-b border-border align-top ${campo === "recordatorios" ? "bg-menta-suave" : ""}`}>
                   <th scope="row" className="p-3 font-semibold text-n-900">{etiqueta}</th>
                   <td className="p-3 text-n-700">{a[campo]}<Fuentes fuentes={a.fuentes[campo]} /></td>
                   <td className={`p-3 ${campo === "recordatorios" ? "font-semibold text-n-900" : "text-n-700"}`}>{campo === "precio" ? precioPeluDesk : campo === "recordatorios" ? recordatorios.filaComparativa : FILA_PELUDESK[campo]}</td>

@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
+import { IconoWhatsApp as WhatsappLogo } from "@/components/iconos/whatsapp";
 import { Hueso, Marca, Rotulo } from "./comunes";
 import { datosLanding } from "@/lib/landing/negocio";
 import { PERROS } from "./perros";
@@ -24,7 +24,7 @@ export async function LlamadoFinal() {
             rel="noopener noreferrer"
             className="lp-boton lp-boton-indigo lp-display inline-flex min-h-16 items-center gap-3 rounded-full px-9 text-2xl font-bold focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--lp-indigo)]"
           >
-            <WhatsappLogo size={32} weight="fill" aria-hidden />
+            <WhatsappLogo size={32} aria-hidden />
             <span className="tabular-nums">{TELEFONO_VISIBLE}</span>
           </a>
         </div>
@@ -97,7 +97,7 @@ export async function WhatsAppFlotante() {
       aria-label="Escríbenos por WhatsApp"
       className="lp-flotante lp-boton lp-boton-indigo lp-display fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-40 inline-flex size-16 items-center justify-center gap-2 rounded-full ring-4 ring-[var(--lp-amarillo)] focus-visible:outline-none focus-visible:ring-white lg:bottom-6 lg:right-6 lg:size-auto lg:min-h-14 lg:px-6"
     >
-      <WhatsappLogo size={32} weight="fill" aria-hidden />
+      <WhatsappLogo size={32} aria-hidden />
       <span className="hidden text-lg font-bold lg:inline">¿Dudas? Escríbenos</span>
     </a>
   );

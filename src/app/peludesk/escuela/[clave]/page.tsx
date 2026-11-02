@@ -32,13 +32,13 @@ export default async function SesionEscuela({ params }: Props) {
         <section className="hta-regla grid gap-8 py-10 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] md:gap-x-12">
           <div>
             {v?.youtube_id ? (
-              <div className="aspect-video overflow-hidden rounded-xl border border-n-200 bg-n-900">
+              <div className="aspect-video overflow-hidden rounded-xl border border-border bg-n-900">
                 <iframe title={`Grabación: ${s.titulo}`} src={`https://www.youtube-nocookie.com/embed/${v.youtube_id}`} className="h-full w-full" allow="accelerometer; encrypted-media; picture-in-picture" allowFullScreen loading="lazy" />
               </div>
             ) : (
-              <div className="rounded-xl border border-n-200 bg-white p-5">
+              <div className="rounded-xl border border-border bg-white p-5">
                 <p className="hta-etiqueta">Sesión en vivo</p>
-                <p className="text-lg font-bold text-n-900">{fecha ?? "Fecha por anunciar"}</p>
+                <p className="text-lg font-semibold text-foreground">{fecha ?? "Fecha por anunciar"}</p>
                 <p className="mt-1 text-sm text-n-600">{v?.fecha_at ? "La grabación queda aquí después de la sesión." : "Inscríbete y te avisamos por WhatsApp en cuanto tenga fecha."}</p>
                 {bot && <a href={`https://wa.me/${bot}?text=${encodeURIComponent(textoInscripcion(s))}`} target="_blank" rel="noopener noreferrer" className="hta-boton mt-4" data-inscribirme>Inscribirme por WhatsApp</a>}
               </div>

@@ -82,7 +82,7 @@ export default async function ArticuloPage({ params }: Props) {
         <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1fr)_16rem]">
           <div className="min-w-0">
             {toc.length > 2 && (
-              <nav aria-label="Contenido del artículo" className="mb-8 rounded-2xl border border-n-200 bg-white p-5 lg:hidden">
+              <nav aria-label="Contenido del artículo" className="mb-8 rounded-2xl border border-border bg-white p-5 lg:hidden">
                 <p className="text-sm font-bold uppercase tracking-[0.1em] text-n-600">En este artículo</p>
                 <ol className="mt-3 flex list-decimal flex-col gap-2 pl-5 text-n-800">
                   {toc.map((h) => (
@@ -97,7 +97,7 @@ export default async function ArticuloPage({ params }: Props) {
           </div>
           {toc.length > 2 && (
             <aside className="hidden lg:block">
-              <nav aria-label="Contenido del artículo" className="sticky top-24 rounded-2xl border border-n-200 bg-white p-5">
+              <nav aria-label="Contenido del artículo" className="sticky top-24 rounded-2xl border border-border bg-white p-5">
                 <p className="text-sm font-bold uppercase tracking-[0.1em] text-n-600">En este artículo</p>
                 <ol className="mt-3 flex flex-col gap-2 text-sm">
                   {toc.map((h) => (

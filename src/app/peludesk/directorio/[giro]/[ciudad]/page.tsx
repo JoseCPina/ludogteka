@@ -128,7 +128,7 @@ export default async function DirectorioCiudad({ params, searchParams }: Props) 
 
 function Fila({ n, posicion, href }: { n: NegocioDirectorio; posicion: number; href: string }) {
   return (
-    <li className="grid gap-x-6 gap-y-2 border-b border-n-200 py-5 sm:grid-cols-[3rem_minmax(0,1fr)_auto]">
+    <li className="grid gap-x-6 gap-y-2 border-b border-border py-5 sm:grid-cols-[3rem_minmax(0,1fr)_auto]">
       <span className="text-sm font-bold tabular-nums text-n-500">{posicion}</span>
       <div>
         <h2 className="text-lg font-bold leading-tight text-n-900">

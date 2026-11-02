@@ -1,4 +1,4 @@
-import { Info, PawPrint, Scissors } from "@phosphor-icons/react/dist/ssr";
+import { InfoIcon as Info, PawPrintIcon as PawPrint, ScissorsIcon as Scissors } from "lucide-react";
 import { BotonWhatsApp, Cinta, TarjetaPerro } from "./comunes";
 import { PERROS } from "./perros";
 import { datosLanding, pesos } from "@/lib/landing/negocio";
@@ -32,7 +32,7 @@ export async function Estetica() {
         <div className="grid gap-10 lg:grid-cols-12">
           <div className="lg:col-span-6">
             <Cinta className="lp-revela gap-2 text-2xl">
-              <Scissors size={24} weight="bold" aria-hidden />
+              <Scissors size={24} aria-hidden />
               Estética
             </Cinta>
             <h2 className="lp-revela lp-display mt-5 text-balance text-4xl font-bold leading-[1.05] text-[var(--lp-indigo)] sm:text-5xl">
@@ -52,7 +52,7 @@ export async function Estetica() {
             <ul className="mt-3 grid gap-x-5 gap-y-2 sm:grid-cols-2">
               {ESTETICA_INCLUYE.map((item) => (
                 <li key={item} className="flex items-start gap-2 text-base font-semibold">
-                  <PawPrint size={18} weight="fill" className="mt-0.5 shrink-0 text-[var(--lp-turquesa-hondo)]" aria-hidden />
+                  <PawPrint size={18} className="mt-0.5 shrink-0 text-[var(--lp-turquesa-hondo)]" aria-hidden />
                   {item}
                 </li>
               ))}
@@ -106,7 +106,7 @@ export async function Estetica() {
         </ul>
 
         {ESTETICA_PELO_MALTRATADO != null && <div className="lp-revela mt-6 flex items-start gap-3 rounded-[1.25rem] bg-[var(--lp-amarillo)] p-5 text-lg">
-          <Info size={26} weight="bold" className="mt-0.5 shrink-0 text-[var(--lp-indigo)]" aria-hidden />
+          <Info size={26} className="mt-0.5 shrink-0 text-[var(--lp-indigo)]" aria-hidden />
           <p>
             <strong>El precio puede aumentar según el tipo de pelo y el cuidado previo.</strong> En razas
             chicas con pelo maltratado, el baño estético es de{" "}

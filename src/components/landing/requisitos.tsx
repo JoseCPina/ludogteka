@@ -1,4 +1,4 @@
-import { PawPrint, Prohibit } from "@phosphor-icons/react/dist/ssr";
+import { PawPrintIcon as PawPrint, BanIcon as Prohibit } from "lucide-react";
 import Image from "next/image";
 import { BotonWhatsApp, Cinta } from "./comunes";
 import { PERROS } from "./perros";
@@ -36,7 +36,7 @@ export async function Requisitos() {
             {si.map((r) => (
               <li key={r.texto} className="flex items-center gap-3 text-lg font-bold">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--lp-turquesa-hondo)] text-white">
-                  <PawPrint size={22} weight="fill" aria-hidden />
+                  <PawPrint size={22} aria-hidden />
                 </span>
                 {r.texto}
               </li>
@@ -49,7 +49,7 @@ export async function Requisitos() {
             {no.map((r) => (
               <li key={r.texto} className="flex items-center gap-3 text-lg font-bold">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#a6330f] text-white">
-                  <Prohibit size={22} weight="bold" aria-hidden />
+                  <Prohibit size={22} aria-hidden />
                 </span>
                 {r.texto}
               </li>

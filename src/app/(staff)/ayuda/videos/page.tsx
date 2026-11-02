@@ -20,18 +20,18 @@ export default async function VideosPage() {
       </div>
 
       {videos.length === 0 ? (
-        <div data-sin-videos className="rounded-lg border border-n-200 bg-n-50 p-6">
+        <div data-sin-videos className="rounded-lg border border-border bg-card shadow-tarjeta p-6">
           <p className="font-semibold text-n-900">Estamos preparando los videos.</p>
           <p className="mt-1 text-n-600">Mientras tanto, los artículos de <Enlace href="/ayuda" enTexto>Ayuda</Enlace> te explican cada pantalla paso a paso.</p>
         </div>
       ) : (
         areas.map((a) => (
           <section key={a.clave} className="flex flex-col gap-3">
-            <h2 className="text-lg font-bold text-n-900">{a.nombre}</h2>
+            <h2 className="text-lg font-semibold text-foreground">{a.nombre}</h2>
             <ul className="grid gap-3 sm:grid-cols-2">
               {a.videos.map((v) => (
                 <li key={v.slug}>
-                  <Enlace href={`/ayuda/videos/${v.slug}`} className="flex h-full gap-3 rounded-lg border border-n-200 bg-white p-3 hover:border-morado" data-video={v.numero} forma="bloque">
+                  <Enlace href={`/ayuda/videos/${v.slug}`} className="flex h-full gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-3 hover:border-morado" data-video={v.numero} forma="bloque">
                     <span className="grid h-16 w-28 flex-none place-items-center overflow-hidden rounded-md bg-n-100">
                       {v.poster_path ? (
                         // eslint-disable-next-line @next/next/no-img-element

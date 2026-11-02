@@ -162,7 +162,7 @@ export function GeneradorLista({ giroInicial }: { giroInicial: GiroMercado }) {
 
         <div className="flex flex-col gap-4 md:sticky md:top-20 md:self-start">
           <p className="hta-etiqueta">Vista previa</p>
-          <canvas ref={canvas} className="w-full rounded-xl border border-n-200" style={{ aspectRatio: "1080 / 1350" }} aria-label="Vista previa de tu lista de precios" data-vista-previa />
+          <canvas ref={canvas} className="w-full rounded-xl border border-border" style={{ aspectRatio: "1080 / 1350" }} aria-label="Vista previa de tu lista de precios" data-vista-previa />
           <div className="flex flex-wrap gap-2">
             <Button type="button" sinBloqueo cargando={bajando.cargando} disabled={conPrecio.length === 0} onClick={() => bajando.correr(async () => { if (canvas.current) descargar(await canvasAPng(canvas.current), `${archivo}.png`); })}>Bajar imagen</Button>
             <Button type="button" variante="secundario" sinBloqueo cargando={bajando.cargando} disabled={conPrecio.length === 0} onClick={() => bajando.correr(async () => descargar(await listaAPdf(datos), `${archivo}.pdf`))}>Bajar PDF</Button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Children, useEffect, useRef, useState, type ReactNode } from "react";
-import { CaretLeft, CaretRight } from "@phosphor-icons/react/dist/ssr";
+import { ChevronLeftIcon as CaretLeft, ChevronRightIcon as CaretRight } from "lucide-react";
 
 // Dónde empieza cada reseña dentro del recorrido de la lista.
 const posicion = (ul: HTMLElement, li: HTMLElement) => li.getBoundingClientRect().left - ul.getBoundingClientRect().left + ul.scrollLeft;
@@ -49,7 +49,7 @@ export function CarruselResenas({ children }: { children: ReactNode }) {
       {total > 1 && (
         <div className="mt-3 flex items-center justify-center gap-3 sm:hidden">
           <button type="button" aria-label="Reseña anterior" disabled={actual === 0} onClick={() => ir(actual - 1)} className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white ring-1 ring-black/10 disabled:opacity-35" data-resena-anterior>
-            <CaretLeft size={18} weight="bold" aria-hidden />
+            <CaretLeft size={18} aria-hidden />
           </button>
           <div className="flex items-center gap-1.5" role="tablist" aria-label="Reseñas">
             {Array.from({ length: total }, (_, i) => (
@@ -68,7 +68,7 @@ export function CarruselResenas({ children }: { children: ReactNode }) {
             ))}
           </div>
           <button type="button" aria-label="Reseña siguiente" disabled={actual === total - 1} onClick={() => ir(actual + 1)} className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white ring-1 ring-black/10 disabled:opacity-35" data-resena-siguiente>
-            <CaretRight size={18} weight="bold" aria-hidden />
+            <CaretRight size={18} aria-hidden />
           </button>
         </div>
       )}

@@ -13,7 +13,7 @@ export function IndiceAyuda({ articulos, base = "/ayuda" }: { articulos: Articul
   const resultados = useMemo(() => (q.trim().length > 2 ? buscar(q, articulos) : null), [q, articulos]);
   const Tarjeta = ({ a }: { a: Articulo }) => (
     <li>
-      <Enlace href={`${base}/${a.slug}`} className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado" forma="bloque">
+      <Enlace href={`${base}/${a.slug}`} className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado" forma="bloque">
         <span className="font-semibold text-n-900">{a.titulo}</span>
         <span className="mt-1 block text-sm text-n-600">{a.resumen}</span>
       </Enlace>
@@ -45,7 +45,7 @@ export function IndiceAyuda({ articulos, base = "/ayuda" }: { articulos: Articul
       ) : (
         agrupar(articulos).map((g) => (
           <section key={g.grupo} className="flex flex-col gap-2">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">{g.nombre}</h2>
+            <h2 className="text-[0.9375rem] font-semibold text-foreground">{g.nombre}</h2>
             <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
               {g.articulos.map((a) => (
                 <Tarjeta key={a.slug} a={a} />

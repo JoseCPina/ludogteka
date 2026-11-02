@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { WhatsappLogo, MapPin, Clock, SignIn } from "@phosphor-icons/react/dist/ssr";
+import { MapPinIcon as MapPin, ClockIcon as Clock, LogInIcon as SignIn } from "lucide-react";
+import { IconoWhatsApp as WhatsappLogo } from "@/components/iconos/whatsapp";
 import { cargarNegocioLanding, linkWhatsAppDe, pesos } from "@/lib/landing/negocio";
 
 // La landing de un negocio de PeluDesk que no tiene tema propio: nombre,
@@ -29,7 +30,7 @@ export async function LandingBasica() {
             href="/login"
             className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 text-[0.9375rem] font-semibold text-n-700 hover:bg-n-100"
           >
-            <SignIn size={18} weight="bold" aria-hidden />
+            <SignIn size={18} aria-hidden />
             Entrar
           </Link>
         </div>
@@ -48,7 +49,7 @@ export async function LandingBasica() {
               rel="noopener noreferrer"
               className="mt-8 inline-flex min-h-12 items-center gap-2.5 rounded-full bg-morado px-6 font-bold text-white hover:opacity-90"
             >
-              <WhatsappLogo size={22} weight="fill" aria-hidden />
+              <WhatsappLogo size={22} aria-hidden />
               Escríbenos por WhatsApp
             </a>
           )}
@@ -72,13 +73,13 @@ export async function LandingBasica() {
           <section className="grid gap-4 sm:grid-cols-2">
             {direccion && (
               <div className="flex items-start gap-3 rounded-lg border border-n-200 bg-white p-5">
-                <MapPin size={24} weight="fill" className="shrink-0 text-morado" aria-hidden />
+                <MapPin size={24} className="shrink-0 text-morado" aria-hidden />
                 <address className="not-italic text-n-700">{direccion}</address>
               </div>
             )}
             {d?.horario && d.horario.length > 0 && (
               <div className="flex items-start gap-3 rounded-lg border border-n-200 bg-white p-5">
-                <Clock size={24} weight="bold" className="shrink-0 text-morado" aria-hidden />
+                <Clock size={24} className="shrink-0 text-morado" aria-hidden />
                 <dl className="text-n-700">
                   {d.horario.map((h) => (
                     <div key={h.dias}>
