@@ -79,3 +79,38 @@ Tiempo hasta el final del cuerpo, mediana, con la latencia de red de la laptop i
 - **Servidor, por pantalla** (lo medido en desarrollo más 25 %, freno a regresiones): `/recepcion` 2,400 ms, `/hotel` 650 ms, `/estetica` 400 ms, `/admin` 3,100 ms.
 - **Consultas** (lo medido más 2): `/recepcion` 64, `/hotel` 20, `/estetica` 19, `/admin` 81.
 - Siguiente paso para acercar /recepcion e /admin a 600 ms: `inventario_clinico_alertas` (existencia por insumo en una pasada) y `cuentas_abiertas_json`, y medir cuántas consultas de «Necesita atención» pueden ir en una sola función.
+
+## Segunda vuelta (1 de noviembre de 2026, rama fix/admin-recepcion-600): /admin y /recepcion seguían arriba de 600 ms
+
+**Medido en producción con `tiempo-panel-prod.mjs` después de la primera vuelta** (TTFB desde la PC, ~100 ms de red incluidos):
+
+| Pantalla | Patitas & Co. (demo) | Ludogteka |
+|---|---|---|
+| /recepcion | 802 ms (admin) | 699–702 ms |
+| /admin | 934 ms hasta encabezados · **1,251 ms** completo | 626 ms hasta encabezados · **1,088 ms** completo |
+| /hotel | — | 528–550 ms |
+| /estetica | 566–614 ms | 553–557 ms |
+
+**Lo que de verdad cuesta en la base** (5 rondas alternadas, calientes, como admin; el resto de lo que pide el tablero cuesta de 0 a 20 ms cada consulta, `inventario_clinico_alertas` incluida: 13–17 ms):
+
+| Consulta | demo | Ludogteka |
+|---|---|---|
+| `cuentas_abiertas_json(120)` (saldos de salidas) | 83 ms | 84 ms |
+| `veterinaria_atencion` | 91 ms | 11 ms (sin Veterinaria) |
+| `tarjetas_manuales_atencion` | 8 ms | 36 ms |
+
+Los índices de todo lo que `cuentas_abiertas` recorre ya existen (se revisaron uno por uno); su costo es la pasada misma (15 CTE materializadas sobre reservas, estancias, citas, cargos, cobros, pases…), y corre en paralelo con lo demás: no es la causa de los 600 ms. La causa es de estructura:
+
+1. **/admin armaba sus propias tandas ANTES de que arrancara el tablero del día**: la página esperaba cobro integrado, ubicación, cuentas, horario, perfil, personal y huecos de tarifa, y solo entonces React empezaba `TableroDia` (otras dos tandas) y `ExtrasTablero`. Por eso el encabezado salía a los 626–934 ms y la página completa a 1.1–1.25 s.
+2. **Saldos de salidas en tres viajes**: `cuentas_abiertas_json(120)` (todas las cuentas abiertas, el JSON entero) y después las estancias y las citas de esas reservas para quedarse con las terminadas.
+3. **Consultas repetidas en el mismo render**: los videos tutoriales los pedían el layout («¿Cómo se hace?») y la tarjeta «Empieza con estos videos» del inicio, cada uno con su cliente; `resolver_cupo_configuracion` se pedía dos veces en /admin (ubicación y configuración).
+4. `inventario_clinico_alertas` llamaba `existencia_actual_insumo` por cada insumo con lotes: barato hoy (pocos insumos), lineal en insumos × movimientos en una clínica real.
+
+**Qué cambió**
+- `src/app/(staff)/admin/page.tsx`: la página solo pinta el encabezado y SUS HIJOS en paralelo: `AvanceWeb`, `VideosInicio`, `RecordatorioPagoSiToca` (una consulta propia), `TableroDia`, `ExtrasTablero` y `SeccionesAdmin` (todo lo de configuración, con sus tandas de antes). El tablero arranca en el mismo instante que la página.
+- Migración `20261203001500`: `saldos_de_salidas_json(p_dias)` (la misma cuenta y el mismo saldo que Caja, `cuentas_abiertas`, filtrada en la base: saldo > 0, nada pendiente, salida real del último perro) — comprobado en desarrollo contra la lógica anterior: 22/22 y 1/1 cuentas idénticas; `inventario_clinico_alertas` con la existencia de todos los insumos con lotes en un solo recorrido de `movimientos_inventario` (mismo resultado que antes en Huellitas; el día del último movimiento sale en la zona del negocio).
+- `src/lib/tablero/saldos-de-salidas.ts`: una consulta en vez de tres.
+- `src/lib/tutoriales/de-sesion.ts` (`tutorialesDeSesion`, `cache()` por petición): el layout y `VideosInicio` comparten la lista.
+- `tiempo-panel-dev.mjs`: topes de consultas bajados a lo que queda: /recepcion 61 (era 64), /admin 77 (era 81), /hotel 20 y /estetica 19 igual. La primera corrida en la laptop confirma el conteo exacto (si queda abajo, se baja a lo que quedó + 2).
+
+**Esperado después (servidor, producción):** /admin completo ≈ 500–600 ms (el tablero ya no espera a la página: −300–400 ms; menos dos viajes de saldos: −40 ms); /recepcion ≈ 450–550 ms (−2 viajes de saldos, −1 de videos; la tanda principal la sigue limitando `cuentas_abiertas` ~85 ms). Si /recepcion sigue arriba de 600 ms en la laptop o en producción, lo siguiente es `cuentas_abiertas`: acotar la segunda rama de `candidatas` (reservas creadas en la ventana sin estancia ni cita) con un índice parcial por `negocio_id, created_at` que excluya las ya canceladas, o una vista materializada por hora; ninguna de las dos es caché de pantalla.

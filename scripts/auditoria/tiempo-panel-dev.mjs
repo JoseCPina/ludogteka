@@ -43,7 +43,10 @@ const B = datos.B;
 
 // Consultas por pantalla después del arreglo (layout del personal incluido; el middleware no se cuenta). Si una
 // pantalla crece, se sube aquí a propósito, con el motivo en el commit.
-const TOPES_CONSULTAS = { "/recepcion": 64, "/hotel": 20, "/estetica": 19, "/admin": 81 };
+// Segunda vuelta (1 de noviembre de 2026): los saldos de salidas en una consulta (−2), los videos del inicio
+// compartidos con el layout (−1) y la configuración vigente del inicio pedida una vez (−1). Conteo exacto en la
+// laptop con la build de esa vuelta: /admin 65 y /recepcion 49 (admin) → tope = medido + 2.
+const TOPES_CONSULTAS = { "/recepcion": 51, "/hotel": 20, "/estetica": 19, "/admin": 67 };
 // Tandas de viajes a la base que quedan en cada pantalla (sesión + layout + la pantalla): para descontar la latencia
 // de desarrollo, no para premiar más tandas.
 const TANDAS = { "/recepcion": 6, "/hotel": 5, "/estetica": 6, "/admin": 8 };

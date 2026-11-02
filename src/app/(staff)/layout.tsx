@@ -12,7 +12,7 @@ import { accesoDeSesion } from "@/lib/auth/acceso";
 import { articulosDelNegocio } from "@/lib/ayuda";
 import { AvisoTickets } from "@/components/ayuda/aviso-tickets";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { cargarTutorialesVisibles } from "@/lib/tutoriales";
+import { tutorialesDeSesion } from "@/lib/tutoriales/de-sesion";
 import { PwaNegocio } from "@/components/pwa/pwa-negocio";
 import { AvisoInstalar } from "@/components/pwa/instalar";
 import { PedirNombre } from "@/components/personal/pedir-nombre";
@@ -35,7 +35,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     cargarNegocioLanding(),
     supabase.rpc("mis_negocios"),
     conAyuda
-      ? cargarTutorialesVisibles(supabase, { rol: sesion.rol, permisos: sesion.permisos, modulos: sesion.modulos }).catch(() => [])
+      ? tutorialesDeSesion()
       : Promise.resolve([]),
     // QA N151: prueba vencida o falta de pago → todo lo que escribe se ve deshabilitado (el mismo indicador que la franja).
     bloqueoDeEscritura(),
