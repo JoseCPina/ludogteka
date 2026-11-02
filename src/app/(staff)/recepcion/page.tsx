@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import { TableroDia } from "../tablero-dia";
+import { EsqueletoTableroDia } from "../tablero-esqueleto";
 import { VideosInicio } from "@/components/ayuda/videos-inicio";
 import { ExtrasTablero } from "@/components/extras/extras-tablero";
 
@@ -9,8 +11,11 @@ export default async function RecepcionPage() {
   return (
     <div className="flex flex-col gap-6">
       <VideosInicio />
-      <TableroDia />
-      <ExtrasTablero />
+      {/* Tiempo del panel, cuarta vuelta: el tablero llega en streaming; el menú y el encabezado no lo esperan. */}
+      <Suspense fallback={<EsqueletoTableroDia />}>
+        <TableroDia />
+        <ExtrasTablero />
+      </Suspense>
     </div>
   );
 }

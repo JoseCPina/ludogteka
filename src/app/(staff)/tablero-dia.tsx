@@ -124,22 +124,14 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const negocio = await negocioActual();
   const zona = negocio.zona_horaria;
   const supabase = await createSupabaseServerClient();
-  // Solo lo que el negocio tiene prendido (su plan y lo que el admin apagó).
-  const sesion = await obtenerSesionConRol();
-  const mods = sesion?.modulos ?? [];
-  const conEstancias = usaEstancias(mods);
-  const conHotel = mods.includes("hotel");
-  const conEstetica = mods.includes("estetica");
-  const puedeReasignar = sesion?.rol === "admin" || sesion?.rol === "recepcion";
-  const puedeCorregirEstilista = tienePermiso(sesion, "corregir_estilista");
 
   // El día del negocio se calcula aquí con su zona (lo mismo que fecha_negocio() en la base), sin un viaje más.
   const hoy = hoyNegocio(zona);
   const columnas = "estancia_id, reserva_id, perro_id, perro_nombre, categoria, servicio_nombre";
 
-  // Tiempo del panel (31 de octubre de 2026): lo que no depende de nada se pide A LA VEZ, aquí; cada bloque de abajo
-  // solo espera lo suyo (antes eran 14 viajes a la base uno tras otro).
-  const previas = arrancarTodas({
+  // Tiempo del panel, cuarta vuelta (2 de noviembre de 2026): lo que no depende del rol ni de los módulos arranca ANTES
+  // de esperar la sesión (antes esperaba a la sesión y luego salía todo junto: una tanda más en el camino del tablero).
+  const sinSesion = arrancarTodas({
     bajas: supabase
     .from("perros_bajas")
     .select("id, perro_id, perro_nombre, motivo, created_at")
@@ -150,6 +142,75 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     .limit(50),
     evaluacionExigida: supabase.rpc("evaluacion_exigida"),
     saldos: cargarSaldosDeSalidas(supabase, hoy, zona),
+    cfdi: supabase.rpc("cfdi_atencion"),
+    principal: Promise.all([
+      supabase.from("llegadas_hoy").select(columnas).order("perro_nombre"),
+      supabase.from("salidas_hoy").select(columnas).order("perro_nombre"),
+      supabase.from("quienes_estan_adentro").select(columnas).order("perro_nombre"),
+      supabase.rpc("calendario_ocupacion", { p_desde: hoy, p_hasta: hoy }),
+      leerTodo<Record<string, unknown>>(() =>
+        supabase
+          .from("citas_estetica")
+          .select("id, inicio, estado, empleado_id, updated_at, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
+          .is("deleted_at", null)
+          .gte("inicio", sumarDiasFecha(hoy, -1))
+          .lt("inicio", sumarDiasFecha(hoy, 2))
+          .order("inicio")
+          .order("id")
+      ),
+      leerTodo<Record<string, unknown>>(() => supabase.rpc("listar_cuentas_sin_vincular").order("id")),
+      supabase.rpc("minutos_retraso_cierre", { p_fecha: hoy }),
+      // Lo que llega en la próxima semana: es donde un requisito vencido o
+      // una evaluación faltante se vuelve un problema con fecha.
+      // La semana que viene puede traer más de 1,000 llegadas en un negocio grande: página por página.
+      leerTodo<Record<string, unknown>>(() =>
+        supabase
+          .from("estancias")
+          .select("id, perro_id, fecha_entrada, reserva_id, created_at, perros(nombre, evaluacion_comportamiento_fecha)")
+          .in("estado", ["reservada", "confirmada"])
+          .is("deleted_at", null)
+          .gte("fecha_entrada", hoy)
+          .lte("fecha_entrada", sumarDiasFecha(hoy, DIAS_ADELANTE))
+          .order("fecha_entrada")
+          .order("id")
+      ),
+      supabase.from("turnos_caja").select("id").eq("estado", "abierto").is("deleted_at", null).limit(1),
+      // Comprobantes que los dueños mandaron desde el portal y nadie ha
+      // revisado: no cuentan hasta que recepción los confirme.
+      leerTodo<{ id: string; created_at: string }>(() =>
+        supabase.from("requisitos_sanitarios_propuestos").select("id, created_at").eq("estado", "pendiente").is("deleted_at", null).order("created_at").order("id")
+      ),
+      // El último turno cerrado: si no hay abierto, cuánto lleva la caja sin turno.
+      supabase
+        .from("turnos_caja")
+        .select("cerrado_at")
+        .eq("estado", "cerrado")
+        .is("deleted_at", null)
+        .order("cerrado_at", { ascending: false })
+        .limit(1),
+      // Contratos que el dueño debe firmar en su portal (el de guardería se
+      // genera al vender un paquete) o que hay que volver a generar.
+      leerTodo<{ situacion: string; espera_desde: string | null; contrato_id: string }>(() =>
+        supabase.from("contratos_por_atender").select("contrato_id, situacion, espera_desde").order("contrato_id")
+      ),
+    ]),
+  });
+
+  // Solo lo que el negocio tiene prendido (su plan y lo que el admin apagó).
+  const sesion = await obtenerSesionConRol();
+  const mods = sesion?.modulos ?? [];
+  const conEstancias = usaEstancias(mods);
+  const conHotel = mods.includes("hotel");
+  const conEstetica = mods.includes("estetica");
+  const puedeReasignar = sesion?.rol === "admin" || sesion?.rol === "recepcion";
+  const puedeCorregirEstilista = tienePermiso(sesion, "corregir_estilista");
+
+  // Tiempo del panel (31 de octubre de 2026): lo que depende del rol o de los módulos se pide A LA VEZ, aquí; cada
+  // bloque de abajo solo espera lo suyo (antes eran 14 viajes a la base uno tras otro).
+  const previas = arrancarTodas({
+    bajas: sinSesion.bajas,
+    evaluacionExigida: sinSesion.evaluacionExigida,
+    saldos: sinSesion.saldos,
     razas: tienePermiso(sesion, "tarifas")
       ? Promise.all([
       supabase.rpc("razas_sin_grupo"),
@@ -201,75 +262,29 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     cobro: sesion?.rol === "admin"
       ? supabase.rpc("estado_cobro")
       : Promise.resolve({ data: null }),
-    cfdi: supabase.rpc("cfdi_atencion"),
+    cfdi: sinSesion.cfdi,
   });
 
   const [
-    { data: llegadas, error: e1 },
-    { data: salidas, error: e2 },
-    { data: adentro, error: e3 },
-    { data: calendario, error: e4 },
-    { data: citasCrudo, error: e5 },
-    { data: sinVincular },
-    { data: minutosData },
-    { data: proximas },
-    { data: turnoAbierto },
-    { data: comprobantes },
-    { data: ultimoTurno },
-    { data: contratosPorAtender },
+    [
+      { data: llegadas, error: e1 },
+      { data: salidas, error: e2 },
+      { data: adentro, error: e3 },
+      { data: calendario, error: e4 },
+      { data: citasCrudo, error: e5 },
+      { data: sinVincular },
+      { data: minutosData },
+      { data: proximas },
+      { data: turnoAbierto },
+      { data: comprobantes },
+      { data: ultimoTurno },
+      { data: contratosPorAtender },
+    ],
     { data: asignables },
     { data: personalEstetica },
     { data: citasEnAusenciaCrudo },
   ] = await Promise.all([
-    supabase.from("llegadas_hoy").select(columnas).order("perro_nombre"),
-    supabase.from("salidas_hoy").select(columnas).order("perro_nombre"),
-    supabase.from("quienes_estan_adentro").select(columnas).order("perro_nombre"),
-    supabase.rpc("calendario_ocupacion", { p_desde: hoy, p_hasta: hoy }),
-    leerTodo<Record<string, unknown>>(() =>
-      supabase
-        .from("citas_estetica")
-        .select("id, inicio, estado, empleado_id, updated_at, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
-        .is("deleted_at", null)
-        .gte("inicio", sumarDiasFecha(hoy, -1))
-        .lt("inicio", sumarDiasFecha(hoy, 2))
-        .order("inicio")
-        .order("id")
-    ),
-    leerTodo<Record<string, unknown>>(() => supabase.rpc("listar_cuentas_sin_vincular").order("id")),
-    supabase.rpc("minutos_retraso_cierre", { p_fecha: hoy }),
-    // Lo que llega en la próxima semana: es donde un requisito vencido o
-    // una evaluación faltante se vuelve un problema con fecha.
-    // La semana que viene puede traer más de 1,000 llegadas en un negocio grande: página por página.
-    leerTodo<Record<string, unknown>>(() =>
-      supabase
-        .from("estancias")
-        .select("id, perro_id, fecha_entrada, reserva_id, created_at, perros(nombre, evaluacion_comportamiento_fecha)")
-        .in("estado", ["reservada", "confirmada"])
-        .is("deleted_at", null)
-        .gte("fecha_entrada", hoy)
-        .lte("fecha_entrada", sumarDiasFecha(hoy, DIAS_ADELANTE))
-        .order("fecha_entrada")
-        .order("id")
-    ),
-    supabase.from("turnos_caja").select("id").eq("estado", "abierto").is("deleted_at", null).limit(1),
-    // Comprobantes que los dueños mandaron desde el portal y nadie ha
-    // revisado: no cuentan hasta que recepción los confirme.
-    leerTodo<{ id: string; created_at: string }>(() =>
-      supabase.from("requisitos_sanitarios_propuestos").select("id, created_at").eq("estado", "pendiente").is("deleted_at", null).order("created_at").order("id")
-    ),
-    // El último turno cerrado: si no hay abierto, cuánto lleva la caja sin turno.
-    supabase
-      .from("turnos_caja")
-      .select("cerrado_at")
-      .eq("estado", "cerrado")
-      .is("deleted_at", null)
-      .order("cerrado_at", { ascending: false })
-      .limit(1),
-    // Contratos que el dueño debe firmar en su portal (el de guardería se
-    // genera al vender un paquete) o que hay que volver a generar.
-    leerTodo<{ situacion: string; espera_desde: string | null; contrato_id: string }>(() =>
-      supabase.from("contratos_por_atender").select("contrato_id, situacion, espera_desde").order("contrato_id")
-    ),
+    sinSesion.principal,
     // Quién atiende cada cita de estética y a quién se le puede pasar (solo
     // admin y recepción cambian la estilista).
     conEstetica && puedeReasignar

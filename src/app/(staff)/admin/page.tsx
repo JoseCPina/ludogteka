@@ -11,7 +11,9 @@ import { HorarioNegocio } from "./horario-negocio";
 import type { DiaHorario } from "./configuracion-actions";
 import { TarifasFaltantes } from "./tarifas-faltantes";
 import { cargarServiciosConHuecos } from "@/lib/tarifas/huecos";
+import { Suspense } from "react";
 import { TableroDia } from "../tablero-dia";
+import { EsqueletoSeccionesAdmin, EsqueletoTableroDia } from "../tablero-esqueleto";
 import { ExtrasTablero } from "@/components/extras/extras-tablero";
 import { RecordatorioPago } from "./recordatorio-pago";
 import { AvanceWeb } from "@/components/avance-web";
@@ -244,11 +246,16 @@ export default async function AdminPage() {
       <section className="flex flex-col gap-4">
         <h2 className="text-lg font-semibold text-foreground">Hoy</h2>
         {esAdmin && <RecordatorioPagoSiToca />}
-        <TableroDia compacto />
-        <ExtrasTablero />
+        {/* Tiempo del panel, cuarta vuelta: el tablero y la administración llegan en streaming, cada uno por su lado. */}
+        <Suspense fallback={<EsqueletoTableroDia />}>
+          <TableroDia compacto />
+          <ExtrasTablero />
+        </Suspense>
       </section>
 
-      <SeccionesAdmin />
+      <Suspense fallback={<EsqueletoSeccionesAdmin />}>
+        <SeccionesAdmin />
+      </Suspense>
     </div>
   );
 }
