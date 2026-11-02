@@ -46,10 +46,13 @@ const B = datos.B;
 // Segunda vuelta (1 de noviembre de 2026): los saldos de salidas en una consulta (−2), los videos del inicio
 // compartidos con el layout (−1) y la configuración vigente del inicio pedida una vez (−1). Conteo exacto en la
 // laptop con la build de esa vuelta: /admin 65 y /recepcion 49 (admin) → tope = medido + 2.
-const TOPES_CONSULTAS = { "/recepcion": 51, "/hotel": 20, "/estetica": 19, "/admin": 67 };
+// Tercera vuelta (1 de noviembre de 2026): la sesión en un viaje (`sesion_actual`: −2 consultas en toda pantalla).
+// Con el layout sin las consultas repetidas de AvisoPlan (PR #233, −2) y la sesión en un viaje (−2), conteo exacto en la
+// laptop (2 de noviembre de 2026): /admin 61, /recepcion 45 (admin), /hotel 14 y /estetica 14 → tope = medido + 2.
+const TOPES_CONSULTAS = { "/recepcion": 47, "/hotel": 16, "/estetica": 16, "/admin": 63 };
 // Tandas de viajes a la base que quedan en cada pantalla (sesión + layout + la pantalla): para descontar la latencia
 // de desarrollo, no para premiar más tandas.
-const TANDAS = { "/recepcion": 6, "/hotel": 5, "/estetica": 6, "/admin": 8 };
+const TANDAS = { "/recepcion": 5, "/hotel": 4, "/estetica": 5, "/admin": 7 };
 
 async function cookieDe(profileId) {
   const { data: u } = await A.auth.admin.getUserById(profileId);
