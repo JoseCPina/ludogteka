@@ -80,7 +80,7 @@ export function FilaReserva({ r }: { r: ReservaCalendario }) {
   }
 
   return (
-    <li data-reserva={r.id} className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-3">
+    <li data-reserva={r.id} className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-3">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-bold text-n-900">

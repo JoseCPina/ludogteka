@@ -206,7 +206,7 @@ export default async function CheckinEstanciaPage({
       />
 
       {yaHizoCheckin ? (
-        <div className="rounded-lg border border-n-200 bg-n-50 p-4">
+        <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <p className="font-semibold text-n-900" role="status">
             Check-in registrado
             {estancia.hora_entrada_real ? ` a las ${horaLocalDeInstante(estancia.hora_entrada_real, zona)}` : ""}
@@ -239,7 +239,7 @@ export default async function CheckinEstanciaPage({
       )}
 
       {servicio?.categoria !== "estetica" && (
-        <div className="border-t border-n-200 pt-4">
+        <div className="border-t border-border pt-4">
           <SeccionServiciosExtra estanciaId={estanciaId} />
         </div>
       )}

@@ -200,7 +200,7 @@ export default async function CheckoutEstanciaPage({
       {sugerenciaHotel && <ConvertirHotel estanciaId={estanciaId} sugerencia={sugerenciaHotel} />}
 
       {!puedeCheckout ? (
-        <div className="rounded-lg border border-n-200 bg-n-50 p-4">
+        <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           {estancia.estado === "finalizada" ? (
             <>
               <p className="font-semibold text-n-900">
@@ -256,7 +256,7 @@ export default async function CheckoutEstanciaPage({
         />
       )}
 
-      <div className="border-t border-n-200 pt-4">
+      <div className="border-t border-border pt-4">
         <CargosSeccion
           estanciaId={estanciaId}
           estado={estancia.estado as string}
@@ -267,7 +267,7 @@ export default async function CheckoutEstanciaPage({
         />
       </div>
 
-      <div className="border-t border-n-200 pt-4">
+      <div className="border-t border-border pt-4">
         <SeccionServiciosExtra estanciaId={estanciaId} />
       </div>
     </div>

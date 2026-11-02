@@ -30,7 +30,7 @@ export default async function SaldosPendientesPage() {
       </div>
 
       {saldos.length === 0 ? (
-        <p className="rounded-lg border border-n-200 bg-white p-4 text-n-600">
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-600">
           No hay saldos pendientes de perros que ya se fueron.
         </p>
       ) : (
@@ -38,7 +38,7 @@ export default async function SaldosPendientesPage() {
           <p className="text-sm text-n-700">
             {saldos.length} {saldos.length === 1 ? "cuenta" : "cuentas"} · <strong>${total.toFixed(2)}</strong> por cobrar
           </p>
-          <ul className="divide-y divide-n-200 rounded-lg border border-n-200 bg-white">
+          <ul className="divide-y divide-border rounded-lg border border-border bg-card shadow-tarjeta">
             {saldos.map((s) => (
               <li key={s.reservaId} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="flex flex-col gap-1">

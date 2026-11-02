@@ -71,10 +71,10 @@ function Tarjeta({ item }: { item: ComprobantePendiente }) {
   }
 
   return (
-    <li className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4 md:flex-row md:gap-5">
+    <li className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4 md:flex-row md:gap-5">
       <div className="flex-none">
         {item.foto_url && item.es_pdf ? (
-          <Enlace href={item.foto_url} target="_blank" rel="noreferrer" className="grid h-44 w-44 place-items-center rounded-md border border-n-200 bg-n-50 p-3 text-center text-sm font-semibold text-morado hover:underline" forma="bloque">
+          <Enlace href={item.foto_url} target="_blank" rel="noreferrer" className="grid h-44 w-44 place-items-center rounded-md border border-border bg-muted p-3 text-center text-sm font-semibold text-morado hover:underline" forma="bloque">
             Abrir el PDF del comprobante →
           </Enlace>
         ) : item.foto_url ? (
@@ -83,7 +83,7 @@ function Tarjeta({ item }: { item: ComprobantePendiente }) {
             <img
               src={item.foto_url}
               alt={`Comprobante de ${item.tipo_etiqueta} de ${item.perro_nombre}`}
-              className="h-44 w-44 rounded-md border border-n-200 object-cover"
+              className="h-44 w-44 rounded-md border border-border object-cover"
             />
           </Enlace>
         ) : (
@@ -95,7 +95,7 @@ function Tarjeta({ item }: { item: ComprobantePendiente }) {
 
       <div className="flex flex-1 flex-col gap-2">
         <div>
-          <p className="text-lg font-bold text-n-900">
+          <p className="text-lg font-semibold text-foreground">
             {item.tipo_etiqueta} · {item.perro_nombre}
           </p>
           <Antiguedad dias={item.dias_esperando} prefijo="Esperando revisión" />

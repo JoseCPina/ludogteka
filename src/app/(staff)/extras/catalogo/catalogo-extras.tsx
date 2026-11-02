@@ -43,8 +43,8 @@ export function CatalogoExtras({
   const [nuevo, setNuevo] = useState<{ nombre: string; tipo: "general" | "traslado"; unidad: string } | null>(null);
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
-        <p className="text-sm font-bold uppercase tracking-wide text-n-600">Agregar un servicio extra</p>
+      <div className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
+        <p className="text-[0.9375rem] font-semibold text-foreground">Agregar un servicio extra</p>
         <div className="flex flex-wrap gap-2">
           {SUGERIDOS.filter((s) => !catalogo.some((c) => c.nombre.toLowerCase() === s.nombre.toLowerCase())).map((s) => (
             <Alternar key={s.nombre} type="button" data-escritura="" onClick={() => setNuevo(s)} className="rounded-full border-[1.5px] border-borde bg-white px-3 text-sm font-semibold text-n-900 hover:border-morado hover:bg-morado-suave">
@@ -69,7 +69,7 @@ export function CatalogoExtras({
 
       {catalogo.length === 0 && <p className="text-sm text-n-500">Todavía no hay servicios extra. Agrega el primero arriba.</p>}
       {catalogo.map((e) => (
-        <div key={e.id} className={`flex flex-col gap-3 rounded-lg border bg-white p-4 ${e.activo ? "border-n-200" : "border-n-200 opacity-70"}`}>
+        <div key={e.id} className={`flex flex-col gap-3 rounded-lg border bg-white p-4 ${e.activo ? "border-border" : "border-border opacity-70"}`}>
           <FormularioExtra extra={e} iva={iva} />
           {e.tipo === "traslado" && <Zonas extra={e} />}
           {e.tipo === "general" && <Paquete extra={e} paquete={paquetes[e.id] ?? null} />}
@@ -192,8 +192,8 @@ function FormularioExtra({
 
 function Zonas({ extra }: { extra: CatalogoExtra }) {
   return (
-    <div className="flex flex-col gap-2 border-t border-n-200 pt-3">
-      <p className="text-sm font-bold uppercase tracking-wide text-n-600">Zonas y precio por zona</p>
+    <div className="flex flex-col gap-2 border-t border-border pt-3">
+      <p className="text-[0.9375rem] font-semibold text-foreground">Zonas y precio por zona</p>
       {/* QA S18 (N70): cómo se cobra un traslado por zona, con un ejemplo de SUS zonas. */}
       <p className="text-sm text-n-700" data-como-se-cobra-zona>
         Cada viaje cobra el precio de UNA zona (no se multiplica por kilómetro): al agregarlo a la estancia se escoge la
@@ -240,7 +240,7 @@ function FilaZona({ extraId, zona }: { extraId: string; zona: ZonaExtra | null }
   }
 
   return (
-    <div className="flex flex-col gap-2 rounded-md bg-n-50 p-2" data-zona-form>
+    <div className="flex flex-col gap-2 rounded-md bg-muted p-2" data-zona-form>
       <div className="grid gap-2 sm:grid-cols-[2fr_1fr_1fr_auto]">
         <Field label={zona ? "Zona" : "Zona nueva"} value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="ej. Centro, hasta 5 km" />
         <Field label="Hasta (km)" type="number" min="0" step="0.1" value={km} onChange={(e) => setKm(e.target.value)} />
@@ -299,7 +299,7 @@ function Paquete({ extra, paquete }: { extra: CatalogoExtra; paquete: PaqueteExt
 
   if (!abierto) {
     return (
-      <div className="border-t border-n-200 pt-3">
+      <div className="border-t border-border pt-3">
         <Button type="button" variante="secundario" onClick={() => setAbierto(true)}>
           Venderlo también como paquete de sesiones
         </Button>
@@ -307,8 +307,8 @@ function Paquete({ extra, paquete }: { extra: CatalogoExtra; paquete: PaqueteExt
     );
   }
   return (
-    <div className="flex flex-col gap-2 border-t border-n-200 pt-3" data-paquete-form>
-      <p className="text-sm font-bold uppercase tracking-wide text-n-600">Paquete de sesiones</p>
+    <div className="flex flex-col gap-2 border-t border-border pt-3" data-paquete-form>
+      <p className="text-[0.9375rem] font-semibold text-foreground">Paquete de sesiones</p>
       <p className="text-sm text-n-600">
         Se vende desde la ficha del cliente, para un perro. Cada vez que se marca una sesión como hecha, se descuenta del
         paquete y no se cobra aparte.

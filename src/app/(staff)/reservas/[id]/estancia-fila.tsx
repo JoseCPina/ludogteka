@@ -138,7 +138,7 @@ export function EstanciaFila({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="font-bold text-n-900">{fila.perroNombre}</p>
@@ -224,7 +224,7 @@ export function EstanciaFila({
       )}
 
       {editable && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-3">
+        <div className="flex flex-col gap-3 border-t border-border pt-3">
           {conflicto && (
             <AvisoConflicto
               conflicto={conflicto.c}
@@ -309,7 +309,7 @@ export function EstanciaFila({
         </div>
       )}
 
-      <div className="border-t border-n-200 pt-3">
+      <div className="border-t border-border pt-3">
         <CargosSeccion
           estanciaId={fila.id}
           estado={estado}

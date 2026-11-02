@@ -76,15 +76,15 @@ export async function ListaSeries({ modulo }: { modulo: ModuloEstancia }) {
           No hay series recurrentes de {modulo.etiqueta.toLowerCase()} activas todavía.
         </p>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
-          <ul className="divide-y divide-n-200">
+        <div className="overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
+          <ul className="divide-y divide-border">
             {series.map((s) => {
               const perro = Array.isArray(s.perros) ? s.perros[0] : s.perros;
               const servicio = Array.isArray(s.servicios) ? s.servicios[0] : s.servicios;
               const proxima = proximaPorSerie.get(s.id as string);
               return (
                 <li key={s.id}>
-                  <Enlace href={`/reservas/series/${s.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-n-50" forma="bloque">
+                  <Enlace href={`/reservas/series/${s.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-muted" forma="bloque">
                     <div>
                       <p className="font-semibold text-n-900">
                         {perro?.nombre ?? "—"} · {servicio?.nombre ?? "—"}

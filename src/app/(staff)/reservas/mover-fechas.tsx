@@ -84,7 +84,7 @@ export function MoverFechas({
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3" data-mover-fechas>
+    <div className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3" data-mover-fechas>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {!soloSalida && (
           <Field label={esGuarderia ? "Nueva fecha" : "Nueva entrada"} type="date" value={nuevaEntrada} onChange={(e) => setNuevaEntrada(e.target.value)} />

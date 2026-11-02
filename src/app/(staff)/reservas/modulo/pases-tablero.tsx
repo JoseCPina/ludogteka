@@ -36,7 +36,7 @@ function Lista({ titulo, items, vacio }: { titulo: string; items: Fila[]; vacio:
         <ul className="flex flex-col gap-2">
           {items.map((f) => (
             <li key={f.id}>
-              <Enlace href={`/guarderia/pases?cliente=${f.cliente_id}${f.perro_id ? `&perro=${f.perro_id}` : ""}`} className="flex flex-col rounded-md border border-n-200 bg-white px-3 py-2 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
+              <Enlace href={`/guarderia/pases?cliente=${f.cliente_id}${f.perro_id ? `&perro=${f.perro_id}` : ""}`} className="flex flex-col rounded-md border border-border bg-card px-3 py-2 hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
                 <span className="font-semibold text-n-900">
                   {f.perro_nombre ?? "—"} <span className="font-normal text-n-600">({f.cliente_nombre})</span> ·{" "}
                   {f.servicio_nombre}
@@ -77,9 +77,9 @@ export async function PasesTablero({ hoy }: { hoy: string }) {
   const perdidos = filas.filter((f) => f.estado === "vencido");
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-n-50 p-4">
+    <section className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Day pass y mensualidad</h2>
+        <h2 className="text-[0.9375rem] font-semibold text-foreground">Day pass y mensualidad</h2>
         <Enlace href="/guarderia/pases">
             Vender o consultar pases
           </Enlace>

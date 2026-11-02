@@ -92,7 +92,7 @@ export function PaseCheckin({
   }
 
   return (
-    <div className="rounded-lg border-l-4 border-n-300 bg-n-50 px-4 py-3">
+    <div className="rounded-lg border-l-4 border-n-300 bg-muted px-4 py-3">
       <p className="font-bold text-n-900">Paga el día suelto: ${estado.precioDia.toFixed(2)}</p>
       <p className="text-sm text-n-600">Este perro no tiene pases ni mensualidad vigentes (el paquete es por perro).</p>
     </div>
@@ -126,7 +126,7 @@ function DeshacerCheckin({ estanciaId }: { estanciaId: string }) {
     );
   }
   return (
-    <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-white p-3">
+    <div className="flex flex-col gap-3 rounded-md border border-border bg-card p-3">
       <p className="text-sm text-n-700">
         El perro vuelve a «reservada» y el día regresa al pase. El check-in que se había capturado queda en el
         historial del pase. No cambia ningún cobro ni la caja.

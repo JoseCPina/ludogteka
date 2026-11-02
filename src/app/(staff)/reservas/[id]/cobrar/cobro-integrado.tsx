@@ -236,7 +236,7 @@ export function CobroIntegrado({
   // Sin cobro integrado conectado no se ofrece (el manual está arriba).
   if (!disponible.activo) {
     return disponible.proveedor === "manual" || !disponible.motivo ? null : (
-      <p className="rounded-lg border border-n-200 bg-n-50 px-4 py-3 text-sm text-n-600">{disponible.motivo}</p>
+      <p className="rounded-lg border border-border bg-card shadow-tarjeta px-4 py-3 text-sm text-n-600">{disponible.motivo}</p>
     );
   }
 
@@ -307,7 +307,7 @@ export function CobroIntegrado({
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-white p-4">
+        <div className="flex flex-col gap-3 rounded-md border border-border bg-card p-4">
           <p className="font-semibold text-n-900">
             {modo === "terminal" ? "Mandar a la terminal" : "Link de pago por WhatsApp"}
             {grupo ? ` · UNA orden por las ${grupo.partes.length} cuentas` : ""}
@@ -384,7 +384,7 @@ export function CobroIntegrado({
       {historial.length > 0 && (
         <ul className="flex flex-col gap-1 text-sm">
           {historial.map((o) => (
-            <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-n-200 bg-white px-3 py-2">
+            <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2">
               <span className="text-n-700">
                 {o.tipo === "point" ? "Terminal" : "Link"} · {dinero(o.monto)}
                 {o.installments && o.installments > 1 ? ` · ${o.installments} meses` : ""}

@@ -21,8 +21,8 @@ export const ARTICULOS_DIA_Y_RESERVAS: Articulo[] = [
 
 1. Arriba están los números del día: **Llegan hoy**, **Se van hoy**, **Adentro ahora** y la ocupación de día (y de noche si tienes hotel). Si das estética, también **Citas hoy**, **En curso** y **Terminadas**.
 2. Junto al título tienes los atajos: **Nuevo cliente**, **Check-in**, **Check-out**, **Nueva cita de estética** y **Nueva reserva**.
-3. En **Necesita atención** está lo que alguien tiene que resolver. Cada aviso es un link a donde se arregla.
-4. Abajo vienen las listas **Llegan hoy**, **Se van hoy** y **Siguen aquí ahora**. Toca un perro para ir directo a su check-in o su check-out.
+3. A la derecha (en el celular, al final) está **Necesita atención**, con lo que alguien tiene que resolver y cuántos son. Cada aviso es un link a donde se arregla; lo más viejo sale en rojo.
+4. Debajo de los números, en una sola tarjeta, van **Llegan hoy**, **Se van hoy** y **Siguen aquí ahora**, cada una con cuántos son. Toca un perro para ir directo a su check-in o su check-out. Si das estética, abajo vienen las **Citas de estética hoy** con la hora, el estilista y su estado.
 
 > El admin ve una versión corta en [Administración](/admin): los números y lo pendiente. Con **Ver el tablero del día completo →** llega aquí.
 

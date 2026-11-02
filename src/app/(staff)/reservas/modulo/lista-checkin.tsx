@@ -62,7 +62,7 @@ export async function ListaCheckin({ modulo }: { modulo: ModuloEstancia }) {
         <ul className="flex flex-col gap-2">
           {llegadas.map((l) => (
             <li key={l.estancia_id}>
-              <Enlace href={`/reservas/estancias/${l.estancia_id}/checkin`} className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
+              <Enlace href={`/reservas/estancias/${l.estancia_id}/checkin`} className="flex items-center justify-between gap-3 rounded-md border border-border bg-card px-4 py-3 hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
                 <span className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold text-n-900">{l.perro_nombre}</span>
                   <ContratoEstadoBanner

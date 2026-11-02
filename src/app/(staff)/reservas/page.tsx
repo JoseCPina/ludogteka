@@ -27,7 +27,7 @@ export default function ReservasPage() {
       <ul className="flex flex-col gap-3">
         {MODULOS_LISTA.map((m) => (
           <li key={m.categoria}>
-            <Enlace href={m.base} className="flex items-center justify-between gap-3 rounded-lg border-[1.5px] border-n-200 bg-white px-4 py-4 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
+            <Enlace href={m.base} className="flex items-center justify-between gap-3 rounded-lg border-[1.5px] border-border bg-white px-4 py-4 hover:border-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave" forma="bloque">
               <span>
                 <span className="block font-bold text-n-900">{m.etiqueta}</span>
                 <span className="block text-sm text-n-600">{m.descripcion}</span>

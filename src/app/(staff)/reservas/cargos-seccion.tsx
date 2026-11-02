@@ -212,7 +212,7 @@ export function CargosSeccion({
           </span>
         )}
         {(filasCargos.length > 0 || vacioCargos) && (
-          <p className="text-sm font-bold uppercase tracking-wide text-n-600" data-titulo-cargos>Cargos aplicados</p>
+          <p className="text-[0.9375rem] font-semibold text-foreground" data-titulo-cargos>Cargos aplicados</p>
         )}
         {filasCargos.length === 0 ? (
           vacioCargos && <p className="text-sm text-n-500" data-sin-cargos>{vacioCargos}</p>
@@ -222,7 +222,7 @@ export function CargosSeccion({
               <li
                 key={c.id}
                 className={`rounded-md border px-3 py-2 ${
-                  c.cancelado ? "border-n-200 bg-n-50" : "border-n-200 bg-white"
+                  c.cancelado ? "border-border bg-muted" : "border-border bg-white"
                 }`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -247,7 +247,7 @@ export function CargosSeccion({
                   <p className="mt-1 text-xs text-n-500">Cancelado: {c.motivoCancelacion}</p>
                 )}
                 {cancelandoId === c.id && (
-                  <div className="mt-2 flex flex-col gap-2 border-t border-n-200 pt-2">
+                  <div className="mt-2 flex flex-col gap-2 border-t border-border pt-2">
                     {conflicto?.cargoId === c.id && (
                       <AvisoConflicto
                         conflicto={conflicto.c}
@@ -293,7 +293,7 @@ export function CargosSeccion({
           </ul>
         )}
 
-        <div className="flex flex-col gap-2 border-t border-n-200 pt-2 text-sm" data-desglose-estancia={cancelada ? "cancelada" : "vigente"}>
+        <div className="flex flex-col gap-2 border-t border-border pt-2 text-sm" data-desglose-estancia={cancelada ? "cancelada" : "vigente"}>
           <DesgloseEstancia cuenta={cuentaViva} actualizando={actualizando} partes="total" />
           {cancelada && cuentaCobrado > 0 && (
             <span className="text-n-600" data-desglose-cobrado>
@@ -321,7 +321,7 @@ export function CargosSeccion({
       )}
 
       {serviciosCargo.length > 0 && (
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-n-50 p-3">
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-3">
           <div className="min-w-[200px]">
             <Select label="Aplicar cargo" value={servicioId} onChange={(e) => setServicioId(e.target.value)}>
               {serviciosCargo.map((s) => (

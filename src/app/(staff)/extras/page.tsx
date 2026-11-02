@@ -69,27 +69,27 @@ export default async function ExtrasPage({ searchParams }: { searchParams: Promi
       </div>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Tareas del día</h2>
+        <h2 className="text-lg font-semibold text-foreground">Tareas del día</h2>
         <ListaExtras filas={tareas} negocio={negocio.nombre} puedeAgregar={puedeAgregar} vacio="No hay tareas de servicios extra para este día." />
       </section>
 
-      <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Traslados</h2>
+      <section className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Traslados</h2>
         <p className="text-sm text-n-600">
           Hoja del día: dirección, horario y estado. Cuando sale el traslado se le avisa al dueño por WhatsApp.
         </p>
         <ListaExtras filas={traslados} negocio={negocio.nombre} puedeAgregar={puedeAgregar} vacio="No hay traslados para este día." />
       </section>
 
-      <section className="flex flex-col gap-3 border-t border-n-200 pt-6" data-cobrables>
-        <h2 className="text-lg font-bold text-n-900">Lo que se cobra aparte</h2>
+      <section className="flex flex-col gap-3 border-t border-border pt-6" data-cobrables>
+        <h2 className="text-lg font-semibold text-foreground">Lo que se cobra aparte</h2>
         <p className="text-sm text-n-600">
           Para agregar uno a una estancia, abre su check-in o su check-out. Los servicios extra se marcan hechos aquí; los
           cargos adicionales se agregan en «Cargos» de la estancia.
         </p>
         <ul className="flex flex-col gap-2 text-sm">
           {catalogo.map((e) => (
-            <li key={e.id} className="rounded-md border border-n-200 bg-white px-3 py-2" data-cobrable="extra">
+            <li key={e.id} className="rounded-md border border-border bg-card px-3 py-2" data-cobrable="extra">
               <strong className="text-n-900">{e.nombre}</strong>{" "}
               {e.tipo === "traslado" ? (
                 <span className="text-n-700">
@@ -104,7 +104,7 @@ export default async function ExtrasPage({ searchParams }: { searchParams: Promi
             </li>
           ))}
           {(cargos ?? []).map((c) => (
-            <li key={c.id} className="rounded-md border border-n-200 bg-white px-3 py-2" data-cobrable="cargo">
+            <li key={c.id} className="rounded-md border border-border bg-card px-3 py-2" data-cobrable="cargo">
               <strong className="text-n-900">{c.nombre}</strong>{" "}
               <span className="text-n-700">
                 ·{" "}

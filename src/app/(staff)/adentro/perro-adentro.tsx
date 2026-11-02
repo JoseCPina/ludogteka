@@ -210,9 +210,9 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
   const reporte = dato.reporte ?? null;
 
   return (
-    <li className="rounded-xl border border-n-200 bg-white p-4 shadow-sm" data-perro={dato.nombre}>
+    <li className="rounded-xl border border-border bg-white p-4 shadow-sm" data-perro={dato.nombre}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h3 className="text-lg font-bold text-n-900">{dato.nombre}</h3>
+        <h3 className="text-lg font-semibold text-foreground">{dato.nombre}</h3>
         <span className="flex flex-wrap gap-1.5">
           {dato.etiquetas.map((e) => (
             <Chip key={e} tono="info" punto={false}>
@@ -267,7 +267,7 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
           )}
 
           {abierto && (
-            <div className="mt-4 flex flex-col gap-3 border-t border-n-200 pt-4">
+            <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4">
               <p className="text-sm text-n-600">
                 Se borra en {retencion} {retencion === 1 ? "día" : "días"}: lo que subas aquí solo vive ese tiempo.
               </p>
@@ -276,7 +276,7 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
               {subidas.length > 0 && (
                 <ul className="flex flex-col gap-2" aria-live="polite">
                   {subidas.map((s) => (
-                    <li key={s.key} className="rounded-lg border border-n-200 bg-n-50 p-3">
+                    <li key={s.key} className="rounded-lg border border-border bg-card shadow-tarjeta p-3">
                       <div className="flex items-center justify-between gap-2 text-sm">
                         <span className="truncate font-semibold text-n-900">{s.tipo === "video" ? "Video" : "Foto"} · {s.nombre}</span>
                         {s.estado !== "error" && s.estado !== "demo" && <span className="shrink-0 text-n-600">{Math.round(s.progreso * 100)} %</span>}
@@ -284,10 +284,10 @@ export function PerroAdentro({ dato, permiso, retencion }: { dato: PerroAdentroD
                       {s.estado === "demo" ? (
                         <div className="mt-2 flex flex-col gap-2">
                           {s.vista && (s.tipo === "video" ? (
-                            <video src={s.vista} muted playsInline controls className="max-h-48 w-full max-w-xs rounded-md border border-n-200 bg-black" />
+                            <video src={s.vista} muted playsInline controls className="max-h-48 w-full max-w-xs rounded-md border border-border bg-black" />
                           ) : (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={s.vista} alt="" className="h-28 w-28 rounded-md border border-n-200 object-cover" />
+                            <img src={s.vista} alt="" className="h-28 w-28 rounded-md border border-border object-cover" />
                           ))}
                           <AvisoDemo texto={s.tipo === "video" ? AVISO_VIDEO_DEMO : AVISO_FOTO_DEMO} />
                           <Button type="button" variante="secundario" tamano="compacto" className="self-start" onClick={() => setSubidas((x) => x.filter((y) => y.key !== s.key))}>

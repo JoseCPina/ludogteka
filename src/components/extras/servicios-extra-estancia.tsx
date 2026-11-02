@@ -117,7 +117,7 @@ export function ServiciosExtraEstancia({
     <div className="flex flex-col gap-4" data-servicios-extra>
       {(filas.length > 0 || vacioExtras) && (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-bold uppercase tracking-wide text-n-600">Servicios extra</p>
+          <p className="text-[0.9375rem] font-semibold text-foreground">Servicios extra</p>
           <ListaExtras
             filas={filas}
             negocio={negocio}
@@ -146,7 +146,7 @@ export function ServiciosExtraEstancia({
       )}
 
       {puedeAgregar && !sinCargosNuevos && catalogo.length > 0 && (
-        <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-3">
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-3">
           <div className="grid gap-3 sm:grid-cols-2">
             <Select label="Servicio extra" value={extraId} onChange={(e) => { setExtraId(e.target.value); setZonaId(""); }}>
               {catalogo.map((e) => (

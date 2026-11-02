@@ -21,9 +21,9 @@ export async function ExtrasTablero() {
   if (filas.length === 0) return null;
   const pendientes = filas.filter((f) => f.estado === "pendiente" || f.estado === "en_camino").length;
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4" data-extras-tablero>
+    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4" data-extras-tablero>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-lg font-bold text-n-900">Servicios extra de hoy</h2>
+        <h2 className="text-lg font-semibold text-foreground">Servicios extra de hoy</h2>
         <Enlace href="/extras" className="text-sm">
           {pendientes === 0 ? "Todo hecho · ver detalle" : `${pendientes} por hacer · ver todo`}
         </Enlace>
