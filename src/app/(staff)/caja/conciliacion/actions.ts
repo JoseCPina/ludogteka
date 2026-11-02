@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
@@ -12,8 +11,6 @@ export async function darPorRevisada(id: string, nota: string): Promise<{ error:
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("conciliacion_dar_por_revisada", { p_id: id, p_nota: nota });
   if (error) return { error: error.message.replace(/^.*?ERROR:\s*/, "") };
-  revalidatePath("/caja/conciliacion");
-  revalidatePath("/recepcion");
   return { error: null, registros: await registrosDe(supabase, [{ t: "conciliacion_terminal", i: id }]) };
 }
 
@@ -28,8 +25,6 @@ export async function darPorRevisadasHasta(hasta: string, nota: string): Promise
   const { data, error } = await supabase.rpc("conciliacion_dar_por_revisadas_hasta", { p_hasta: hasta, p_nota: nota });
   if (error) return { error: error.message.replace(/^.*?ERROR:\s*/, "") };
   const r = (data ?? {}) as { cerradas?: number; ids?: string[] };
-  revalidatePath("/caja/conciliacion");
-  revalidatePath("/recepcion");
   return {
     error: null,
     cerradas: r.cerradas ?? 0,
@@ -46,9 +41,6 @@ export async function guardarMostrarPagosAjenos(mostrar: boolean): Promise<{ err
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("guardar_conciliacion_mostrar_ajenos", { p_mostrar: mostrar });
   if (error) return { error: error.message.replace(/^.*?ERROR:\s*/, "") };
-  revalidatePath("/admin/pagos");
-  revalidatePath("/caja/conciliacion");
-  revalidatePath("/recepcion");
   const { data: ajuste } = await supabase.from("conciliacion_ajustes").select("id").limit(1).maybeSingle();
   return { error: null, registros: await registrosDe(supabase, [{ t: "conciliacion_ajustes", i: (ajuste?.id as string | undefined) ?? null, datos: { mostrar_pagos_ajenos: mostrar } }]) };
 }

@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
@@ -17,8 +16,6 @@ export async function registrarRetiro(monto: number, motivo: string): Promise<Es
 
   if (error) return { error: traducirError(error) };
 
-  revalidatePath("/caja");
-  revalidatePath("/caja/turno");
   return { error: null, retiroId: data as string, registros: await registrosDe(supabase, [{ t: "movimientos_caja", i: data as string }]) };
 }
 
@@ -28,8 +25,6 @@ export async function cancelarRetiro(retiroId: string, motivo: string): Promise<
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("cancelar_retiro", { p_id: retiroId, p_motivo: motivo.trim() });
   if (error) return { error: traducirError(error) };
-  revalidatePath("/caja");
-  revalidatePath("/caja/turno");
   return { error: null, registros: await registrosDe(supabase, [{ t: "movimientos_caja", i: retiroId }]) };
 }
 

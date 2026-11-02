@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { MENSAJE_DEMO } from "@/lib/solo-lectura";
@@ -20,22 +19,10 @@ async function demo(): Promise<ResultadoCorreccion | null> {
   return (await cargarNegocioLanding()).plan === "demo" ? { error: MENSAJE_DEMO } : null;
 }
 
-// QA R23 (N89): anular o corregir un cobro y corregir un precio NO llaman a esta función: un revalidatePath dentro
-// de una acción hace que Next vuelva a pintar la pantalla completa ANTES de contestar (3 a 4 s en Caja). Esas
-// acciones contestan con los totales nuevos, la pantalla los pinta al instante y se refresca sola; las demás
-// pantallas son dinámicas y se leen de nuevo al abrirlas.
-function refrescar(reservaId?: string | null, grupoId?: string | null) {
-  revalidatePath("/caja");
-  revalidatePath("/caja/turno");
-  revalidatePath("/caja/conciliacion");
-  revalidatePath("/recepcion");
-  revalidatePath("/reportes");
-  if (reservaId) {
-    revalidatePath(`/caja/cobrar/${reservaId}`);
-    revalidatePath(`/reservas/${reservaId}/cobrar`);
-  }
-  if (grupoId) revalidatePath(`/caja/recibo-junto/${grupoId}`);
-}
+// QA R23 (N89) y revalidate-lote-1 (1 de noviembre de 2026): ninguna acción de aquí llama revalidatePath. Un
+// revalidatePath dentro de una acción hace que Next vuelva a pintar la pantalla completa ANTES de contestar (3 a 4 s en
+// Caja). Las acciones contestan con los totales nuevos (registros), la pantalla los pinta al instante y se refresca
+// sola; las demás pantallas son dinámicas y se leen de nuevo al abrirlas.
 
 type RespuestaCobro = { turno_del_cobro_cerrado?: boolean; grupo_id?: string | null; reserva_id?: string; saldo?: number; diferencia?: number };
 
@@ -163,7 +150,6 @@ export async function agregarEfectivo(monto: number, origen: string, nota: strin
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("registrar_efectivo_agregado", { p_monto: monto, p_origen: origen, p_nota: nota.trim() || null });
   if (error) return { error: traducirError(error) };
-  refrescar();
   return {
     error: null,
     aviso: "Efectivo agregado al turno. Cuenta en el efectivo esperado del corte; no es una venta.",
@@ -178,6 +164,5 @@ export async function cancelarEfectivoAgregado(id: string, motivo: string): Prom
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("cancelar_efectivo_agregado", { p_id: id, p_motivo: motivo.trim() });
   if (error) return { error: traducirError(error) };
-  refrescar();
   return { error: null, aviso: "Cancelado.", registros: await registrosDe(supabase, [{ t: "movimientos_caja", i: id }]) };
 }

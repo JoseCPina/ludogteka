@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
@@ -33,9 +32,6 @@ export async function revisarComprobante(
   if (error) return { error: error.message || "No pudimos guardar la revisión." };
 
   const salida = data as { estado: "confirmado" | "rechazado"; fecha_vencimiento?: string | null; requisito_aplicado_id?: string | null } | null;
-  revalidatePath("/recepcion/comprobantes");
-  revalidatePath("/recepcion");
-  revalidatePath("/admin");
   return {
     error: null,
     estado: salida?.estado,

@@ -1,7 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { revalidarModulosEstancia, revalidarSeriesModulos } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
@@ -60,8 +58,6 @@ export async function crearSerie(
     p_serie_id: serie.id,
   });
 
-  revalidarSeriesModulos();
-  revalidarModulosEstancia();
   return {
     error: errorGen ? traducirError(errorGen) : null,
     serieId: serie.id,
@@ -78,7 +74,6 @@ export async function renovarHorizonte(serieId: string, semanas = 8): Promise<Es
     p_horizonte_semanas: semanas,
   });
   if (error) return { error: traducirError(error), resultados: [] };
-  revalidatePath(`/reservas/series/${serieId}`);
   return { error: null, resultados: (data as ResultadoFecha[] | null) ?? [], registros: await registrosDe(supabase, [{ t: "series_recurrentes", i: serieId }]) };
 }
 
@@ -136,7 +131,6 @@ export async function editarSerie(
     p_serie_id: serieId,
   });
 
-  revalidatePath(`/reservas/series/${serieId}`);
   return {
     error: errorGen ? traducirError(errorGen) : null,
     canceladas,
@@ -176,7 +170,6 @@ export async function pausarSerie(
     if (!error) canceladas++;
   }
 
-  revalidatePath(`/reservas/series/${serieId}`);
   return {
     error: null,
     canceladas,
@@ -193,7 +186,6 @@ export async function quitarPausa(serieId: string, pausaId: string): Promise<Est
     .update({ deleted_at: new Date().toISOString() })
     .eq("id", pausaId);
   if (error) return { error: traducirError(error) };
-  revalidatePath(`/reservas/series/${serieId}`);
   return { error: null, registros: await registrosDe(supabase, [{ t: "series_pausas", i: pausaId }, { t: "series_recurrentes", i: serieId }]) };
 }
 
@@ -223,9 +215,6 @@ export async function cancelarSerie(serieId: string): Promise<EstadoCancelarSeri
     if (!error) canceladas++;
   }
 
-  revalidarSeriesModulos();
-  revalidarModulosEstancia();
-  revalidatePath(`/reservas/series/${serieId}`);
   return {
     error: null,
     canceladas,

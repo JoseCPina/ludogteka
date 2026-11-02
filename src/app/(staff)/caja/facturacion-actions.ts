@@ -1,7 +1,6 @@
 "use server";
 
 import { createHash, randomBytes } from "node:crypto";
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { negocioActual, urlDelNegocioActual } from "@/lib/negocio/actual";
@@ -31,12 +30,6 @@ async function enDemo(): Promise<ResultadoFactura | null> {
   return (await cargarNegocioLanding()).plan === "demo" ? { error: MENSAJE_DEMO } : null;
 }
 
-function refrescar() {
-  revalidatePath("/caja");
-  revalidatePath("/caja/facturas");
-  revalidatePath("/recepcion");
-}
-
 async function contexto() {
   const negocio = await negocioActual();
   return { negocio, sb: await createSupabaseServerClient(), admin: createSupabaseAdminClient(negocio.id) };
@@ -52,7 +45,6 @@ export async function facturarCobros(cobroIds: string[], receptor?: ReceptorManu
   if (p.error) return { error: traducir(p.error) };
   const facturaId = p.data as string;
   const r = await timbrarFactura(sb, admin, negocio.id, facturaId);
-  refrescar();
   return { ...r, facturaId, registros: await registrosDe(sb, [{ t: "cfdi_facturas", i: facturaId }, ...cobroIds.map((i) => ({ t: "cobros", i }))]) };
 }
 
@@ -72,14 +64,12 @@ export async function timbrarBorrador(facturaId: string): Promise<ResultadoFactu
   if (negado) return negado;
   const { negocio, sb, admin } = await contexto();
   const r = await timbrarFactura(sb, admin, negocio.id, facturaId);
-  refrescar();
   return { ...r, facturaId };
 }
 
 export async function revisarPorRevisar(facturaId: string): Promise<ResultadoFactura> {
   const { negocio, sb, admin } = await contexto();
   const r = await revisarFactura(sb, admin, negocio.id, facturaId);
-  refrescar();
   return r;
 }
 
@@ -89,7 +79,6 @@ export async function descartarBorrador(facturaId: string): Promise<ResultadoFac
   const { sb } = await contexto();
   const { error } = await sb.rpc("cfdi_descartar", { p_factura_id: facturaId });
   if (error) return { error: traducir(error) };
-  refrescar();
   return { error: null, aviso: "Borrador descartado: los cobros quedaron libres para facturarse.", registros: await registrosDe(sb, [{ t: "cfdi_facturas", i: facturaId }]) };
 }
 
@@ -98,7 +87,6 @@ export async function cancelarUnaFactura(facturaId: string, motivo: string, sust
   if (negado) return negado;
   const { sb, admin } = await contexto();
   const r = await cancelarFactura(sb, admin, facturaId, motivo, sustitutaUuid);
-  refrescar();
   return r;
 }
 
@@ -119,12 +107,10 @@ export async function sustituirFactura(facturaId: string, receptor?: ReceptorMan
   const nuevaId = p.data as string;
   const t = await timbrarFactura(sb, admin, negocio.id, nuevaId);
   if (t.error) {
-    refrescar();
     return { ...t, facturaId: nuevaId, error: `${t.error} (La factura anterior sigue vigente.)` };
   }
   const { data: nueva } = await admin.from("cfdi_facturas").select("uuid_fiscal").eq("id", nuevaId).eq("negocio_id", negocio.id).maybeSingle();
   const c = await cancelarFactura(sb, admin, facturaId, "01", nueva?.uuid_fiscal ?? null);
-  refrescar();
   if (c.error) return { error: `La factura nueva ya salió, pero la anterior no se pudo cancelar: ${c.error}`, facturaId: nuevaId };
   return {
     error: null,
@@ -140,7 +126,6 @@ export async function actualizarCancelaciones(): Promise<ResultadoFactura> {
   const { data: ok2 } = await sb.rpc("tiene_permiso", { p_permiso: "facturar" });
   if (!ok && !ok2) return { error: "No tienes permiso para esto." };
   const n = await sincronizarCancelaciones(admin, negocio.id);
-  refrescar();
   return { error: null, aviso: n ? `${n} cancelación(es) cambiaron de estado.` : "Sin cambios por ahora." };
 }
 
@@ -153,7 +138,6 @@ export async function emitirGlobal(desde: string, hasta: string): Promise<Result
   if (p.error) return { error: traducir(p.error) };
   const facturaId = p.data as string;
   const r = await timbrarFactura(sb, admin, negocio.id, facturaId);
-  refrescar();
   return { ...r, facturaId, registros: await registrosDe(sb, [{ t: "cfdi_facturas", i: facturaId }]) };
 }
 
@@ -181,7 +165,6 @@ export async function enlaceDeFactura(facturaId: string): Promise<ResultadoFactu
   }
   const mensaje = `Hola, aquí está tu factura ${f.serie ?? ""}${f.folio ?? ""} de ${negocio.nombre}. Puedes bajar el PDF y el XML aquí (el link dura 30 días): ${url}`;
   await sb.rpc("cfdi_registrar_envio", { p_factura_id: facturaId, p_canal: "whatsapp" });
-  refrescar();
   return {
     error: null,
     enlaceWhatsapp: tel ? `https://wa.me/52${tel}?text=${encodeURIComponent(mensaje)}` : undefined,
@@ -204,6 +187,5 @@ export async function correoDeFactura(facturaId: string, correo: string): Promis
   if (r.error) return { error: r.error };
   const { error } = await sb.rpc("cfdi_registrar_envio", { p_factura_id: facturaId, p_canal: "correo" });
   if (error) return { error: traducir(error) };
-  refrescar();
   return { error: null, aviso: `Factura enviada a ${c}.`, registros: await registrosDe(sb, [{ t: "cfdi_facturas", i: facturaId }]) };
 }
