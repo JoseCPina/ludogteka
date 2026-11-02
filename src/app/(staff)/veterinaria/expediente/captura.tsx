@@ -18,7 +18,7 @@ import { capturarResultado, confirmarAdjunto, iniciarConsulta, prepararAdjunto }
 /** «Nueva consulta» sin cita: tipo y médico (el médico que es quien llama viene elegido). */
 export function IniciarConsulta({ perroId, medicos, medicoPropio }: { perroId: string; medicos: MedicoVet[]; medicoPropio: string | null }) {
   return (
-    <FormularioAccion accion={(fd) => iniciarConsulta(perroId, fd)} textoBoton="Abrir la consulta" className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+    <FormularioAccion accion={(fd) => iniciarConsulta(perroId, fd)} textoBoton="Abrir la consulta" className="rounded-lg border-[1.5px] border-border bg-muted p-4">
       <div className="grid gap-3 sm:grid-cols-2">
         <Select label="Tipo de consulta" name="tipo" defaultValue="consulta">
           {Object.entries(TIPOS_CITA).map(([clave, nombre]) => (
@@ -48,7 +48,7 @@ export function CapturarResultado({ perroId, consultaId, hoy }: { perroId: strin
   const cambiar = (i: number, k: keyof Fila, v: string) => setFilas((f) => f.map((x, j) => (j === i ? { ...x, [k]: v } : x)));
   const utiles = filas.filter((f) => f.nombre.trim() && f.valor.trim());
   return (
-    <FormularioAccion accion={(fd) => capturarResultado(perroId, consultaId, fd)} textoBoton="Guardar resultado" textoExito="Resultado guardado" className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+    <FormularioAccion accion={(fd) => capturarResultado(perroId, consultaId, fd)} textoBoton="Guardar resultado" textoExito="Resultado guardado" className="rounded-lg border-[1.5px] border-border bg-muted p-4">
       <input type="hidden" name="parametros" value={JSON.stringify(utiles.map((f) => ({ nombre: f.nombre, valor: f.valor, unidad: f.unidad || null, rango: f.rango || null })))} />
       <div className="grid gap-3 sm:grid-cols-3">
         <Field label="Estudio" name="estudio" required placeholder="Biometría hemática" />
@@ -137,7 +137,7 @@ export function SubirAdjunto({ perroId, consultaId }: { perroId: string; consult
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+    <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-border bg-muted p-4">
       <div>
         <label htmlFor={`adjunto-${consultaId ?? perroId}`} className="mb-1.5 block text-sm font-medium text-n-800">
           Foto o PDF (hasta 15 MB)
@@ -154,7 +154,7 @@ export function SubirAdjunto({ perroId, consultaId }: { perroId: string; consult
         <div className="flex flex-col gap-2">
           {demo.vista ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={demo.vista} alt="" className="h-28 w-28 rounded-md border border-n-200 object-cover" />
+            <img src={demo.vista} alt="" className="h-28 w-28 rounded-md border border-border object-cover" />
           ) : (
             <p className="text-sm font-semibold text-n-900">{demo.nombre}</p>
           )}

@@ -11,20 +11,20 @@ type Permiso = { id: string; tipo: string; vencimiento: string; dias: number; es
 function Tarjeta({ href, titulo, children }: { href?: string; titulo: string; children: React.ReactNode }) {
   const cuerpo = (
     <>
-      <h2 className="text-lg font-bold text-n-900">{titulo}</h2>
+      <h2 className="text-lg font-semibold text-foreground">{titulo}</h2>
       <div className="mt-2 flex flex-col gap-2 text-sm text-n-700">{children}</div>
     </>
   );
-  const base = "rounded-lg border border-n-200 bg-white p-5";
+  const base = "rounded-lg border border-border bg-card shadow-tarjeta p-5";
   // Una tarjeta que lleva a una pantalla que esta persona no abre no se muestra (QA N127).
   return href ? (
     <SiPuedeAbrir href={href}>
-      <Enlace href={href} className={`${base} hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave`} forma="bloque">
+      <Enlace href={href} className={`${base} hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave`} forma="bloque">
         {cuerpo}
       </Enlace>
     </SiPuedeAbrir>
   ) : (
-    <div className={`${base} border-dashed bg-n-50`}>{cuerpo}</div>
+    <div className={`${base} border-dashed bg-muted`}>{cuerpo}</div>
   );
 }
 

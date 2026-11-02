@@ -14,7 +14,7 @@ export async function UsoDictado({ consultaId }: { consultaId: string }) {
   const zona = await zonaActual();
   const total = filas.reduce((s, f) => s + (f.minutos ?? 0), 0);
   return (
-    <section aria-label="Uso del dictado" className="rounded-lg border border-n-200 bg-white p-4">
+    <section aria-label="Uso del dictado" className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <h2 className="text-base font-bold text-n-900">Dictado en esta consulta</h2>
       <p className="text-sm text-n-600">{filas.length} {filas.length === 1 ? "dictado" : "dictados"} · {total} min en total. Aquí solo queda el registro de uso: el texto dictado se pasó al expediente.</p>
       <ul className="mt-2 flex flex-col gap-1 text-sm text-n-800">

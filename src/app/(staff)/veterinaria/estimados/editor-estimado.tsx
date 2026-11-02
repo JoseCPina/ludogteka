@@ -76,7 +76,7 @@ export function EditorEstimado({
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="grid gap-3 rounded-lg border border-n-200 bg-white p-5 sm:grid-cols-2">
+      <section className="grid gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5 sm:grid-cols-2">
         <Field label="Título" name="titulo" value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Esterilización, limpieza dental…" required />
         <Select label="Tipo" name="tipo" value={tipo} onChange={(e) => setTipo(e.target.value as "consulta" | "cirugia")}>
           <option value="consulta">Consulta</option>
@@ -96,11 +96,11 @@ export function EditorEstimado({
         </div>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">Líneas</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">Líneas</h2>
         <p className="text-sm text-n-600">Cada línea lleva un precio mínimo (lo seguro) y uno máximo. Al aceptar, el mínimo pasa a la cuenta; lo demás se agrega cuando ocurre, hasta el máximo.</p>
         {filas.map((f, i) => (
-          <div key={i} className="grid gap-2 rounded-md border border-n-200 bg-n-50 p-3 sm:grid-cols-6">
+          <div key={i} className="grid gap-2 rounded-md border border-border bg-muted p-3 sm:grid-cols-6">
             <Select label="Tipo" name={`tipo_${i}`} value={f.tipo} onChange={(e) => cambiar(i, { tipo: e.target.value as Fila["tipo"], insumo_id: e.target.value === "insumo" ? f.insumo_id : "" })}>
               {Object.entries(TIPOS_LINEA).map(([k, n]) => (
                 <option key={k} value={k}>
@@ -149,7 +149,7 @@ export function EditorEstimado({
           <Button type="button" variante="secundario" onClick={() => setFilas((x) => [...x, vacia("procedimiento")])}>+ Procedimiento</Button>
           <Button type="button" variante="secundario" onClick={() => setFilas((x) => [...x, vacia("insumo")])}>+ Insumo</Button>
         </div>
-        <p className="text-lg font-bold text-n-900">
+        <p className="text-lg font-semibold text-foreground">
           Total estimado: {dinero(totales.min)} – {dinero(totales.max)}
         </p>
       </section>

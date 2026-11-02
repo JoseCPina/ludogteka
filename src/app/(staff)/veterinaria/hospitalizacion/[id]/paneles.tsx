@@ -20,7 +20,7 @@ import {
   suspenderMedicacion,
 } from "../actions";
 
-const cuadro = "rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4";
+const cuadro = "rounded-lg border-[1.5px] border-border bg-muted p-4";
 
 export function FormularioMedicacion({
   hospId, productos, medicos, medicoPropio, ahoraLocal,

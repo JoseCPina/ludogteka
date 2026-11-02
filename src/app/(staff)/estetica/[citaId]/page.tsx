@@ -244,153 +244,161 @@ export default async function CitaDetallePage({
       </div>
 
       <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />
-      {aplicanRequisitos ? (
-        <>
-          <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
-          {traePendientes && (
-            <p className="rounded-md border-[1.5px] border-ambar bg-ambar-suave px-3 py-2 text-sm text-ambar-oscuro">
-              Trae requisitos vencidos o sin registro. No detienen esta cita (las vacunas se exigen en guardería y
-              hotel), pero sí sus estancias: conviene ponerlo al día.
+
+      {/* Rediseño (docs/diseno/DESIGN.md; bloque account-settings; Mobbin: Fresha, la cita con la ficha y los avisos del
+          cliente a un lado y lo que se hace con la cita al otro): la alerta crítica arriba a todo lo ancho; a la
+          izquierda, lo que se hace con la cita; a la derecha, la salud del perro y el historial. */}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="flex min-w-0 flex-col gap-6">
+          {!puedeEditar ? (
+            <p className="text-sm text-n-500">Esta cita es de otro empleado — solo se puede consultar.</p>
+          ) : (
+            <CitaDetalle
+              servicioNombre={servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? null}
+              version={(cita.updated_at as string | null) ?? null}
+              citaId={cita.id}
+              perroNombre={perro.nombre}
+              estado={cita.estado}
+              inicio={cita.inicio}
+              precio={cita.precio}
+              recargo={Number(cita.recargo ?? 0)}
+              recargoMotivo={(cita.recargo_motivo as string | null) ?? null}
+              puedeRecargo={tienePermiso(sesion, "excepciones_reserva")}
+              puedeEliminar={tienePermiso(sesion, "eliminar_citas")}
+              abrirReprogramar={abrirReprogramar}
+              tarifa={{
+                aplicada: Boolean(cita.tarifa_guarderia),
+                origen: cita.tarifa_guarderia ? (cita.tarifa_guarderia_modo === "si" ? "manual" : "auto") : null,
+                servicioNombre: (servicioTarifa?.nombre as string | null) ?? null,
+                aplicable: tarifaAplicable,
+                puedeCambiar: tienePermiso(sesion, "excepciones_reserva"),
+              }}
+              esStandalone={!cita.estancia_id}
+              entregadoPorNombre={cita.entregado_por_nombre}
+              recogidoPorNombre={cita.recogido_por_nombre}
+              recogidoPorEsDueno={cita.recogido_por_es_dueno}
+              recetaItems={recetaItems}
+              estilista={
+                sesion?.rol === "admin" || sesion?.rol === "recepcion"
+                  ? {
+                      empleadoId: (cita.empleado_id as string | null) ?? null,
+                      nombreActual: empleado?.nombre_completo ?? null,
+                      estilistas,
+                      puedeCorregir: tienePermiso(sesion, "corregir_estilista"),
+                    }
+                  : null
+              }
+            />
+          )}
+
+          {puedeCorregirServicio && (
+            <section data-corregir-servicio-seccion className="flex flex-col gap-2 border-t border-border pt-4">
+              <h2 className="text-[0.9375rem] font-semibold text-foreground">Servicio de la cita</h2>
+              <CorregirServicio
+                version={(cita.updated_at as string | null) ?? null}
+                citaId={cita.id}
+                estado={cita.estado}
+                servicioActual={servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? "Servicio"}
+                servicios={((serviciosCorregibles ?? []) as { id: string; nombre: string }[]).filter((x) => x.id !== cita.servicio_id)}
+                gruposPrecio={(gruposPrecio ?? []) as { id: string; nombre: string }[]}
+                puedeExcepcion={tienePermiso(sesion, "excepciones_reserva")}
+              />
+            </section>
+          )}
+        </div>
+        <aside className="flex min-w-0 flex-col gap-4" aria-label="Salud e historial">
+          {aplicanRequisitos ? (
+            <>
+              <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
+              {traePendientes && (
+                <p className="rounded-md border-[1.5px] border-ambar bg-ambar-suave px-3 py-2 text-sm text-ambar-oscuro">
+                  Trae requisitos vencidos o sin registro. No detienen esta cita (las vacunas se exigen en guardería y
+                  hotel), pero sí sus estancias: conviene ponerlo al día.
+                </p>
+              )}
+            </>
+          ) : (
+            usaEstancias(sesion?.modulos ?? []) && <NotaSoloEstetica />
+          )}
+
+          {cita.estancia_id && (
+            <p className="rounded-md border border-border bg-muted px-3 py-2 text-sm text-n-700">
+              Ligada a una estancia en curso — el perro ya está adentro, esta cita no genera entrada ni
+              salida propia.
             </p>
           )}
-        </>
-      ) : (
-        usaEstancias(sesion?.modulos ?? []) && <NotaSoloEstetica />
-      )}
+          {correcciones.length > 0 && (
+            <section data-historial-servicio className="flex flex-col gap-2 border-t border-border pt-4">
+              <h2 className="text-[0.9375rem] font-semibold text-foreground">Historial de servicio</h2>
+              <ul className="flex flex-col gap-2">
+                {correcciones.map((k) => (
+                  <li key={k.id} className="rounded-md border border-border bg-card px-3 py-2 text-sm text-n-700">
+                    <span className="font-semibold text-n-900">
+                      {k.servicio_anterior} → {k.servicio_nuevo}
+                    </span>
+                    <span className="block text-n-700">
+                      ${Number(k.precio_anterior).toFixed(2)} → ${Number(k.precio_nuevo).toFixed(2)}
+                      {Number(k.diferencia) !== 0 && ` (${Number(k.diferencia) > 0 ? "+" : "−"}$${Math.abs(Number(k.diferencia)).toFixed(2)})`}
+                      {k.tipo_ajuste === "cobro_adicional" && (Number(k.saldo_actual) > 0 ? " · cobro adicional por cobrar" : " · cobro adicional ya cobrado")}
+                      {k.tipo_ajuste === "saldo_a_favor" && (Number(k.saldo_actual) < 0 ? " · saldo a favor por devolver" : " · saldo a favor ya devuelto")}
+                    </span>
+                    <span className="block text-xs text-n-500">
+                      {formatearFecha(k.cuando, zona)} {horaLocalDeInstante(k.cuando, zona)} · por {k.por_nombre} · {ESTADO_HISTORIAL[k.estado_cita] ?? k.estado_cita}
+                    </span>
+                    <span className="block text-n-700">Motivo: {k.motivo}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-      {cita.estancia_id && (
-        <p className="rounded-md border border-n-200 bg-n-50 px-3 py-2 text-sm text-n-700">
-          Ligada a una estancia en curso — el perro ya está adentro, esta cita no genera entrada ni
-          salida propia.
-        </p>
-      )}
+          {cambios.length > 0 && (
+            <section data-historial-agenda className="flex flex-col gap-2 border-t border-border pt-4">
+              <h2 className="text-[0.9375rem] font-semibold text-foreground">Historial de cambios</h2>
+              <ul className="flex flex-col gap-2">
+                {cambios.map((k) => (
+                  <li key={k.id} className="rounded-md border border-border bg-card px-3 py-2 text-sm text-n-700">
+                    <span className="font-semibold text-n-900">{ETIQUETA_CAMBIO[k.tipo] ?? k.tipo}</span>
+                    {k.tipo === "reprogramacion" && (
+                      <span className="block">
+                        {formatearDiaDeInstante(k.inicio_antes, zona)} {horaLocalDeInstante(k.inicio_antes, zona)} → {formatearDiaDeInstante(k.inicio_despues, zona)} {horaLocalDeInstante(k.inicio_despues, zona)}
+                      </span>
+                    )}
+                    {k.tipo === "tarifa_guarderia" && k.detalle && (
+                      <span className="block">
+                        ${Number(k.detalle.precio_antes ?? 0).toFixed(2)} → ${Number(k.detalle.precio_despues ?? 0).toFixed(2)}
+                      </span>
+                    )}
+                    <span className="block text-xs text-n-500">
+                      {formatearFecha(k.cuando, zona)} {horaLocalDeInstante(k.cuando, zona)} · por {k.por_nombre} · {ESTADO_HISTORIAL[k.estado_antes] ?? k.estado_antes}
+                    </span>
+                    {k.motivo && <span className="block text-n-700">Motivo: {k.motivo}</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-      {!puedeEditar ? (
-        <p className="text-sm text-n-500">Esta cita es de otro empleado — solo se puede consultar.</p>
-      ) : (
-        <CitaDetalle
-          servicioNombre={servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? null}
-          version={(cita.updated_at as string | null) ?? null}
-          citaId={cita.id}
-          perroNombre={perro.nombre}
-          estado={cita.estado}
-          inicio={cita.inicio}
-          precio={cita.precio}
-          recargo={Number(cita.recargo ?? 0)}
-          recargoMotivo={(cita.recargo_motivo as string | null) ?? null}
-          puedeRecargo={tienePermiso(sesion, "excepciones_reserva")}
-          puedeEliminar={tienePermiso(sesion, "eliminar_citas")}
-          abrirReprogramar={abrirReprogramar}
-          tarifa={{
-            aplicada: Boolean(cita.tarifa_guarderia),
-            origen: cita.tarifa_guarderia ? (cita.tarifa_guarderia_modo === "si" ? "manual" : "auto") : null,
-            servicioNombre: (servicioTarifa?.nombre as string | null) ?? null,
-            aplicable: tarifaAplicable,
-            puedeCambiar: tienePermiso(sesion, "excepciones_reserva"),
-          }}
-          esStandalone={!cita.estancia_id}
-          entregadoPorNombre={cita.entregado_por_nombre}
-          recogidoPorNombre={cita.recogido_por_nombre}
-          recogidoPorEsDueno={cita.recogido_por_es_dueno}
-          recetaItems={recetaItems}
-          estilista={
-            sesion?.rol === "admin" || sesion?.rol === "recepcion"
-              ? {
-                  empleadoId: (cita.empleado_id as string | null) ?? null,
-                  nombreActual: empleado?.nombre_completo ?? null,
-                  estilistas,
-                  puedeCorregir: tienePermiso(sesion, "corregir_estilista"),
-                }
-              : null
-          }
-        />
-      )}
-
-      {puedeCorregirServicio && (
-        <section data-corregir-servicio-seccion className="flex flex-col gap-2 border-t border-n-200 pt-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Servicio de la cita</h2>
-          <CorregirServicio
-            version={(cita.updated_at as string | null) ?? null}
-            citaId={cita.id}
-            estado={cita.estado}
-            servicioActual={servicio?.nombre ?? (cita.servicio_nombre as string | null) ?? "Servicio"}
-            servicios={((serviciosCorregibles ?? []) as { id: string; nombre: string }[]).filter((x) => x.id !== cita.servicio_id)}
-            gruposPrecio={(gruposPrecio ?? []) as { id: string; nombre: string }[]}
-            puedeExcepcion={tienePermiso(sesion, "excepciones_reserva")}
-          />
-        </section>
-      )}
-
-      {correcciones.length > 0 && (
-        <section data-historial-servicio className="flex flex-col gap-2 border-t border-n-200 pt-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Historial de servicio</h2>
-          <ul className="flex flex-col gap-2">
-            {correcciones.map((k) => (
-              <li key={k.id} className="rounded-md border border-n-200 bg-white px-3 py-2 text-sm text-n-700">
-                <span className="font-semibold text-n-900">
-                  {k.servicio_anterior} → {k.servicio_nuevo}
-                </span>
-                <span className="block text-n-700">
-                  ${Number(k.precio_anterior).toFixed(2)} → ${Number(k.precio_nuevo).toFixed(2)}
-                  {Number(k.diferencia) !== 0 && ` (${Number(k.diferencia) > 0 ? "+" : "−"}$${Math.abs(Number(k.diferencia)).toFixed(2)})`}
-                  {k.tipo_ajuste === "cobro_adicional" && (Number(k.saldo_actual) > 0 ? " · cobro adicional por cobrar" : " · cobro adicional ya cobrado")}
-                  {k.tipo_ajuste === "saldo_a_favor" && (Number(k.saldo_actual) < 0 ? " · saldo a favor por devolver" : " · saldo a favor ya devuelto")}
-                </span>
-                <span className="block text-xs text-n-500">
-                  {formatearFecha(k.cuando, zona)} {horaLocalDeInstante(k.cuando, zona)} · por {k.por_nombre} · {ESTADO_HISTORIAL[k.estado_cita] ?? k.estado_cita}
-                </span>
-                <span className="block text-n-700">Motivo: {k.motivo}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {cambios.length > 0 && (
-        <section data-historial-agenda className="flex flex-col gap-2 border-t border-n-200 pt-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Historial de cambios</h2>
-          <ul className="flex flex-col gap-2">
-            {cambios.map((k) => (
-              <li key={k.id} className="rounded-md border border-n-200 bg-white px-3 py-2 text-sm text-n-700">
-                <span className="font-semibold text-n-900">{ETIQUETA_CAMBIO[k.tipo] ?? k.tipo}</span>
-                {k.tipo === "reprogramacion" && (
-                  <span className="block">
-                    {formatearDiaDeInstante(k.inicio_antes, zona)} {horaLocalDeInstante(k.inicio_antes, zona)} → {formatearDiaDeInstante(k.inicio_despues, zona)} {horaLocalDeInstante(k.inicio_despues, zona)}
-                  </span>
-                )}
-                {k.tipo === "tarifa_guarderia" && k.detalle && (
-                  <span className="block">
-                    ${Number(k.detalle.precio_antes ?? 0).toFixed(2)} → ${Number(k.detalle.precio_despues ?? 0).toFixed(2)}
-                  </span>
-                )}
-                <span className="block text-xs text-n-500">
-                  {formatearFecha(k.cuando, zona)} {horaLocalDeInstante(k.cuando, zona)} · por {k.por_nombre} · {ESTADO_HISTORIAL[k.estado_antes] ?? k.estado_antes}
-                </span>
-                {k.motivo && <span className="block text-n-700">Motivo: {k.motivo}</span>}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {historial.length > 0 && (
-        <section data-historial-estilista className="flex flex-col gap-2 border-t border-n-200 pt-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Historial de estilista</h2>
-          <ul className="flex flex-col gap-2">
-            {historial.map((h) => (
-              <li key={h.id} className="rounded-md border border-n-200 bg-white px-3 py-2 text-sm text-n-700">
-                <span className="font-semibold text-n-900">
-                  {h.de_nombre} → {h.a_nombre}
-                </span>
-                <span className="block text-xs text-n-500">
-                  {formatearFecha(h.cuando, zona)} {horaLocalDeInstante(h.cuando, zona)} · por {h.por_nombre} · {ESTADO_HISTORIAL[h.estado_cita] ?? h.estado_cita}
-                </span>
-                {h.motivo && <span className="block text-n-700">Motivo: {h.motivo}</span>}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+          {historial.length > 0 && (
+            <section data-historial-estilista className="flex flex-col gap-2 border-t border-border pt-4">
+              <h2 className="text-[0.9375rem] font-semibold text-foreground">Historial de estilista</h2>
+              <ul className="flex flex-col gap-2">
+                {historial.map((h) => (
+                  <li key={h.id} className="rounded-md border border-border bg-card px-3 py-2 text-sm text-n-700">
+                    <span className="font-semibold text-n-900">
+                      {h.de_nombre} → {h.a_nombre}
+                    </span>
+                    <span className="block text-xs text-n-500">
+                      {formatearFecha(h.cuando, zona)} {horaLocalDeInstante(h.cuando, zona)} · por {h.por_nombre} · {ESTADO_HISTORIAL[h.estado_cita] ?? h.estado_cita}
+                    </span>
+                    {h.motivo && <span className="block text-n-700">Motivo: {h.motivo}</span>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

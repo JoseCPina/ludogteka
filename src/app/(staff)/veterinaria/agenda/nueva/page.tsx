@@ -49,12 +49,12 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
           </Enlace>
         </SiPuedeAbrir>
         {filas.length === 0 ? (
-          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No encontramos a nadie con eso.<SiPuedeAbrir href="/clientes/nuevo"> Da de alta al dueño y a su mascota con <Enlace href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} enTexto>Nuevo cliente</Enlace>.</SiPuedeAbrir></p>
+          <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">No encontramos a nadie con eso.<SiPuedeAbrir href="/clientes/nuevo"> Da de alta al dueño y a su mascota con <Enlace href={`/clientes/nuevo?volver=${encodeURIComponent("/veterinaria/agenda/nueva")}`} enTexto>Nuevo cliente</Enlace>.</SiPuedeAbrir></p>
         ) : (
-          <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
             {filas.map((f) => (
               <li key={f.id}>
-                <Enlace href={`/veterinaria/agenda/nueva?perro=${f.id}${fecha ? `&fecha=${fecha}` : ""}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
+                <Enlace href={`/veterinaria/agenda/nueva?perro=${f.id}${fecha ? `&fecha=${fecha}` : ""}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted" forma="bloque">
                   <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
                   <span className="text-sm text-n-600">{f.dueno}{f.telefono ? ` · ${f.telefono}` : ""}</span>
                 </Enlace>
@@ -105,7 +105,7 @@ export default async function NuevaCitaVet({ searchParams }: { searchParams: Pro
           <EnlaceOTexto href="/bienvenida/medico" className="font-semibold underline">Médico veterinario</EnlaceOTexto> o en <EnlaceOTexto href="/veterinaria/medicos" className="font-semibold underline">Médicos</EnlaceOTexto>.
         </Alert>
       ) : (
-        <FormularioAccion accion={agendarCita} textoBoton="Agendar cita" className="rounded-lg border border-n-200 bg-white p-5">
+        <FormularioAccion accion={agendarCita} textoBoton="Agendar cita" className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
           <input type="hidden" name="perro_id" value={perro} />
           <CamposCitaVet
             tipos={tipos}

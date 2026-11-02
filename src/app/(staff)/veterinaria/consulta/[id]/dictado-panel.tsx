@@ -240,7 +240,7 @@ export function DictadoPanel({
 
       {(fase === "preparado" || fase === "grabando") && (
         <div className="flex flex-col gap-3">
-          <div className="rounded-md border border-n-200 bg-white p-3 text-sm text-n-800">
+          <div className="rounded-md border border-border bg-card p-3 text-sm text-n-800">
             <p className="font-semibold">Antes de grabar</p>
             <ul className="mt-1 list-disc pl-5">
               <li>Se graba <strong>tu voz</strong> con el micrófono de este equipo y se manda a servicios de terceros: ElevenLabs la convierte en texto y Anthropic (Claude) ordena el texto en un borrador.</li>
@@ -301,7 +301,7 @@ export function DictadoPanel({
                   const texto = borrador[s.clave as keyof BorradorSoap] as string | null;
                   if (!texto) return null;
                   return (
-                    <li key={s.clave} className="rounded-md border border-n-200 bg-white p-3">
+                    <li key={s.clave} className="rounded-md border border-border bg-card p-3">
                       <label className="flex items-start gap-2">
                         <input type="checkbox" className="mt-1 h-4 w-4" checked={Boolean(elegidos[s.clave])} onChange={(e) => setElegidos((m) => ({ ...m, [s.clave]: e.target.checked }))} />
                         <span>
@@ -316,7 +316,7 @@ export function DictadoPanel({
                   );
                 })}
                 {SIGNOS.some((s) => borrador[s.clave] != null) && (
-                  <li className="rounded-md border border-n-200 bg-white p-3">
+                  <li className="rounded-md border border-border bg-card p-3">
                     <p className="text-sm font-bold text-n-900">Signos vitales dictados</p>
                     <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
                       {SIGNOS.filter((s) => borrador[s.clave] != null).map((s) => (
@@ -330,7 +330,7 @@ export function DictadoPanel({
                   </li>
                 )}
                 {borrador.diagnosticos.length > 0 && (
-                  <li className="rounded-md border border-n-200 bg-white p-3">
+                  <li className="rounded-md border border-border bg-card p-3">
                     <p className="text-sm font-bold text-n-900">Diagnósticos sugeridos del catálogo</p>
                     <div className="mt-1 flex flex-col gap-1">
                       {borrador.diagnosticos.map((d) => (
@@ -368,7 +368,7 @@ export function DictadoPanel({
             <p className="text-n-700">No se armó el borrador, pero la transcripción quedó abajo para que la uses.</p>
           )}
           {transcripcion && (
-            <details className="rounded-md border border-n-200 bg-white p-3">
+            <details className="rounded-md border border-border bg-card p-3">
               <summary className="cursor-pointer text-sm font-semibold text-n-800">Ver la transcripción</summary>
               <p className="mt-2 whitespace-pre-wrap text-n-800">{transcripcion}</p>
               <p className="mt-2 text-xs text-n-600">Solo se ve aquí: no se guarda en ningún lado. Si la necesitas, cópiala ahora.</p>

@@ -159,7 +159,7 @@ export function EditorReceta({ perroId, consultaId, productos, tratamiento = nul
         const elegido = emitibles.find((p) => p.id === f.insumo_id);
         const calc = calculada(f);
         return (
-          <fieldset key={i} className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+          <fieldset key={i} className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
             <legend className="px-1 text-sm font-bold text-n-700">Medicamento {i + 1}</legend>
             <div className="grid gap-3 sm:grid-cols-2">
               {emitibles.length === 0 ? (

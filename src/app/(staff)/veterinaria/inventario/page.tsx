@@ -157,11 +157,11 @@ export default async function InventarioClinicoPage({ searchParams }: { searchPa
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
       ) : visibles.length === 0 ? (
-        <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">
           {insumos.length === 0 ? "Todavía no hay productos clínicos." : "Ningún producto cumple el filtro."}
         </p>
       ) : (
-        <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+        <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
           {visibles.map((i) => {
             const eq = i.unidad ? Number(i.unidad.equivalencia_en_base) : 1;
             const ex = existenciaDe.get(i.id);
@@ -172,7 +172,7 @@ export default async function InventarioClinicoPage({ searchParams }: { searchPa
             const lgsTxt = etiquetaLgs(i.clasificacion_lgs);
             return (
               <li key={i.id}>
-                <Enlace href={`/veterinaria/inventario/${i.id}`} className="flex flex-col gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
+                <Enlace href={`/veterinaria/inventario/${i.id}`} className="flex flex-col gap-2 px-4 py-3 hover:bg-muted" forma="bloque">
                   <span className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-semibold text-n-900">{i.nombre}</span>
                     <span className="text-sm tabular-nums text-n-700">
@@ -197,8 +197,8 @@ export default async function InventarioClinicoPage({ searchParams }: { searchPa
       )}
 
       {puedeEscribir && (candidatos ?? []).length > 0 && (
-        <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="text-lg font-bold text-n-900">Pasar un producto existente a lotes</h2>
+        <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="text-lg font-semibold text-foreground">Pasar un producto existente a lotes</h2>
           <p className="text-sm text-n-600">
             Si ya lo tienes en el inventario de siempre, pásalo aquí. Su existencia de hoy queda en un lote «INICIAL» sin caducidad, y después completas sus clasificaciones en su ficha.
           </p>

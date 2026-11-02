@@ -77,7 +77,7 @@ export function ProductoForm({
 
   return (
     <form method="post"
-      className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5"
+      className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5"
       onSubmit={async (e) => {
         e.preventDefault();
         setError(null);
@@ -158,7 +158,7 @@ export function ProductoForm({
         />
       </div>
 
-      <fieldset className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-4" disabled={bloqueado}>
+      <fieldset className="flex flex-col gap-3 rounded-md border border-border bg-muted p-4" disabled={bloqueado}>
         <legend className="px-1 text-sm font-bold text-n-800">Clasificación</legend>
         <Select label="Principio activo" name="principio_activo_id" value={principioId} onChange={(e) => elegirPrincipio(e.target.value)} ayuda="Opcional. Al elegirlo se llenan las clasificaciones de abajo; el catálogo lo mantiene PeluDesk.">
           <option value="">Sin principio activo</option>

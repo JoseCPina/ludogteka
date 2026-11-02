@@ -37,7 +37,7 @@ export default async function CensoHospitalizacion({ searchParams }: { searchPar
       const dueno = (Array.isArray(perro.clientes) ? perro.clientes[0] : perro.clientes) as { nombre: string } | null;
       formulario = (
         <section className="flex max-w-2xl flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">Ingresar a {perro.nombre as string} <span className="font-normal text-n-600">· {dueno?.nombre}</span></h2>
+          <h2 className="text-lg font-semibold text-foreground">Ingresar a {perro.nombre as string} <span className="font-normal text-n-600">· {dueno?.nombre}</span></h2>
           {medicos.length === 0 ? (
             <Alert variante="advertencia" titulo="Falta un médico veterinario">Un admin designa a los médicos en Veterinaria → Médicos.</Alert>
           ) : (
@@ -59,16 +59,16 @@ export default async function CensoHospitalizacion({ searchParams }: { searchPar
       {error && <Alert variante="error" titulo="No pudimos cargar el censo">{error.message}</Alert>}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Internados ({censo.length})</h2>
+        <h2 className="text-lg font-semibold text-foreground">Internados ({censo.length})</h2>
         {censo.length === 0 ? (
-          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No hay nadie hospitalizado ahora.</p>
+          <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">No hay nadie hospitalizado ahora.</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {censo.map((f) => (
               <li key={f.id}>
-                <Enlace href={`/veterinaria/hospitalizacion/${f.id}`} className={`flex flex-col gap-1.5 rounded-lg border bg-white p-4 hover:bg-n-50 ${f.dosis_atrasadas > 0 ? "border-ambar" : "border-n-200"}`} forma="bloque">
+                <Enlace href={`/veterinaria/hospitalizacion/${f.id}`} className={`flex flex-col gap-1.5 rounded-lg border bg-white p-4 hover:bg-muted ${f.dosis_atrasadas > 0 ? "border-ambar" : "border-border"}`} forma="bloque">
                   <span className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="text-lg font-bold text-n-900">{f.mascota} <span className="text-sm font-normal text-n-500">· {etiquetaEspecie(f.especie)} · día {f.dias}</span></span>
+                    <span className="text-lg font-semibold text-foreground">{f.mascota} <span className="text-sm font-normal text-n-500">· {etiquetaEspecie(f.especie)} · día {f.dias}</span></span>
                     <span className="text-sm text-n-600">{f.ubicacion ?? "Sin ubicación"}</span>
                   </span>
                   <span className="text-sm text-n-700">{f.motivo} · {f.dueno} · Responsable: {f.medico}</span>
@@ -91,17 +91,17 @@ export default async function CensoHospitalizacion({ searchParams }: { searchPar
 
       {puede && !perroId && (
         <section className="flex max-w-2xl flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">Ingresar una mascota</h2>
+          <h2 className="text-lg font-semibold text-foreground">Ingresar una mascota</h2>
           <form method="get" className="flex items-end gap-3">
             <div className="flex-1">
               <Field label="Buscar mascota o dueño" name="q" defaultValue={q ?? ""} />
             </div>
             <Button type="submit" variante="secundario">Buscar</Button>
           </form>
-          <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
             {candidatas.slice(0, 15).map((c) => (
               <li key={c.id}>
-                <Enlace href={`/veterinaria/hospitalizacion?perro=${c.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 hover:bg-n-50" forma="bloque">
+                <Enlace href={`/veterinaria/hospitalizacion?perro=${c.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 hover:bg-muted" forma="bloque">
                   <span className="font-semibold text-n-900">{c.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(c.especie)}</span></span>
                   <span className="text-sm text-n-600">{c.dueno}</span>
                 </Enlace>

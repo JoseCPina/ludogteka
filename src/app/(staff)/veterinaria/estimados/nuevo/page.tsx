@@ -30,10 +30,10 @@ export default async function NuevoEstimado({ searchParams }: { searchParams: Pr
           <div className="flex-1"><Field label="Buscar mascota o dueño" name="q" defaultValue={qCrudo ?? ""} /></div>
           <Button type="submit">Buscar</Button>
         </form>
-        <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+        <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
           {filas.map((f) => (
             <li key={f.id}>
-              <Enlace href={`/veterinaria/estimados/nuevo?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
+              <Enlace href={`/veterinaria/estimados/nuevo?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted" forma="bloque">
                 <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
                 <span className="text-sm text-n-600">{f.dueno}</span>
               </Enlace>

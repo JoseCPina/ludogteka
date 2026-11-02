@@ -35,14 +35,14 @@ export default async function Estimados({ searchParams }: { searchParams: Promis
       </nav>
       {puede === true && (
         filas.length === 0 ? (
-          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">Todavía no hay estimados{filtro ? " con ese estado" : ""}. Se crean desde el <Enlace href="/veterinaria/expediente" enTexto>expediente</Enlace> de la mascota.</p>
+          <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">Todavía no hay estimados{filtro ? " con ese estado" : ""}. Se crean desde el <Enlace href="/veterinaria/expediente" enTexto>expediente</Enlace> de la mascota.</p>
         ) : (
-          <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
             {filas.map((e) => {
               const est = ESTADOS_ESTIMADO[e.estado] ?? { etiqueta: e.estado, estilo: "bg-n-100" };
               return (
                 <li key={e.id}>
-                  <Enlace href={`/veterinaria/estimados/${e.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
+                  <Enlace href={`/veterinaria/estimados/${e.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted" forma="bloque">
                     <span>
                       <span className="font-semibold text-n-900">{e.titulo}</span> <span className="text-n-500">· v{e.version} · {e.mascota} ({e.dueno})</span>
                     </span>

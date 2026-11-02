@@ -35,14 +35,14 @@ export default async function Consentimientos() {
       {error && <Alert variante="error" titulo="No pudimos cargar las plantillas">{error.message}</Alert>}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Esperando firma ({(pendientes ?? []).length})</h2>
+        <h2 className="text-lg font-semibold text-foreground">Esperando firma ({(pendientes ?? []).length})</h2>
         {(pendientes ?? []).length === 0 ? (
-          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No hay consentimientos pendientes.</p>
+          <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">No hay consentimientos pendientes.</p>
         ) : (
-          <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
             {(pendientes ?? []).map((p) => (
               <li key={p.id as string}>
-                <Enlace href={`/veterinaria/consentimientos/${p.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
+                <Enlace href={`/veterinaria/consentimientos/${p.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted" forma="bloque">
                   <span className="font-semibold text-n-900">{ETIQUETA_CONSENTIMIENTO[p.tipo as string]} · {un(p.perros as { nombre: string } | { nombre: string }[] | null)?.nombre}{p.procedimiento ? ` — ${p.procedimiento}` : ""}</span>
                   <Antiguedad dias={diasDesde(p.created_at as string, hoy, zona)} />
                 </Enlace>
@@ -53,12 +53,12 @@ export default async function Consentimientos() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Plantillas del negocio</h2>
+        <h2 className="text-lg font-semibold text-foreground">Plantillas del negocio</h2>
         <Alert variante="info" titulo="Son textos base">
           Revísalos con tu asesor legal antes de usarlos. Cada vez que guardas se crea una versión nueva; los consentimientos ya creados conservan el texto con el que se crearon.
         </Alert>
         {plantillas.map((p) => (
-          <article key={p.id} className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+          <article key={p.id} className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="font-bold text-n-900">{ETIQUETA_CONSENTIMIENTO[p.tipo]}</h3>
               <span className="text-sm text-n-500">Versión {p.version}</span>

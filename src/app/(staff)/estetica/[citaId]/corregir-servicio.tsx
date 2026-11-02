@@ -107,7 +107,7 @@ export function CorregirServicio({
   return (
     <form method="post"
       data-corregir-servicio-form
-      className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3"
+      className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3"
       onSubmit={async (e) => {
         e.preventDefault();
         if (!listo || !cot) return setError("Escoge el servicio correcto y revisa el precio antes de confirmar.");
@@ -187,7 +187,7 @@ export function CorregirServicio({
       )}
 
       {listo && cot && (
-        <div data-correccion-resumen className="flex flex-col gap-1.5 rounded-md border border-n-200 bg-white p-3 text-sm text-n-700">
+        <div data-correccion-resumen className="flex flex-col gap-1.5 rounded-md border border-border bg-card p-3 text-sm text-n-700">
           <p>
             <span className="font-semibold text-n-900">{cot.servicio_actual} → {cot.servicio_nuevo}</span>
           </p>

@@ -47,7 +47,7 @@ export default async function LibroControl({ searchParams }: { searchParams: Pro
         <Alert variante="error" titulo="No pudimos armar el libro">{error.message}</Alert>
       ) : (
         <>
-          <form method="get" className="grid gap-3 rounded-lg border border-n-200 bg-white p-4 sm:grid-cols-4 print:hidden">
+          <form method="get" className="grid gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4 sm:grid-cols-4 print:hidden">
             <Field label="Desde" name="desde" type="date" defaultValue={desde} />
             <Field label="Hasta" name="hasta" type="date" defaultValue={hasta} />
             <label className="block text-sm font-medium text-n-800">
@@ -67,14 +67,14 @@ export default async function LibroControl({ searchParams }: { searchParams: Pro
           </div>
           <p className="hidden text-sm print:block">Libro de control del {formatearFechaCalendario(desde)} al {formatearFechaCalendario(hasta)}</p>
           {porProducto.size === 0 ? (
-            <p className="rounded-lg border border-n-200 bg-white p-5 text-n-700">No hay movimientos de productos controlados en este rango.</p>
+            <p className="rounded-lg border border-border bg-card shadow-tarjeta p-5 text-n-700">No hay movimientos de productos controlados en este rango.</p>
           ) : (
             [...porProducto.entries()].map(([producto, filas]) => {
               const inicial = libro?.saldos_iniciales.find((s) => s.producto === producto);
               return (
                 <section key={producto} className="flex flex-col gap-2 print:break-inside-avoid-page">
-                  <h2 className="text-lg font-bold text-n-900">{producto}{filas[0].laboratorio ? <span className="font-normal text-n-500"> · {filas[0].laboratorio}</span> : null}</h2>
-                  <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+                  <h2 className="text-lg font-semibold text-foreground">{producto}{filas[0].laboratorio ? <span className="font-normal text-n-500"> · {filas[0].laboratorio}</span> : null}</h2>
+                  <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
                     <TablaResponsiva className="w-full min-w-[56rem] text-sm">
                       <thead>
                         <tr className="text-left text-n-500">
@@ -83,10 +83,10 @@ export default async function LibroControl({ searchParams }: { searchParams: Pro
                       </thead>
                       <tbody>
                         {inicial && inicial.saldo_inicial !== 0 && (
-                          <tr className="border-t border-n-200 bg-n-50"><td className="px-3 py-1.5" colSpan={6}>Saldo al inicio del rango</td><td className="text-right font-semibold">{inicial.saldo_inicial}</td><td colSpan={2} /></tr>
+                          <tr className="border-t border-border bg-muted"><td className="px-3 py-1.5" colSpan={6}>Saldo al inicio del rango</td><td className="text-right font-semibold">{inicial.saldo_inicial}</td><td colSpan={2} /></tr>
                         )}
                         {filas.map((m) => (
-                          <tr key={m.id} className="border-t border-n-200 align-top">
+                          <tr key={m.id} className="border-t border-border align-top">
                             <td className="whitespace-nowrap px-3 py-1.5">{formatearFechaCalendario(m.fecha)}<span className="block text-xs text-n-500">{m.hora}</span></td>
                             <td>{NOMBRE_TIPO_MOVIMIENTO[m.tipo] ?? m.tipo}{m.motivo ? <span className="block text-xs text-n-500">{m.motivo}</span> : null}</td>
                             <td>{m.folio ?? "—"}</td>

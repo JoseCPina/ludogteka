@@ -73,7 +73,7 @@ export function LotesProducto({
               textoBoton="Registrar entrada"
               textoExito="Entrada registrada"
               reiniciar
-              className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4"
+              className="rounded-lg border-[1.5px] border-border bg-muted p-4"
             >
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Código de lote" name="codigo" required ayuda="El que viene en la caja o el frasco." />
@@ -88,7 +88,7 @@ export function LotesProducto({
       )}
 
       {lotes.length === 0 ? (
-        <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">Este producto todavía no tiene lotes. Registra la primera entrada.</p>
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">Este producto todavía no tiene lotes. Registra la primera entrada.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {lotes.map((l) => {
@@ -98,7 +98,7 @@ export function LotesProducto({
             return (
               <li
                 key={l.id}
-                className={`rounded-lg border bg-white p-4 ${resaltado ? (l.estado === "caducado" ? "border-coral" : "border-ambar") : "border-n-200"} ${vacio ? "opacity-70" : ""}`}
+                className={`rounded-lg border bg-white p-4 ${resaltado ? (l.estado === "caducado" ? "border-coral" : "border-ambar") : "border-border"} ${vacio ? "opacity-70" : ""}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
@@ -144,7 +144,7 @@ export function LotesProducto({
                         accion={(fd) => registrarAjusteLote(insumoId, l.id, fd)}
                         textoBoton="Registrar ajuste"
                         reiniciar
-                        className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4"
+                        className="rounded-lg border-[1.5px] border-border bg-muted p-4"
                       >
                         <Select label="Sentido" name="sentido" defaultValue="positivo">
                           <option value="positivo">Hay más que en el sistema (+)</option>
@@ -158,7 +158,7 @@ export function LotesProducto({
                         accion={(fd) => registrarSalidaLote(insumoId, l.id, abierto.accion as "surtido" | "merma" | "caducado", fd)}
                         textoBoton={TITULO[abierto.accion]}
                         reiniciar
-                        className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4"
+                        className="rounded-lg border-[1.5px] border-border bg-muted p-4"
                       >
                         <Field label={`Cantidad (${unidadConsumo})`} name="cantidad" type="number" step="0.01" min="0" required />
                         {abierto.accion === "surtido" ? (
@@ -181,7 +181,7 @@ export function LotesProducto({
                       {l.movimientos.map((m) => {
                         const t = TIPOS_MOVIMIENTO_LOTE[m.tipo];
                         return (
-                          <li key={m.id} className="rounded-md border border-n-200 px-3 py-2 text-sm">
+                          <li key={m.id} className="rounded-md border border-border px-3 py-2 text-sm">
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <span className="flex items-center gap-2">
                                 <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${t?.estilo ?? "bg-n-100 text-n-700"}`}>{t?.etiqueta ?? m.tipo}</span>

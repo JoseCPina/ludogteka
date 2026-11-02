@@ -30,9 +30,9 @@ const Etiqueta = ({ estado }: { estado: string }) => {
 
 function Seccion({ titulo, children, nota }: { titulo: string; children: React.ReactNode; nota?: string }) {
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4 sm:p-5">
+    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4 sm:p-5">
       <div>
-        <h2 className="text-lg font-bold text-n-900">{titulo}</h2>
+        <h2 className="text-lg font-semibold text-foreground">{titulo}</h2>
         {nota && <p className="mt-0.5 text-sm text-n-600">{nota}</p>}
       </div>
       {children}
@@ -124,7 +124,7 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
         {vigentes.length === 0 ? (
           <p className="text-n-700">Todavía no hay vacunas registradas.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-n-200">
+          <ul className="flex flex-col divide-y divide-border">
             {vigentes.map((v: RegistroVacuna) => (
               <li key={v.id} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -164,7 +164,7 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
         {desparasitaciones.length === 0 ? (
           <p className="text-n-700">Todavía no hay desparasitaciones registradas.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-n-200">
+          <ul className="flex flex-col divide-y divide-border">
             {desparasitaciones.map((d: RegistroDesparasitacion) => (
               <li key={d.id} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -205,7 +205,7 @@ export default async function CarnetDeMascota({ params }: { params: Promise<{ pe
       )}
 
       {anuladas.length > 0 && (
-        <details className="rounded-lg border border-n-200 bg-white p-4">
+        <details className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <summary className="cursor-pointer font-semibold text-n-800">Registros anulados ({anuladas.length})</summary>
           <ul className="mt-3 flex flex-col gap-2 text-sm text-n-700">
             {anuladas.map((r) => (

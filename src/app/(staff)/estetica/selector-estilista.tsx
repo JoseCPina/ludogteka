@@ -163,7 +163,7 @@ export function SelectorEstilista({
       </p>
       {abierto ? (
         <form method="post"
-          className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3"
+          className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3"
           onSubmit={async (e) => {
             e.preventDefault();
             if (elegida === (actualId ?? SIN_ASIGNAR)) return setError("Escoge a otra persona.");

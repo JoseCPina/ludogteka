@@ -9,7 +9,7 @@ import { ingresarMascota } from "./actions";
 
 export function FormularioIngreso({ perroId, medicos, medicoPropio, precioDia }: { perroId: string; medicos: MedicoOpcion[]; medicoPropio: string | null; precioDia: number | null }) {
   return (
-    <FormularioAccion accion={(fd) => ingresarMascota(perroId, fd)} textoBoton="Ingresar a hospitalización" className="rounded-lg border border-n-200 bg-white p-5">
+    <FormularioAccion accion={(fd) => ingresarMascota(perroId, fd)} textoBoton="Ingresar a hospitalización" className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
       <Textarea label="Motivo del ingreso" name="motivo" rows={3} required />
       <div className="grid gap-3 sm:grid-cols-2">
         <Select label="Médico responsable" name="medico_id" defaultValue={medicoPropio ?? ""} required>

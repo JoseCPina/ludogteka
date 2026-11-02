@@ -509,7 +509,7 @@ export function AgendarForm({
 
   // La excepción (grupo + motivo) se queda a la vista aunque ya haya precio: si no, al elegir el grupo desaparecería el campo del motivo.
   const bloqueExcepcion = excepcion && puedeExcepcion && perroId ? (
-    <div data-excepcion className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+    <div data-excepcion className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <p className="font-semibold text-n-900">Excepción solo para esta cita</p>
       <Select label="Grupo de precio" value={grupoElegido} onChange={(e) => setGrupoElegido(e.target.value)}>
         <option value="">Elige el grupo con el que cobrar</option>
@@ -529,7 +529,7 @@ export function AgendarForm({
   return (
     <div className="flex max-w-2xl flex-col gap-4">
       {!formularioCerrado && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <div>
             <p className="text-sm text-n-600">Cliente</p>
             <p className="font-bold text-n-900">{clienteElegido.nombre}</p>
@@ -574,7 +574,7 @@ export function AgendarForm({
       )}
 
       {formularioCerrado ? null : nuevoPerro || perrosDelCliente.length === 0 ? (
-        <div data-nuevo-perrito className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+        <div data-nuevo-perrito className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <p className="font-bold text-n-900">
             {perrosDelCliente.length === 0 ? `Registra el perrito de ${clienteElegido.nombre}` : `Otro perrito de ${clienteElegido.nombre}`}
           </p>
@@ -695,7 +695,7 @@ export function AgendarForm({
           )}
 
           {servicioActual && (servicioActual.incluye.length > 0 || servicioActual.no_incluye) && (
-            <div data-incluye className="rounded-md border border-n-200 bg-n-50 p-3 text-sm text-n-800">
+            <div data-incluye className="rounded-md border border-border bg-muted p-3 text-sm text-n-800">
               {servicioActual.incluye.length > 0 && (
                 <>
                   <p className="font-semibold text-n-900">Incluye</p>
@@ -729,7 +729,7 @@ export function AgendarForm({
               alternativo. En los demás la casilla no haría nada y sería
               una pregunta de más en el mostrador. */}
           {servicioActual?.tiene_precio_maltratado && (
-            <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
+            <label className="flex items-start gap-2 rounded-md border-[1.5px] border-border bg-white p-3 text-n-900">
               <input
                 type="checkbox"
                 checked={peloMaltratado}
@@ -746,7 +746,7 @@ export function AgendarForm({
           )}
 
           {puedeExcepcion && (
-            <div className="flex flex-col gap-2 rounded-md border border-n-200 p-3">
+            <div className="flex flex-col gap-2 rounded-md border border-border p-3">
               <Field
                 label="Recargo manual (opcional)"
                 inputMode="decimal"

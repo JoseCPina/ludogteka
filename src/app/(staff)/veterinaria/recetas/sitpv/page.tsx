@@ -43,7 +43,7 @@ export default async function Sitpv({ searchParams }: { searchParams: Promise<{ 
       {medicos.length > 0 && (
         <section className="grid gap-3 sm:grid-cols-2">
           {medicos.map((m) => (
-            <div key={m.medico_id} className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
+            <div key={m.medico_id} className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <p className="font-semibold text-n-900">{m.nombre} <span className="font-normal text-n-500">· CPA {m.cpa ?? "sin capturar"}</span></p>
               <p className={`text-sm ${m.folios_asignados > 0 && m.folios_disponibles < alerta ? "font-semibold text-coral-oscuro" : "text-n-700"}`}>
                 Folios: {m.folios_disponibles} disponibles de {m.folios_asignados} asignados
@@ -81,12 +81,12 @@ export default async function Sitpv({ searchParams }: { searchParams: Promise<{ 
             <EnlacePestana href={enlace(estado ?? "", archivadas !== "1")} activo={archivadas === "1"}>{archivadas === "1" ? "Ocultar archivados" : "Ver también archivados"}</EnlacePestana>
           </div>
           {filas.length === 0 ? (
-            <p className="rounded-lg border border-n-200 bg-white p-5 text-n-700">Todavía no hay recetas registradas del SITPV.</p>
+            <p className="rounded-lg border border-border bg-card shadow-tarjeta p-5 text-n-700">Todavía no hay recetas registradas del SITPV.</p>
           ) : (
-            <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+            <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
               {filas.map((r) => (
                 <li key={r.id}>
-                  <Enlace href={`/veterinaria/recetas/sitpv/${r.id}`} className="flex flex-col gap-1 px-4 py-3 hover:bg-n-50" forma="bloque">
+                  <Enlace href={`/veterinaria/recetas/sitpv/${r.id}`} className="flex flex-col gap-1 px-4 py-3 hover:bg-muted" forma="bloque">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold text-n-900">Folio {r.folio} · {r.producto}</span>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.estado === "cancelada" ? "bg-coral-suave text-coral-oscuro" : "bg-menta-suave text-menta-oscuro"}`}>{r.estado === "cancelada" ? "Cancelado" : "Registrado"}</span>

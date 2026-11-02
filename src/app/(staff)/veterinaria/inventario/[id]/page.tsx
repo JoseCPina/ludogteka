@@ -110,7 +110,7 @@ export default async function ProductoClinicoPage({ params }: { params: Promise<
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Lotes</h2>
+        <h2 className="text-lg font-semibold text-foreground">Lotes</h2>
         <LotesProducto
           insumoId={id}
           puedeEscribir={puedeEscribir}
@@ -123,9 +123,9 @@ export default async function ProductoClinicoPage({ params }: { params: Promise<
 
       {puedeEscribir && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">Datos regulatorios</h2>
+          <h2 className="text-lg font-semibold text-foreground">Datos regulatorios</h2>
           <p className="max-w-3xl text-sm text-n-600">El registro SENASICA, el laboratorio y la presentación salen en el espejo del SITPV y en el libro de control.</p>
-          <FormularioAccion accion={guardarRegulatorioProducto.bind(null, id)} textoBoton="Guardar datos" className="max-w-3xl rounded-lg border border-n-200 bg-white p-4">
+          <FormularioAccion accion={guardarRegulatorioProducto.bind(null, id)} textoBoton="Guardar datos" className="max-w-3xl rounded-lg border border-border bg-card shadow-tarjeta p-4">
             <div className="grid gap-3 sm:grid-cols-3">
               <Field label="Registro SENASICA" name="registro_senasica" defaultValue={(insumo.registro_senasica as string | null) ?? ""} />
               <Field label="Laboratorio" name="laboratorio" defaultValue={(insumo.laboratorio as string | null) ?? ""} />
@@ -136,7 +136,7 @@ export default async function ProductoClinicoPage({ params }: { params: Promise<
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Datos y clasificación</h2>
+        <h2 className="text-lg font-semibold text-foreground">Datos y clasificación</h2>
         <ProductoForm
           producto={{
             id,

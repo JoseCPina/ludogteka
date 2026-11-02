@@ -46,10 +46,10 @@ export default async function NuevoEspejo({ searchParams }: { searchParams: Prom
           <div className="flex-1"><Field label="Buscar mascota o dueño" name="q" defaultValue={q ?? ""} placeholder="Motita, Ana, 444…" /></div>
           <Button type="submit">Buscar</Button>
         </form>
-        <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+        <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
           {filas.map((f) => (
             <li key={f.id}>
-              <Enlace href={`/veterinaria/recetas/sitpv/nuevo?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
+              <Enlace href={`/veterinaria/recetas/sitpv/nuevo?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted" forma="bloque">
                 <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
                 <span className="text-sm text-n-600">{f.dueno}{f.telefono ? ` · ${f.telefono}` : ""}</span>
               </Enlace>
@@ -76,7 +76,7 @@ export default async function NuevoEspejo({ searchParams }: { searchParams: Prom
       {productos.length === 0 ? (
         <Alert variante="advertencia" titulo="No hay productos de Grupo I en el inventario clínico">Da de alta el producto en Veterinaria → Inventario clínico con su clasificación de SENASICA (Grupo I). Si es un antimicrobiano, activa el espejo cuantificado en Ajustes.</Alert>
       ) : (
-        <FormularioAccion accion={registrarEspejo} textoBoton="Registrar" className="rounded-lg border border-n-200 bg-white p-5">
+        <FormularioAccion accion={registrarEspejo} textoBoton="Registrar" className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
           <input type="hidden" name="uso" value={hospitalario ? "hospitalario" : "paciente"} />
           <input type="hidden" name="perro_id" value={perro ?? ""} />
           <div className="grid gap-3 sm:grid-cols-2">

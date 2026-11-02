@@ -29,9 +29,9 @@ const ESTADO_DOSIS: Record<string, string> = { pendiente: "bg-n-100 text-n-700",
 
 function Seccion({ titulo, children, nota }: { titulo: string; children: React.ReactNode; nota?: string }) {
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4 sm:p-5">
+    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4 sm:p-5">
       <div>
-        <h2 className="text-lg font-bold text-n-900">{titulo}</h2>
+        <h2 className="text-lg font-semibold text-foreground">{titulo}</h2>
         {nota && <p className="mt-0.5 text-sm text-n-600">{nota}</p>}
       </div>
       {children}
@@ -123,7 +123,7 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
         {d.cargos.length === 0 ? (
           <p className="text-n-700">Todavía no hay cargos.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-n-200 text-sm">
+          <ul className="flex flex-col divide-y divide-border text-sm">
             {d.cargos.map((c) => (
               <li key={c.id} className={`flex items-baseline justify-between gap-3 py-1.5 ${c.cancelado ? "text-n-400 line-through" : "text-n-800"}`}>
                 <span>{c.descripcion}{c.tipo === "deposito" && c.cancelado ? " (aplicado a la cuenta)" : ""}</span>
@@ -132,7 +132,7 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
             ))}
           </ul>
         )}
-        <p className="flex items-baseline justify-between border-t border-n-200 pt-2 font-bold text-n-900">
+        <p className="flex items-baseline justify-between border-t border-border pt-2 font-bold text-n-900">
           <span>Total de la cuenta</span>
           <span className="tabular-nums">{dinero(total)}</span>
         </p>
@@ -150,7 +150,7 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
         ) : (
           <div className="flex flex-col gap-4">
             {d.medicacion.map((m) => (
-              <div key={m.id} className={`rounded-md border p-3 ${m.suspendida ? "border-n-200 bg-n-50 opacity-80" : "border-n-200"}`}>
+              <div key={m.id} className={`rounded-md border p-3 ${m.suspendida ? "border-border bg-muted opacity-80" : "border-border"}`}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <p className="font-bold text-n-900">
                     {m.producto} <span className="font-normal text-n-600">· {m.dosis}{m.via ? ` · ${m.via}` : ""}{m.frecuencia_horas ? ` · cada ${m.frecuencia_horas} h` : ""}</span>
@@ -244,7 +244,7 @@ export default async function Hospitalizacion({ params }: { params: Promise<{ id
         {d.consentimientos.length === 0 ? (
           <p className="text-n-700">Todavía no hay consentimientos de esta hospitalización.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-n-200 text-sm">
+          <ul className="flex flex-col divide-y divide-border text-sm">
             {d.consentimientos.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
                 <Enlace href={`/veterinaria/consentimientos/${c.id}`}>

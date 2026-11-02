@@ -202,7 +202,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
 
       <UsoDictado consultaId={id} />
 
-      <section className="rounded-lg border border-n-200 bg-white p-4" data-vacunas-consulta aria-labelledby="t-vacunas-consulta">
+      <section className="rounded-lg border border-border bg-card shadow-tarjeta p-4" data-vacunas-consulta aria-labelledby="t-vacunas-consulta">
         <h2 id="t-vacunas-consulta" className="font-semibold text-n-900">Vacunas y desparasitación</h2>
         <AplicacionesConsulta
           consultaId={id}
@@ -218,14 +218,14 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
       {c.estado === "borrador" && puedeAtender === true ? (
         <EditorConsulta consulta={c} especie={d.mascota.especie} soyElMedico={soyElMedico} nombreMedico={d.medico.nombre} cargosIniciales={cargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} aplicarDesparasitacion={aplicarDesparasitacion} seAnulanAlDescartar={seAnulanAlDescartar} puedeEmitirReceta={puedeRecetar === true && miMedico != null} />
       ) : (
-        <article className={`flex flex-col gap-5 rounded-lg border border-n-200 bg-white p-5 ${anulada ? "opacity-80" : ""}`}>
+        <article className={`flex flex-col gap-5 rounded-lg border border-border bg-card shadow-tarjeta p-5 ${anulada ? "opacity-80" : ""}`}>
           {c.estado === "borrador" && <Alert variante="info" titulo="Borrador">Solo quien atiende consultas lo edita.</Alert>}
           {SECCIONES_CONSULTA.filter((s) => s.clave === "motivo" || s.clave === "anamnesis").map((s) => (
             <Bloque key={s.clave} etiqueta={s.etiqueta} texto={c[s.clave]} />
           ))}
           {vitalesConValor.length > 0 && (
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wide text-n-600">Signos vitales</h3>
+            <h3 className="text-[0.9375rem] font-semibold text-foreground">Signos vitales</h3>
             <dl className="mt-1 grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
               {vitalesConValor.map((v) => (
                 <div key={v.clave}>
@@ -240,7 +240,7 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
             <Bloque key={s.clave} etiqueta={s.etiqueta} texto={c[s.clave]} />
           ))}
           <div>
-            <h3 className="text-sm font-bold uppercase tracking-wide text-n-600">Diagnósticos</h3>
+            <h3 className="text-[0.9375rem] font-semibold text-foreground">Diagnósticos</h3>
             {c.diagnosticos.length === 0 ? (
               <p className="text-n-700">Sin diagnósticos.</p>
             ) : (
@@ -272,10 +272,10 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
       )}
 
       {d.adendas.length > 0 && (
-        <section className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="text-lg font-bold text-n-900">Adendas</h2>
+        <section className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="text-lg font-semibold text-foreground">Adendas</h2>
           {d.adendas.map((a) => (
-            <article key={a.id} className="rounded-md border border-n-200 bg-n-50 p-3">
+            <article key={a.id} className="rounded-md border border-border bg-muted p-3">
               <p className="whitespace-pre-wrap text-n-900">{a.texto}</p>
               <p className="mt-1 text-xs text-n-600">{a.firma_nombre} · cédula {a.firma_cedula}{a.firma_cpa ? ` · CPA ${a.firma_cpa}` : ""} · {formatearFecha(a.firmada_at, zona)}</p>
             </article>
@@ -287,13 +287,13 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
         <AccionesFirmada id={id} puedeAdenda={miMedico != null} puedeAnular={soyElMedico || esAdmin} />
       )}
 
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">Resultados de laboratorio</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">Resultados de laboratorio</h2>
         {d.resultados.length === 0 ? (
           <p className="text-n-700">Sin resultados capturados en esta consulta.</p>
         ) : (
           d.resultados.map((r) => (
-            <article key={r.id} className={`rounded-md border border-n-200 p-3 ${r.anulada_at ? "opacity-60" : ""}`}>
+            <article key={r.id} className={`rounded-md border border-border p-3 ${r.anulada_at ? "opacity-60" : ""}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className={`font-semibold text-n-900 ${r.anulada_at ? "line-through" : ""}`}>{r.estudio}{r.laboratorio ? ` · ${r.laboratorio}` : ""} · {r.fecha_estudio}</p>
                 {!r.anulada_at && puedeAtender === true && <AnularItem tipo="resultado" id={r.id} rutas={rutas} />}
@@ -319,12 +319,12 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
         {puedeAtender === true && !anulada && <Desplegable texto="Capturar un resultado"><CapturarResultado perroId={c.perro_id} consultaId={id} hoy={hoy} /></Desplegable>}
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">Archivos</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">Archivos</h2>
         {d.adjuntos.length === 0 ? (
           <p className="text-n-700">Sin archivos en esta consulta.</p>
         ) : (
-          <ul className="divide-y divide-n-200">
+          <ul className="divide-y divide-border">
             {d.adjuntos.map((a) => (
               <li key={a.id} className={`flex flex-wrap items-center justify-between gap-2 py-2 ${a.anulada_at ? "opacity-60" : ""}`}>
                 <span>
@@ -359,7 +359,7 @@ function Bloque({ etiqueta, texto: crudo }: { etiqueta: string; texto: string | 
   if (!texto) return null;
   return (
     <div>
-      <h3 className="text-sm font-bold uppercase tracking-wide text-n-600">{etiqueta}</h3>
+      <h3 className="text-[0.9375rem] font-semibold text-foreground">{etiqueta}</h3>
       <p className="mt-1 whitespace-pre-wrap text-n-900">{texto}</p>
     </div>
   );
