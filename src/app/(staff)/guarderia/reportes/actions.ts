@@ -33,6 +33,7 @@ async function metaDe(supabase: Cliente, reporteId: string, perroId: string): Pr
 export async function guardarBorrador(perroId: string, respuestas: RespuestasReporte): Promise<ResultadoGuardar> {
   const r = await guardar(perroId, respuestas, "borrador");
   if (r.error || !r.reporteId) return { error: r.error ?? "No pudimos guardar." };
+  // revalidate-lote-1: se queda; formulario-reporte.tsx no pinta desde el registro final ni refresca solo (la acción no devuelve registros).
   revalidatePath("/guarderia/reportes");
   return { error: null, meta: await metaDe(r.supabase, r.reporteId, perroId) };
 }
@@ -42,6 +43,7 @@ export async function dejarListo(perroId: string, respuestas: RespuestasReporte)
   const r = await guardar(perroId, respuestas, "listo");
   if (r.error || !r.reporteId) return { error: r.error ?? "No pudimos guardar." };
   const tarjeta = await generarTarjeta(r.reporteId);
+  // revalidate-lote-1: se queda; formulario-reporte.tsx no pinta desde el registro final ni refresca solo (la acción no devuelve registros).
   revalidatePath("/guarderia/reportes");
   const meta = await metaDe(r.supabase, r.reporteId, perroId);
   if (!tarjeta.ok) return { error: `El reporte quedó listo, pero no pudimos dibujar la imagen: ${tarjeta.error}`, meta };
@@ -53,6 +55,7 @@ export async function regenerarImagen(reporteId: string, perroId: string): Promi
   const supabase = await createSupabaseServerClient();
   const tarjeta = await generarTarjeta(reporteId);
   if (!tarjeta.ok) return { error: tarjeta.error };
+  // revalidate-lote-1: se queda; formulario-reporte.tsx no pinta desde el registro final ni refresca solo (la acción no devuelve registros).
   revalidatePath("/guarderia/reportes");
   return { error: null, meta: await metaDe(supabase, reporteId, perroId) };
 }
@@ -91,6 +94,7 @@ export async function enviarReporte(reporteId: string, perroId: string): Promise
   const { token, hash } = nuevoToken();
   const { error } = await supabase.rpc("reporte_crear_enlace", { p_reporte_id: reporteId, p_hash: hash });
   if (error) return { error: traducirError(error) };
+  // revalidate-lote-1: se queda; formulario-reporte.tsx no pinta desde el registro final ni refresca solo (la acción no devuelve registros).
   revalidatePath("/guarderia/reportes");
   const url = enlaceWhatsApp(
     contacto.telefono,

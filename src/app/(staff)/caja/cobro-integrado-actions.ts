@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -39,13 +38,6 @@ async function exigirCaja(): Promise<{ error: string } | { cx: ConexionCobro }> 
 async function adminDelNegocio() {
   const negocio = await negocioActual();
   return { negocio, admin: createSupabaseAdminClient(negocio.id) };
-}
-
-function revalidarCuenta(reservaId: string) {
-  revalidatePath(`/reservas/${reservaId}/cobrar`);
-  revalidatePath(`/caja/cobrar/${reservaId}`);
-  revalidatePath("/caja");
-  revalidatePath("/caja/turno");
 }
 
 /** Lo que la pantalla de cobro necesita saber (sin credenciales). */
@@ -129,7 +121,6 @@ export async function iniciarCobroTerminal(
     return { error: mensajeDeError(e), ordenId: orden.id as string };
   }
 
-  revalidarCuenta(reservaId);
   return {
     error: null,
     ordenId: orden.id as string,
@@ -151,10 +142,6 @@ export async function consultarCobroTerminal(ordenId: string): Promise<Resultado
   if (!orden) return { error: "Orden no encontrada." };
   try {
     const r = await sincronizarTerminal(admin, acceso.cx, orden);
-    if (r.pagada || ["cancelada", "expirada", "fallida", "por_confirmar"].includes(r.estado)) {
-      const { data } = await admin.from("mp_ordenes").select("reserva_id").eq("id", ordenId).eq("negocio_id", negocio.id).single();
-      if (data) revalidarCuenta(data.reserva_id as string);
-    }
     return { error: null, ...r };
   } catch (e) {
     return { error: mensajeDeError(e) };
@@ -180,7 +167,6 @@ export async function cancelarCobroTerminal(ordenId: string, motivo: string): Pr
       try {
         const r = await sincronizarTerminal(admin, acceso.cx, orden);
         if (r.pagada) {
-          revalidatePath("/caja");
           return { error: "Mercado Pago ya confirmó este pago: el cobro quedó registrado." };
         }
       } catch {
@@ -203,7 +189,6 @@ export async function cancelarCobroTerminal(ordenId: string, motivo: string): Pr
     .eq("id", ordenId)
     .eq("negocio_id", negocio.id);
   const { data } = await admin.from("mp_ordenes").select("reserva_id").eq("id", ordenId).eq("negocio_id", negocio.id).single();
-  if (data) revalidarCuenta(data.reserva_id as string);
   const supabase = await createSupabaseServerClient();
   return {
     error: null,
@@ -281,7 +266,6 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
     const telefono = cliente?.telefono?.replace(/\D/g, "") ?? "";
     const urlWhatsApp = telefono ? `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}` : undefined;
 
-    revalidarCuenta(reservaId);
     return {
       error: null,
       ordenId: orden.id as string,
@@ -323,8 +307,6 @@ export async function registrarPagosMpPendientes(): Promise<{ error: string | nu
     });
     if ((data as { registrado?: boolean } | null)?.registrado) registrados += 1;
   }
-  revalidatePath("/caja");
-  revalidatePath("/caja/turno");
   const supabase = await createSupabaseServerClient();
   return { error: null, registrados, registros: await registrosDe(supabase, (pendientes ?? []).map((p) => ({ t: "mp_ordenes", i: p.id as string }))) };
 }
@@ -361,7 +343,6 @@ export async function devolverConProveedor(reservaId: string, cobroId: string, m
   }
   try {
     const r = await pedirReembolso(admin, cx, orden, { reembolsoId: p.reembolso_id, monto, total: p.total });
-    revalidarCuenta(reservaId);
     if (!r.ok) return { error: `${r.error} No se registró nada en caja.` };
     const registrosReembolso = () =>
       registrosDe(supabase, [
@@ -385,7 +366,6 @@ export async function devolverConProveedor(reservaId: string, cobroId: string, m
     // Mercado Pago ya lo hizo pero no se pudo registrar: queda en el aire y
     // lo termina «Consultar» en Caja → Reembolsos (o el webhook).
     console.error("[reembolso] no se pudo registrar", p.reembolso_id, e);
-    revalidarCuenta(reservaId);
     return { error: `No pudimos terminar de registrarlo (${mensajeDeError(e)}). Revisa Caja → Reembolsos: ahí se consulta a Mercado Pago y se registra una sola vez.` };
   }
 }
@@ -407,8 +387,6 @@ export async function consultarReembolsosDeOrden(ordenId: string): Promise<{ err
   if (!cx || cx.proveedor !== orden.proveedor) return { error: "El negocio ya no está conectado a ese proveedor: revísalo en su panel." };
   try {
     const nuevos = await sincronizarReembolsos(admin, cx, orden);
-    revalidatePath("/caja/reembolsos");
-    revalidatePath("/caja");
     return { error: null, nuevos };
   } catch (e) {
     return { error: mensajeDeError(e) };
@@ -419,8 +397,6 @@ export async function marcarReembolsoRevisado(reembolsoId: string): Promise<{ er
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("marcar_reembolso_revisado", { p_reembolso_id: reembolsoId });
   if (error) return { error: traducirErrorCaja(error.message) };
-  revalidatePath("/caja/reembolsos");
-  revalidatePath("/recepcion");
   return { error: null, registros: await registrosDe(supabase, [{ t: "reembolsos_cobro", i: reembolsoId }]) };
 }
 
@@ -440,9 +416,6 @@ export async function marcarCobroNoRecibido(reservaId: string, cobroId: string, 
   if (motivo.trim().length < 5) return { error: "Escribe el motivo: qué pasó con este cobro." };
   const negocio = await negocioActual();
   const r = await revisarCobroConProveedor(negocio, cobroId, motivo, sesion.user.id);
-  revalidarCuenta(reservaId);
-  revalidatePath("/caja/conciliacion");
-  revalidatePath("/recepcion");
   if (!r.ok) return { error: r.error };
   return { error: null, aviso: r.aviso };
 }
@@ -493,11 +466,6 @@ async function validarGrupo(partes: ParteGrupo[], opciones: { revisarTerminal: b
   }
   const total = Math.round(partes.reduce((a, p) => a + p.monto, 0) * 100) / 100;
   return { clienteId: primera.cliente_id as string, cliente: { nombre: cliente.nombre, telefono: cliente.telefono }, partes: partes.map((p) => ({ reserva_id: p.reservaId, monto: p.monto })), total };
-}
-
-function revalidarGrupo(ids: string[]) {
-  for (const id of ids) revalidarCuenta(id);
-  revalidatePath("/caja/cobrar-junto");
 }
 
 /** «Cobrar con terminal» de varias cuentas: UNA orden por el total del grupo. */
@@ -554,7 +522,6 @@ export async function iniciarCobroTerminalGrupo(partes: ParteGrupo[], plazos: nu
     await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDeError(e) }).eq("id", orden.id).eq("negocio_id", negocio.id);
     return { error: mensajeDeError(e), ordenId: orden.id as string };
   }
-  revalidarGrupo(g.partes.map((p) => p.reserva_id));
   return {
     error: null,
     ordenId: orden.id as string,
@@ -618,7 +585,6 @@ export async function crearLinkPagoGrupo(partes: ParteGrupo[], concepto: string)
       `(vence en 7 días). ¡Gracias!`;
     const telefono = g.cliente.telefono?.replace(/\D/g, "") ?? "";
     const urlWhatsApp = telefono ? `https://wa.me/52${telefono}?text=${encodeURIComponent(mensaje)}` : undefined;
-    revalidarGrupo(g.partes.map((p) => p.reserva_id));
     const supabase = await createSupabaseServerClient();
     return {
       error: null,

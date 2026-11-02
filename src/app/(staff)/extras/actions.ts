@@ -1,20 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../reservas/traducir-error";
-import { revalidarModulosEstancia } from "../reservas/revalidar";
 import { motivoSinCargosNuevos } from "@/lib/caja/cargos-nuevos-servidor";
 
 export type ResultadoExtra = { error: string | null };
 export type ResultadoAgregar = { error: string | null; cubierto?: boolean; creados?: number };
-
-function refrescar() {
-  revalidatePath("/extras");
-  revalidatePath("/recepcion");
-  revalidatePath("/admin");
-  revalidarModulosEstancia();
-}
 
 // Toda la lógica y los permisos viven en la base (funciones extra_*): aquí solo se
 // llaman con la sesión de quien está en el mostrador y se traduce el error.
@@ -22,7 +13,6 @@ async function llamar(fn: string, args: Record<string, unknown>): Promise<{ erro
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc(fn, args);
   if (error) return { error: traducirError(error), data: null };
-  refrescar();
   return { error: null, data };
 }
 
@@ -134,7 +124,6 @@ export async function guardarExtraCatalogo(a: {
     p_clave_prod_serv: a.claveProdServ,
     p_activo: a.activo,
   });
-  revalidatePath("/extras/catalogo");
   return { error: r.error, id: (r.data as string | null) ?? undefined };
 }
 
@@ -154,7 +143,6 @@ export async function guardarZonaExtra(a: {
     p_precio: Number.isFinite(a.precio) ? a.precio : 0,
     p_activo: a.activo,
   });
-  revalidatePath("/extras/catalogo");
   return { error: r.error };
 }
 
@@ -170,6 +158,5 @@ export async function guardarPaqueteExtra(a: {
     p_precio: a.precio,
     p_vigencia_dias: a.vigenciaDias,
   });
-  revalidatePath("/extras/catalogo");
   return { error: r.error };
 }

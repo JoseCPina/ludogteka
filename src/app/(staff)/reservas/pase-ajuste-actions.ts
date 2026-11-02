@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
@@ -15,14 +14,6 @@ export type ResultadoAjustePase = {
   sigueVencido?: boolean;
   registros?: RegistroFinal[];
 };
-
-function refrescar(perroId?: string | null) {
-  if (perroId) revalidatePath(`/perros/${perroId}`);
-  revalidatePath("/clientes", "layout");
-  revalidatePath("/guarderia/pases");
-  revalidatePath("/caja/pases");
-  revalidatePath("/guarderia");
-}
 
 // Ajusta los días usados de UN pase. Quién puede lo decide la base
 // (permiso «ajustar_pases»; la vigencia solo la cambia un admin).
@@ -45,7 +36,6 @@ export async function ajustarDiasPase(
     p_nueva_vigencia: nuevaVigencia || null,
   });
   if (error) return { error: traducirError(error) };
-  refrescar();
   const r = data as { usados_antes: number; usados_despues: number; reabre: boolean; sigue_vencido: boolean };
   return {
     error: null,
@@ -69,10 +59,6 @@ export async function deshacerCheckin(
     p_motivo_texto: motivoTexto.trim() || null,
   });
   if (error) return { error: traducirError(error) };
-  refrescar();
-  revalidatePath(`/reservas/estancias/${estanciaId}/checkin`);
-  revalidatePath("/guarderia/checkin");
-  revalidatePath("/hotel/checkin");
   return {
     error: null,
     devueltos: (data as { devueltos: number }).devueltos,

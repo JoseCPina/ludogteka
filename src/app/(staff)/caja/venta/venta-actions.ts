@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "../../reservas/traducir-error";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
@@ -28,8 +27,6 @@ export async function crearVentaRapida(clienteId: string | null, lineas: LineaVe
     p_notas: notas,
   });
   if (error) return { error: traducirError(error) };
-  revalidatePath("/caja");
-  revalidatePath("/inventario");
   return { error: null, reservaId: data as string, registros: await registrosDe(supabase, [{ t: "reservas", i: data as string }]) };
 }
 
@@ -38,9 +35,5 @@ export async function cancelarRenglonVenta(ventaId: string, reservaId: string, m
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("cancelar_venta_mostrador", { p_venta_id: ventaId, p_motivo: motivo.trim() });
   if (error) return { error: traducirError(error) };
-  revalidatePath(`/caja/cobrar/${reservaId}`);
-  revalidatePath(`/reservas/${reservaId}/cobrar`);
-  revalidatePath("/caja");
-  revalidatePath("/inventario");
   return { error: null, registros: await registrosDe(supabase, [{ t: "ventas_mostrador", i: ventaId }, { t: "reservas", i: reservaId }]) };
 }

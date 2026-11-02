@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { MENSAJE_DEMO } from "@/lib/solo-lectura";
@@ -39,14 +38,6 @@ export async function cancelarCuenta(
     p_cancelar_cita: cancelarCita,
   });
   if (error) return { error: traducirError(error) };
-  revalidatePath("/caja");
-  revalidatePath("/recepcion");
-  revalidatePath("/estetica");
-  revalidatePath("/guarderia");
-  revalidatePath("/hotel");
-  revalidatePath("/reservas/calendario");
-  revalidatePath(`/caja/cobrar/${reservaId}`);
-  revalidatePath(`/reservas/${reservaId}/cobrar`);
   const d = data as { citas_canceladas?: string[]; citas_no_canceladas?: string[]; estancias_canceladas?: string[]; estancias_no_canceladas?: string[] } | null;
   const citas = d?.citas_canceladas?.length ?? 0;
   const sin = (d?.citas_no_canceladas?.length ?? 0) + (d?.estancias_no_canceladas?.length ?? 0);

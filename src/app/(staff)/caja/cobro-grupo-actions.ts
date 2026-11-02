@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "@/app/(staff)/reservas/traducir-error";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -43,13 +42,6 @@ export async function registrarCobroGrupo(
   });
   if (error) return { error: traducirError(error) };
 
-  for (const p of partes) {
-    revalidatePath(`/reservas/${p.reservaId}`);
-    revalidatePath(`/reservas/${p.reservaId}/cobrar`);
-    revalidatePath(`/caja/cobrar/${p.reservaId}`);
-  }
-  revalidatePath("/caja");
-  revalidatePath("/caja/turno");
   const grupoId = (data as { grupo_id: string }).grupo_id;
   return {
     error: null,

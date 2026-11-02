@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -107,8 +106,6 @@ export async function registrarDevolucion(
 
   if (error) return { error: traducirError(error) };
 
-  revalidatePath(`/reservas/${reservaId}`);
-  revalidatePath(`/reservas/${reservaId}/cobrar`);
   return {
     error: null,
     devolucionId: data as string,

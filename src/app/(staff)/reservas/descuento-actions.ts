@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
@@ -31,8 +30,6 @@ export async function aplicarDescuento(
 
   if (error) return { error: traducirError(error) };
 
-  revalidatePath(`/reservas/${reservaId}`);
-  revalidatePath(`/reservas/${reservaId}/cobrar`);
   return {
     error: null,
     descuentoId: data as string,
@@ -57,7 +54,5 @@ export async function cancelarDescuento(
 
   if (error) return { error: traducirError(error) };
 
-  revalidatePath(`/reservas/${reservaId}`);
-  revalidatePath(`/reservas/${reservaId}/cobrar`);
   return { error: null, registros: await registrosDe(supabase, [{ t: "descuentos_aplicados", i: descuentoId }, { t: "reservas", i: reservaId }]) };
 }

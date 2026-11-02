@@ -4,7 +4,6 @@ import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final
 import { cuentasPorEstancia, type CuentaEstancia } from "@/lib/cuentas/cuenta-estancia";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
-import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 import { motivoSinCargosNuevos } from "@/lib/caja/cargos-nuevos-servidor";
@@ -67,7 +66,6 @@ export async function aplicarCargo(
 
   if (error) return { error: traducirError(error), cargo: null };
 
-  revalidarModulosEstancia();
   const [cuenta, registros] = await Promise.all([cuentaDeEstancia(supabase, estanciaId), registrosDe(supabase, [{ t: "cargos_aplicados", i: data.id }])]);
   return { error: null, cargo: { id: data.id, precio: data.precio }, cuenta, registros };
 }
@@ -86,7 +84,6 @@ export async function cancelarCargo(cargoId: string, motivo: string, control?: C
 
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error) } : { error: traducirError(error) };
 
-  revalidarModulosEstancia();
   const registros = await registrosFinales(supabase, control, [{ t: "cargos_aplicados", i: cargoId }]);
   const estanciaId = registros.find((r) => r.t === "cargos_aplicados")?.datos?.estancia_id as string | undefined;
   return { error: null, registros, cuenta: estanciaId ? await cuentaDeEstancia(supabase, estanciaId) : undefined };

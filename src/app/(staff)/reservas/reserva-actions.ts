@@ -2,8 +2,6 @@
 
 import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
-import { revalidatePath } from "next/cache";
-import { revalidarModulosEstancia } from "./revalidar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 import { mensajeTraslapeDeEstancia } from "@/lib/reservas/traslape-detalle";
@@ -140,7 +138,6 @@ export async function crearReserva(
     return { error: null, resultados, registros: [] };
   }
 
-  revalidarModulosEstancia();
   const todasGuardadas = resultados.every((r) => r.exito);
   return {
     error: null,
@@ -161,7 +158,6 @@ export async function agregarEstanciaAReserva(
   linea: LineaReserva
 ): Promise<ResultadoLinea> {
   const resultado = await insertarEstancia(reservaId, linea);
-  if (resultado.exito) revalidarModulosEstancia();
   return resultado;
 }
 
@@ -277,9 +273,7 @@ export async function cancelarEstancia(estanciaId: string, control?: ControlVers
     return { error: traducirError(error) };
   }
   const aviso = await avisoDevolucionDeEstancia(supabase, estanciaId, desde);
-  revalidarModulosEstancia();
   // El total, lo cobrado y lo devuelto del encabezado de la reserva se recalculan (R35).
-  revalidatePath("/reservas/[id]", "page");
   return { error: null, registros: await registrosFinales(supabase, control), aviso };
 }
 
@@ -295,8 +289,6 @@ export async function marcarNoLlego(estanciaId: string, control?: ControlVersion
     if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, control, [{ t: "estancias", i: estanciaId }]) };
     return { error: traducirError(error) };
   }
-  revalidarModulosEstancia();
-  revalidatePath("/reservas/[id]", "page");
   return { error: null, registros: await registrosFinales(supabase, control) };
 }
 
@@ -324,7 +316,6 @@ export async function moverFechas(
     if (error.hint === "total_distinto") return { error: error.message };
     return { error: traducirError(error, { fecha: fechaEntrada }) };
   }
-  revalidarModulosEstancia();
   return { error: null, registros: await registrosFinales(supabase, control), version: (data as { version?: string } | null)?.version ?? null };
 }
 
@@ -365,7 +356,6 @@ export async function cancelarReserva(reservaId: string, control?: ControlVersio
     if (error) {
       const conflicto = await conflictoDeEstancia(supabase, error, e.id);
       if (conflicto) {
-        revalidarModulosEstancia();
         return { error: null, canceladas, noCancelables, avisos, conflicto, registros: await registrosFinales(supabase, control, [{ t: "reservas", i: reservaId }]) };
       }
     }
@@ -376,8 +366,6 @@ export async function cancelarReserva(reservaId: string, control?: ControlVersio
     }
   }
 
-  revalidarModulosEstancia();
-  revalidatePath(`/reservas/${reservaId}`);
   return { error: null, registros: await registrosFinales(supabase, control), canceladas, noCancelables, avisos };
 }
 

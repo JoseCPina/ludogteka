@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
@@ -38,10 +37,6 @@ export async function comprarBono(
 
   if (error) return { error: traducirError(error) };
 
-  revalidatePath(`/perros/${perroId}`);
-  revalidatePath("/clientes", "layout");
-  revalidatePath("/guarderia/pases");
-  revalidatePath("/caja/pases");
   return { error: null, bonoId: data as string, registros: await registrosDe(supabase, [{ t: "bonos_clientes", i: data as string }]) };
 }
 
@@ -66,8 +61,6 @@ export async function consumirBono(
 
   if (error) return { error: traducirError(error) };
 
-  revalidatePath(`/reservas/${reservaId}`);
-  revalidatePath(`/reservas/${reservaId}/cobrar`);
   return {
     error: null,
     movimientoId: data as string,
@@ -99,7 +92,6 @@ export async function aplicarBonoAEstancia(estanciaId: string): Promise<Resultad
   const { data, error } = await supabase.rpc("aplicar_bono_a_estancia", { p_estancia_id: estanciaId });
   if (error) return { error: traducirError(error) };
 
-  revalidatePath(`/reservas/estancias/${estanciaId}/checkin`);
   return { error: null, ...(data as Omit<ResultadoAplicarBonoEstancia, "error">), registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]) };
 }
 

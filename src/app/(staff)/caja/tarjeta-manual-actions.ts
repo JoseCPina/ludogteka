@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
@@ -23,24 +22,12 @@ async function exigirAdmin(): Promise<ResultadoTarjeta | null> {
   return null;
 }
 
-function refrescar(reservaId?: string | null) {
-  revalidatePath("/caja/conciliacion");
-  revalidatePath("/caja/turno");
-  revalidatePath("/recepcion");
-  revalidatePath("/admin");
-  if (reservaId) {
-    revalidatePath(`/caja/cobrar/${reservaId}`);
-    revalidatePath(`/reservas/${reservaId}/cobrar`);
-  }
-}
-
 export async function revisarTarjetaManual(tarjetaId: string, nota: string, reservaId?: string | null): Promise<ResultadoTarjeta> {
   const negado = await exigirAdmin();
   if (negado) return { error: negado.error };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("tarjeta_manual_revisar", { p_tarjeta_id: tarjetaId, p_nota: nota.trim() });
   if (error) return { error: traducirError(error) };
-  refrescar(reservaId);
   return {
     error: null,
     aviso: "Listo: queda como revisada con el voucher.",
@@ -55,7 +42,6 @@ export async function marcarTarjetaManualNoRecibida(tarjetaId: string, motivo: s
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.rpc("tarjeta_manual_no_recibida", { p_tarjeta_id: tarjetaId, p_motivo: motivo.trim() });
   if (error) return { error: traducirError(error) };
-  refrescar(reservaId);
   const d = data as { turno_del_cobro_cerrado?: boolean } | null;
   return {
     error: null,
@@ -73,7 +59,6 @@ export async function guardarTopeTarjetaManual(tope: number): Promise<ResultadoT
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("guardar_tope_tarjeta_manual", { p_tope: tope });
   if (error) return { error: traducirError(error) };
-  revalidatePath("/admin/pagos");
   const { data: ajuste } = await supabase.from("tarjeta_manual_ajustes").select("id").is("deleted_at", null).limit(1).maybeSingle();
   return { error: null, aviso: "Tope guardado.", registros: await registrosDe(supabase, [{ t: "tarjeta_manual_ajustes", i: (ajuste?.id as string | undefined) ?? null, datos: { tope_alerta: tope } }]) };
 }
