@@ -123,7 +123,9 @@ export function StaffShell({
   const pathname = usePathname();
   const [menuAbierto, setMenuAbierto] = useState(false);
   const activo = itemActivo(items, pathname);
-  const grupoActivo = activo && activo !== items[0] ? GRUPOS_NAV.find((g) => g.id === (activo.grupo ?? "ajustes"))?.titulo : undefined;
+  const tituloGrupo = activo && activo !== items[0] ? GRUPOS_NAV.find((g) => g.id === (activo.grupo ?? "ajustes"))?.titulo : undefined;
+  // «Clientes / Clientes» no dice nada: el grupo solo sale si se llama distinto de la sección.
+  const grupoActivo = tituloGrupo && tituloGrupo !== activo?.etiqueta ? tituloGrupo : undefined;
   const principales = pantallasPrincipales(rol, items);
   const etiqueta = etiquetaRol ?? ETIQUETAS_ROL[rol] ?? rol;
 
