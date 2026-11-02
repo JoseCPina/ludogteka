@@ -52,7 +52,7 @@ export function TarjetaPerro({
     pide("veterinario_nombre") || pide("veterinario_telefono") || pide("veterinario_clinica");
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-n-200 bg-white p-4">
+    <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-border bg-white p-4">
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-bold text-n-900">{titulo}</h3>
         {onQuitar && (
@@ -167,7 +167,7 @@ export function TarjetaPerro({
       )}
 
       {clinico && (
-        <fieldset className="flex flex-col gap-3 rounded-md border border-n-200 p-3">
+        <fieldset className="flex flex-col gap-3 rounded-md border border-border p-3">
           <legend className="px-1 text-sm font-bold text-n-700">Datos de salud (opcional)</legend>
           <div className="grid grid-cols-2 gap-3">
             <Select
@@ -212,7 +212,7 @@ export function TarjetaPerro({
       )}
 
       {pideEmergencia && (
-        <fieldset className="flex flex-col gap-3 rounded-md border border-n-200 p-3">
+        <fieldset className="flex flex-col gap-3 rounded-md border border-border p-3">
           <legend className="px-1 text-sm font-bold text-n-700">Contacto de emergencia</legend>
           <p className="text-sm text-n-600">A quién le hablamos si no te localizamos a ti.</p>
           {pide("contacto_emergencia_nombre") && (
@@ -234,7 +234,7 @@ export function TarjetaPerro({
       )}
 
       {pideVeterinario && (
-        <fieldset className="flex flex-col gap-3 rounded-md border border-n-200 p-3">
+        <fieldset className="flex flex-col gap-3 rounded-md border border-border p-3">
           <legend className="px-1 text-sm font-bold text-n-700">Su veterinario</legend>
           {pide("veterinario_nombre") && (
             <Field

@@ -80,7 +80,7 @@ export function FormularioEquipo({ conEmpleados, conEstetica, conVet }: { conEmp
   }
 
   return (
-    <form method="post" onSubmit={guardar} data-formulario-equipo className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-4">
+    <form method="post" onSubmit={guardar} data-formulario-equipo className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <h2 className="font-semibold text-n-900">Agregar a alguien</h2>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium text-n-800">¿Va a usar la app?</legend>
@@ -124,7 +124,7 @@ export function FormularioEquipo({ conEmpleados, conEstetica, conVet }: { conEmp
       </div>
 
       {modo === "cuenta" && conVet && (
-        <div className="flex flex-col gap-2 rounded-md border border-n-200 p-3">
+        <div className="flex flex-col gap-2 rounded-md border border-border p-3">
           <label className="flex items-center gap-2 text-n-900">
             <input type="checkbox" checked={esMedico} onChange={(e) => setEsMedico(e.target.checked)} />
             Es médico veterinario
@@ -141,7 +141,7 @@ export function FormularioEquipo({ conEmpleados, conEstetica, conVet }: { conEmp
         </div>
       )}
 
-      <details className="rounded-md border border-n-200 p-3" data-equipo-opcional>
+      <details className="rounded-md border border-border p-3" data-equipo-opcional>
         <summary className="cursor-pointer text-sm font-semibold text-morado">Horario y forma de pago (opcional)</summary>
         {conEmpleados ? (
           <div className="mt-3 flex flex-col gap-4">
@@ -180,7 +180,7 @@ export function FormularioEquipo({ conEmpleados, conEstetica, conVet }: { conEmp
       </details>
 
       {invitado && (
-        <div data-link-invitacion className="flex flex-col gap-2 rounded-md border border-n-200 bg-n-50 p-3">
+        <div data-link-invitacion className="flex flex-col gap-2 rounded-md border border-border bg-muted p-3">
           <CampoCopiable etiqueta={`Link de invitación de ${invitado.nombre} (mándaselo)`} valor={invitado.link} textoBoton="Copiar" />
           <Button type="button" variante="secundario" sinBloqueo className="self-start" data-mandar-invitacion onClick={() => wa.abrir(urlWhatsAppInvitacion(invitado))}>
             Mandar por WhatsApp

@@ -67,7 +67,7 @@ export default async function BienvenidaPage() {
         </section>
       )}
 
-      <ol className="flex flex-col divide-y divide-n-200 rounded-xl border border-n-200 bg-white">
+      <ol className="flex flex-col divide-y divide-border rounded-xl border border-border bg-white">
         {pasos.map((p, i) => {
           const video = videoDe(p.clave);
           return (
@@ -103,7 +103,7 @@ export default async function BienvenidaPage() {
         })}
       </ol>
 
-      <section data-bienvenida-whatsapp className="rounded-xl border border-n-200 bg-white p-5">
+      <section data-bienvenida-whatsapp className="rounded-xl border border-border bg-white p-5">
         <h2 className="font-semibold text-n-900">Cómo se avisa a tus clientes por WhatsApp</h2>
         <p className="mt-1 text-sm text-n-700">
           En la cita, la reserva y la ficha del cliente vas a ver botones como <strong>Confirmación</strong>, <strong>Recordatorio</strong>,{" "}

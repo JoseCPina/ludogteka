@@ -31,7 +31,7 @@ export default async function EquipoPage() {
       </div>
 
       {equipo.length > 0 && (
-        <section className="rounded-lg border border-n-200 bg-white p-4">
+        <section className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <h2 className="font-semibold text-n-900">Con cuenta en {conEstetica ? "tu negocio" : "PeluDesk"}</h2>
           <ul className="mt-2 flex flex-col gap-1 text-sm text-n-800" data-equipo-con-cuenta>
             {equipo.map((p) => (

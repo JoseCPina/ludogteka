@@ -10,7 +10,7 @@ function TarjetaServicio({ servicio }: { servicio: PrecioDeServicio }) {
   if (servicio.estado === "no_aplica") return null;
 
   return (
-    <div className="rounded-md border border-n-200 bg-white p-3">
+    <div className="rounded-md border border-border bg-card p-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-bold text-n-900">{servicio.nombre}</p>
         {servicio.estado === "disponible" && servicio.precio !== null ? (
