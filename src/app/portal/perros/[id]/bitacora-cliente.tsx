@@ -20,7 +20,7 @@ export function BitacoraCliente({ entradas, zona, mascota = vocabularioMascota({
         <li
           key={e.id}
           className={`rounded-lg border-[1.5px] p-4 ${
-            e.tipo === "incidencia" ? "border-coral bg-coral-suave" : "border-n-200 bg-white"
+            e.tipo === "incidencia" ? "border-coral bg-coral-suave" : "border-border bg-white"
           }`}
         >
           <div className="flex flex-wrap items-center justify-between gap-2">

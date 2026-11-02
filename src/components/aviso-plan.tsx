@@ -5,7 +5,7 @@ import { formatearFecha } from "@/lib/formato";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { diasDePrueba, primerCobro } from "@/lib/cobro/prueba";
 import { cookies } from "next/headers";
-import { bloqueoDeEscritura } from "@/lib/cobro/bloqueo-escritura-servidor";
+import { bloqueoDeEscritura, escrituraYCobro } from "@/lib/cobro/bloqueo-escritura-servidor";
 import { Enlace } from "@/components/ui/enlace";
 
 // El aviso del plan del negocio, arriba de todo en el staff y el portal:
@@ -31,17 +31,17 @@ function estadoPrueba(fin: Date, zona: string): { vencida: boolean; dias: number
 export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
   const negocio = await cargarNegocioLanding();
   const supabase = await createSupabaseServerClient();
-  const [{ data: escribible }, { data: cobroData }, sesion] = await Promise.all([
-    supabase.rpc("negocio_escribible"),
-    supabase.rpc("estado_cobro"),
+  // Lo de escritura y cobro es la misma lectura (cacheada) que el bloqueo del layout; la baja de la sucursal va en la
+  // misma tanda (antes era otro viaje después).
+  const [{ escribible, cobro: cobroData }, sesion, zona, { data: baja }] = await Promise.all([
+    escrituraYCobro(),
     obtenerSesionConRol(),
+    zonaActual(),
+    // QA S17: una sucursal dada de baja queda en solo lectura 90 días.
+    supabase.from("negocios").select("sucursal_baja_at, sucursal_baja_hasta").eq("id", negocio.id).maybeSingle(),
   ]);
   const cobro = cobroData as { estado: string; contratado: boolean; solo_lectura_desde: string | null } | null;
   const esAdmin = sesion?.rol === "admin";
-  const zona = await zonaActual();
-
-  // QA S17: una sucursal dada de baja queda en solo lectura 90 días.
-  const { data: baja } = await supabase.from("negocios").select("sucursal_baja_at, sucursal_baja_hasta").eq("id", negocio.id).maybeSingle();
   if (baja?.sucursal_baja_at) {
     return (
       <div role="alert" data-aviso-plan="sucursal_baja" className="border-b border-n-300 bg-n-100 px-4 py-2 text-sm text-n-800 md:px-6">

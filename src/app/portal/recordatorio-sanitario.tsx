@@ -148,7 +148,7 @@ function NotaEstetica({
   const enRevision = pendientes.filter((i) => ultimaPorTipo.get(i.tipo_requisito_id)?.estado === "pendiente");
 
   return (
-    <div className="rounded-md border border-n-200 bg-n-50 p-3 text-sm text-n-600">
+    <div className="rounded-md border border-border bg-muted p-3 text-sm text-n-600">
       <p>
         {servicios.length > 0 ? `Por ahora viene solo a ${servicios.join(" y ")}` : "Por ahora no usa guardería ni hotel"}, así que no le pedimos vacunas ni desparasitación: puedes dejar esto en
         blanco. Si algún día quieres traerlo a guardería u hotel, ese día sí se las vamos a pedir

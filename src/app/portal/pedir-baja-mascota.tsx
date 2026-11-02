@@ -43,8 +43,8 @@ export function PedirBajaMascota({ perroId, nombre, femenino, solicitudes }: { p
   };
 
   return (
-    <section className="flex flex-col gap-3 border-t border-n-200 pt-6" data-pedir-baja>
-      <h2 className="text-lg font-bold text-n-900">Dar de baja a {nombre}</h2>
+    <section className="flex flex-col gap-3 border-t border-border pt-6" data-pedir-baja>
+      <h2 className="text-lg font-semibold text-foreground">Dar de baja a {nombre}</h2>
       {pendiente ? (
         <Alert variante="info" titulo="Ya pediste la baja">
           Motivo: {nombreMotivoBaja(pendiente.motivo).toLowerCase()}. El negocio la va a confirmar; mientras, todo sigue igual.
@@ -67,7 +67,7 @@ export function PedirBajaMascota({ perroId, nombre, femenino, solicitudes }: { p
           {abierto && (
             <form
               method="post"
-              className="flex flex-col gap-4 rounded-md border border-n-200 bg-white p-4"
+              className="flex flex-col gap-4 rounded-md border border-border bg-card p-4"
               onSubmit={(e) => {
                 e.preventDefault();
                 void pedir();

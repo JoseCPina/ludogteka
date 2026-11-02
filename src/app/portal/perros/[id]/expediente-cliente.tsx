@@ -14,16 +14,16 @@ export function ExpedienteCliente({ expediente }: { expediente: ExpedienteDelDue
   if (!expediente.habilitado) return null;
   return (
     <div className="flex flex-col gap-3" data-expediente-cliente>
-      <h2 className="text-lg font-bold text-n-900">Consultas veterinarias</h2>
+      <h2 className="text-lg font-semibold text-foreground">Consultas veterinarias</h2>
       {expediente.consultas.length === 0 ? (
-        <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">Todavía no hay consultas registradas.</p>
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">Todavía no hay consultas registradas.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {expediente.consultas.map((consulta, i) => {
             const limpio = (t: string) => sinEtiquetasDePlantilla(t, expediente.etiquetas ?? []);
             const c = { ...consulta, motivo: limpio(consulta.motivo), diagnostico: limpio(consulta.diagnostico), indicaciones: limpio(consulta.indicaciones) };
             return (
-            <li key={i} className="flex flex-col gap-1 rounded-lg border border-n-200 bg-white p-4">
+            <li key={i} className="flex flex-col gap-1 rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-semibold text-n-900">{TIPOS_CITA[c.tipo] ?? c.tipo}</span>
                 <span className="text-sm text-n-600">{formatearFechaCalendario(c.fecha)}</span>

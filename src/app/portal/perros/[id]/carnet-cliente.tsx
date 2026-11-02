@@ -16,15 +16,15 @@ export function CarnetCliente({ carnet }: { carnet: CarnetDelDueno }) {
   const vacio = carnet.vacunas.length === 0 && carnet.desparasitaciones.length === 0;
   return (
     <div className="flex flex-col gap-3" data-carnet-cliente>
-      <h2 className="text-lg font-bold text-n-900">Carnet de vacunación</h2>
+      <h2 className="text-lg font-semibold text-foreground">Carnet de vacunación</h2>
       {vacio ? (
-        <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">Todavía no hay vacunas ni desparasitaciones registradas en su carnet.</p>
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">Todavía no hay vacunas ni desparasitaciones registradas en su carnet.</p>
       ) : (
-        <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-4">
+        <div className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           {carnet.vacunas.length > 0 && (
             <div>
-              <h3 className="mb-1.5 text-sm font-bold uppercase tracking-wide text-n-600">Vacunas</h3>
-              <ul className="flex flex-col divide-y divide-n-200">
+              <h3 className="mb-1.5 text-[0.9375rem] font-semibold text-foreground">Vacunas</h3>
+              <ul className="flex flex-col divide-y divide-border">
                 {carnet.vacunas.map((v, i) => (
                   <li key={i} className="flex flex-col gap-0.5 py-2 first:pt-0 last:pb-0">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -42,8 +42,8 @@ export function CarnetCliente({ carnet }: { carnet: CarnetDelDueno }) {
           )}
           {carnet.desparasitaciones.length > 0 && (
             <div>
-              <h3 className="mb-1.5 text-sm font-bold uppercase tracking-wide text-n-600">Desparasitaciones</h3>
-              <ul className="flex flex-col divide-y divide-n-200">
+              <h3 className="mb-1.5 text-[0.9375rem] font-semibold text-foreground">Desparasitaciones</h3>
+              <ul className="flex flex-col divide-y divide-border">
                 {carnet.desparasitaciones.map((d, i) => (
                   <li key={i} className="flex flex-col gap-0.5 py-2 first:pt-0 last:pb-0">
                     <div className="flex flex-wrap items-center justify-between gap-2">
