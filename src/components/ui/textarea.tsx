@@ -1,4 +1,5 @@
 import { TextareaHTMLAttributes, forwardRef, useId } from "react";
+import { CLASE_AYUDA, CLASE_ERROR, CLASE_ETIQUETA, claseCampo } from "./campo-base";
 
 type Props = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label: string;
@@ -18,7 +19,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, Props>(
 
     return (
       <div>
-        <label htmlFor={textareaId} className="mb-1.5 block text-sm font-medium text-n-800">
+        <label htmlFor={textareaId} className={CLASE_ETIQUETA}>
           {label}
         </label>
         <textarea
@@ -27,18 +28,16 @@ export const Textarea = forwardRef<HTMLTextAreaElement, Props>(
           rows={rows}
           aria-invalid={error ? true : undefined}
           aria-describedby={descripcionId}
-          className={`w-full rounded-md border-[1.5px] bg-white px-3.5 py-2.5 text-base text-n-900 focus:border-morado focus:outline-none focus:ring-[3px] focus:ring-morado-suave ${
-            error ? "border-coral-oscuro bg-coral-suave" : "border-borde"
-          } ${className}`}
+          className={claseCampo({ error, multilinea: true, className })}
           {...props}
         />
         {error && (
-          <p id={descripcionId} className="mt-1.5 text-sm font-semibold text-coral-oscuro">
+          <p id={descripcionId} className={CLASE_ERROR}>
             {error}
           </p>
         )}
         {!error && ayuda && (
-          <p id={descripcionId} className="mt-1.5 text-sm text-n-600">
+          <p id={descripcionId} className={CLASE_AYUDA}>
             {ayuda}
           </p>
         )}

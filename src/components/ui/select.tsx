@@ -1,4 +1,5 @@
 import { SelectHTMLAttributes, forwardRef, useId } from "react";
+import { CLASE_AYUDA, CLASE_ERROR, CLASE_ETIQUETA, claseCampo } from "./campo-base";
 
 type Props = SelectHTMLAttributes<HTMLSelectElement> & {
   label: string;
@@ -18,7 +19,7 @@ export const Select = forwardRef<HTMLSelectElement, Props>(
 
     return (
       <div>
-        <label htmlFor={selectId} className="mb-1.5 block text-sm font-medium text-n-800">
+        <label htmlFor={selectId} className={CLASE_ETIQUETA}>
           {label}
         </label>
         <select
@@ -26,20 +27,18 @@ export const Select = forwardRef<HTMLSelectElement, Props>(
           id={selectId}
           aria-invalid={error ? true : undefined}
           aria-describedby={descripcionId}
-          className={`min-h-12 w-full rounded-md border-[1.5px] bg-white px-3.5 text-base text-n-900 focus:border-morado focus:outline-none focus:ring-[3px] focus:ring-morado-suave ${
-            error ? "border-coral-oscuro bg-coral-suave" : "border-borde"
-          } ${className}`}
+          className={claseCampo({ error, className: `cursor-pointer ${className}` })}
           {...props}
         >
           {children}
         </select>
         {error && (
-          <p id={descripcionId} className="mt-1.5 text-sm font-semibold text-coral-oscuro">
+          <p id={descripcionId} className={CLASE_ERROR}>
             {error}
           </p>
         )}
         {!error && ayuda && (
-          <p id={descripcionId} className="mt-1.5 text-sm text-n-600">
+          <p id={descripcionId} className={CLASE_AYUDA}>
             {ayuda}
           </p>
         )}
