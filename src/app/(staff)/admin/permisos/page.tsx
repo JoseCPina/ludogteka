@@ -71,20 +71,20 @@ export default async function PermisosPage() {
         </Alert>
       ) : (
         (recepcion ?? []).map((p) => (
-          <section key={p.id as string} className="rounded-lg border border-n-200 bg-white p-5">
-            <h2 className="text-lg font-bold text-n-900">{nombre.get(p.id as string)}</h2>
+          <section key={p.id as string} className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
+            <h2 className="text-lg font-semibold text-foreground">{nombre.get(p.id as string)}</h2>
             <p className="mb-3 text-sm text-n-600">{correo.get(p.id as string) ?? ""}</p>
             <CasillasPermisos profileId={p.id as string} activos={activosDe(p.id as string)} />
           </section>
         ))
       )}
 
-      <section className="rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="mb-3 text-lg font-bold text-n-900">Bitácora</h2>
+      <section className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="mb-3 text-lg font-semibold text-foreground">Bitácora</h2>
         {eventos.length === 0 ? (
           <p className="text-sm text-n-600">Todavía no se ha dado ningún permiso.</p>
         ) : (
-          <ul className="divide-y divide-n-200 text-sm">
+          <ul className="divide-y divide-border text-sm">
             {eventos.map((e, i) => (
               <li key={i} className="flex flex-wrap items-baseline justify-between gap-2 py-2">
                 <span className="text-n-900">

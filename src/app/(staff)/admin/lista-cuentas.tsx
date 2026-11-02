@@ -32,7 +32,7 @@ export function ListaCuentas({ cuentas, miId = null }: { cuentas: Cuenta[]; miId
   if (cuentas.length === 0) {
     return (
       <div className="rounded-lg border-[1.5px] border-dashed border-n-300 bg-white p-10 text-center">
-        <h3 className="text-lg font-bold text-n-900">Aún no hay cuentas</h3>
+        <h3 className="text-lg font-semibold text-foreground">Aún no hay cuentas</h3>
         <p className="mt-1 text-n-600">En cuanto invites a alguien, va a aparecer aquí.</p>
       </div>
     );
@@ -50,35 +50,35 @@ export function ListaCuentas({ cuentas, miId = null }: { cuentas: Cuenta[]; miId
         />
       </div>
 
-      <div className="w-full max-w-full overflow-x-auto rounded-lg border border-n-200 bg-white">
+      <div className="w-full max-w-full overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
         <TablaResponsiva className="w-full min-w-[560px] border-collapse">
           <thead>
             <tr>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Correo
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Rol
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Vinculada
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Alta
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Contraseña
               </th>
             </tr>
           </thead>
           <tbody>
             {filtradas.map((cuenta) => (
-              <tr key={cuenta.id} className="hover:bg-n-50">
-                <td className="border-b border-n-200 px-4 py-3 text-n-900">{etiquetaDeCuenta(cuenta.email)}</td>
-                <td className="border-b border-n-200 px-4 py-3">
+              <tr key={cuenta.id} className="hover:bg-muted">
+                <td className="border-b border-border px-4 py-3 text-n-900">{etiquetaDeCuenta(cuenta.email)}</td>
+                <td className="border-b border-border px-4 py-3">
                   <ChipRol rol={cuenta.rol} />
                 </td>
-                <td className="border-b border-n-200 px-4 py-3">
+                <td className="border-b border-border px-4 py-3">
                   {cuenta.rol === "cliente" ? (
                     cuenta.cliente_id ? (
                       <span className="font-semibold text-menta-oscuro">Sí</span>
@@ -89,10 +89,10 @@ export function ListaCuentas({ cuentas, miId = null }: { cuentas: Cuenta[]; miId
                     <span className="text-n-400">—</span>
                   )}
                 </td>
-                <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-600">
+                <td className="border-b border-border px-4 py-3 tabular-nums text-n-600">
                   {formatearFecha(cuenta.creado_en, zona)}
                 </td>
-                <td className="border-b border-n-200 px-4 py-3">
+                <td className="border-b border-border px-4 py-3">
                   {/* QA S36: la de alguien del equipo la restablece un admin (la de un cliente, desde su ficha). */}
                   {cuenta.rol !== "cliente" && cuenta.id !== miId ? (
                     <RestablecerPasswordPersonal profileId={cuenta.id} nombre={etiquetaDeCuenta(cuenta.email)} compacto />

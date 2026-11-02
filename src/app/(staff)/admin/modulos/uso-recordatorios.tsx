@@ -51,7 +51,7 @@ export function UsoRecordatoriosPanel({ uso, puedeCambiarTope }: { uso: UsoRecor
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-n-200 bg-white p-4" data-uso-recordatorios>
+    <section className="flex flex-col gap-3 rounded-xl border border-border bg-white p-4" data-uso-recordatorios>
       <h2 className="text-lg font-semibold text-n-900">Recordatorios por WhatsApp</h2>
       <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         <div>

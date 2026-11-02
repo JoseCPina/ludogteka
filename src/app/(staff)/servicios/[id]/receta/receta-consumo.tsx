@@ -90,7 +90,7 @@ export function RecetaConsumo({
       ) : (
         <div className="flex flex-col gap-4">
           {[...lineasPorTamano.entries()].map(([tamanoEtiqueta, filas]) => (
-            <div key={tamanoEtiqueta} className="rounded-lg border border-n-200 bg-white p-4">
+            <div key={tamanoEtiqueta} className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <p className="mb-2 font-bold text-n-900">{tamanoEtiqueta}</p>
               <ul className="flex flex-col gap-1.5">
                 {filas.map((f) => (
@@ -112,7 +112,7 @@ export function RecetaConsumo({
       )}
 
       {esAdmin && (
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border-[1.5px] border-border bg-muted p-4">
           <Select label="Tamaño" value={tamanoId} onChange={(e) => setTamanoId(e.target.value)} disabled={enviando.cargando}>
             <option value="">Elige un tamaño</option>
             {tamanos.map((t) => (

@@ -10,11 +10,11 @@ function Renglon({ etiqueta, detalle, valor, signo = "+" }: { etiqueta: string; 
   if (!valor && signo === "−") return null;
   return (
     <tr>
-      <td className="border-b border-n-200 px-3 py-2">
+      <td className="border-b border-border px-3 py-2">
         <span className="font-semibold text-n-900">{etiqueta}</span>
         {detalle && <span className="block text-xs text-n-600">{detalle}</span>}
       </td>
-      <td className={`border-b border-n-200 px-3 py-2 text-right tabular-nums ${signo === "−" ? "text-coral-oscuro" : "text-n-900"}`}>
+      <td className={`border-b border-border px-3 py-2 text-right tabular-nums ${signo === "−" ? "text-coral-oscuro" : "text-n-900"}`}>
         {signo === "−" ? "−" : ""}
         {moneda(valor)}
       </td>
@@ -41,7 +41,7 @@ export function VistaDesglose({ d }: { d: Desglose }) {
         {dias.vacaciones ? ` · ${plural(dias.vacaciones, "día")} de vacaciones` : ""}
         {dias.otras_ausencias ? ` · ${plural(dias.otras_ausencias, "día")} de otras ausencias` : ""}
       </p>
-      <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
         <TablaResponsiva className="w-full min-w-[420px] border-collapse text-sm">
           <tbody>
             {e?.sueldo_monto ? (
@@ -72,7 +72,7 @@ export function VistaDesglose({ d }: { d: Desglose }) {
         </TablaResponsiva>
       </div>
       {d.comisiones_detalle.length > 0 && (
-        <details className="rounded-md border border-n-200 bg-white p-3 text-sm">
+        <details className="rounded-md border border-border bg-card p-3 text-sm">
           <summary className="cursor-pointer font-semibold text-n-800">Comisiones, servicio por servicio</summary>
           <ul className="mt-2 flex flex-col gap-1 text-n-700">
             {d.comisiones_detalle.map((c) => (
@@ -84,7 +84,7 @@ export function VistaDesglose({ d }: { d: Desglose }) {
         </details>
       )}
       {d.propinas_detalle.length > 0 && (
-        <details className="rounded-md border border-n-200 bg-white p-3 text-sm">
+        <details className="rounded-md border border-border bg-card p-3 text-sm">
           <summary className="cursor-pointer font-semibold text-n-800">Propinas, cobro por cobro</summary>
           <p className="mt-2 text-xs text-n-500">Si en una cuenta atendieron varias personas, la propina se reparte según el precio de lo que atendió cada una.</p>
           <ul className="mt-1 flex flex-col gap-1 text-n-700">
@@ -114,7 +114,7 @@ export function VistaDesglose({ d }: { d: Desglose }) {
         </details>
       )}
       {d.adelantos_detalle.length > 0 && (
-        <details className="rounded-md border border-n-200 bg-white p-3 text-sm">
+        <details className="rounded-md border border-border bg-card p-3 text-sm">
           <summary className="cursor-pointer font-semibold text-n-800">Adelantos que se descuentan</summary>
           <ul className="mt-2 flex flex-col gap-1 text-n-700">
             {d.adelantos_detalle.map((a) => (
@@ -141,7 +141,7 @@ export function ListaPagos({ pagos, puedeRevertir, zona }: { pagos: PagoNomina[]
         const esReverso = p.tipo === "reverso";
         const revertido = revertidos.has(p.id);
         return (
-          <li key={p.id} className={`flex flex-col gap-2 rounded-md border bg-white p-3 ${esReverso ? "border-coral" : "border-n-200"}`}>
+          <li key={p.id} className={`flex flex-col gap-2 rounded-md border bg-white p-3 ${esReverso ? "border-coral" : "border-border"}`}>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="font-semibold text-n-900">

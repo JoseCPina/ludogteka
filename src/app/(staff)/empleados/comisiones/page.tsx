@@ -37,7 +37,7 @@ export default async function ComisionesPage() {
       </div>
       <SubnavEmpleados activa="comisiones" puedeNomina ausenciasPorAprobar={porAprobar ?? 0} />
 
-      <ul className="divide-y divide-n-200 rounded-lg border border-n-200 bg-white">
+      <ul className="divide-y divide-border rounded-lg border border-border bg-card shadow-tarjeta">
         {(servicios ?? []).map((s) => {
           const suyas = (reglas ?? []).filter((r) => r.servicio_id === s.id);
           return (
@@ -62,8 +62,8 @@ export default async function ComisionesPage() {
         })}
       </ul>
 
-      <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Agregar o cambiar una regla</h2>
+      <section className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Agregar o cambiar una regla</h2>
         <p className="text-sm text-n-600">Si ya hay una regla para ese servicio y esa persona (o para todos), se reemplaza.</p>
         <FormularioAccion accion={guardarComision} textoBoton="Guardar regla" reiniciar>
           <div className="grid gap-3 sm:grid-cols-2">

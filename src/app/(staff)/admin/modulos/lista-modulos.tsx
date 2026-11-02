@@ -104,7 +104,7 @@ function Modulo({ m, todos }: { m: FilaModulo; todos: FilaModulo[] }) {
 
 export function ListaModulos({ modulos }: { modulos: FilaModulo[] }) {
   return (
-    <ul className="flex flex-col divide-y divide-n-200 rounded-xl border border-n-200 bg-white">
+    <ul className="flex flex-col divide-y divide-border rounded-xl border border-border bg-white">
       {modulos.map((m) => (
         <Modulo key={m.clave} m={m} todos={modulos} />
       ))}

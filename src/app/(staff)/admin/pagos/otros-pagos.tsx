@@ -29,8 +29,8 @@ export function OtrosPagos({ activo }: { activo: boolean }) {
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4" data-otros-pagos>
-      <h2 className="text-lg font-bold text-n-900">Otros pagos de tu cuenta de Mercado Pago</h2>
+    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4" data-otros-pagos>
+      <h2 className="text-lg font-semibold text-foreground">Otros pagos de tu cuenta de Mercado Pago</h2>
       <p className="text-sm text-n-700">
         Tu cuenta puede recibir pagos que no se cobraron desde PeluDesk (otra tienda, una transferencia, otra terminal). PeluDesk solo concilia los que cobra desde aquí
         y los demás se ignoran: no generan alertas.

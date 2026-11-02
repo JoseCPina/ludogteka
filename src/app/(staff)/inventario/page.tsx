@@ -94,7 +94,7 @@ export default async function InventarioPage({
         </Alert>
       )}
 
-      <nav className="flex gap-1 border-b border-n-200" aria-label="Tipo de inventario">
+      <nav className="flex gap-1 border-b border-border" aria-label="Tipo de inventario">
         {pestana("consumibles", "Consumibles", bajoMinimo + porCaducar)}
         {pestana("equipo", "Equipo", equiposConAviso)}
       </nav>
@@ -110,8 +110,8 @@ export default async function InventarioPage({
             if (delArea.length === 0) return null;
             return (
               <section key={area.id} className="flex flex-col gap-2">
-                <h2 className="text-lg font-bold text-n-900">{area.nombre}</h2>
-                <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+                <h2 className="text-lg font-semibold text-foreground">{area.nombre}</h2>
+                <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
                   {delArea.map((i) => {
                     const unidad = i.unidades_medida as unknown as { clave: string; equivalencia_en_base: number } | null;
                     const eq = unidad ? Number(unidad.equivalencia_en_base) : 1;
@@ -121,7 +121,7 @@ export default async function InventarioPage({
                     const caducidad = caducidadDe.get(i.id as string);
                     return (
                       <li key={i.id as string}>
-                        <Enlace href={`/inventario/${i.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
+                        <Enlace href={`/inventario/${i.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted" forma="bloque">
                           <span className="font-semibold text-n-900">{i.nombre as string}</span>
                           <span className="flex flex-wrap items-center gap-2 text-sm">
                             <span className="tabular-nums text-n-700">
@@ -163,14 +163,14 @@ export default async function InventarioPage({
           if (delArea.length === 0) return null;
           return (
             <section key={area.id} className="flex flex-col gap-2">
-              <h2 className="text-lg font-bold text-n-900">{area.nombre}</h2>
-              <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+              <h2 className="text-lg font-semibold text-foreground">{area.nombre}</h2>
+              <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
                 {delArea.map((e) => {
                   const estado = ESTADOS_EQUIPO[e.estado as string];
                   const aviso = e.aviso ? AVISOS_EQUIPO[e.aviso as string] : null;
                   return (
                     <li key={e.equipo_id as string}>
-                      <Enlace href={`/inventario/equipo/${e.equipo_id}`} className={`flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50 ${e.estado === "baja" ? "opacity-60" : ""}`} forma="bloque">
+                      <Enlace href={`/inventario/equipo/${e.equipo_id}`} className={`flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted ${e.estado === "baja" ? "opacity-60" : ""}`} forma="bloque">
                         <span className="flex flex-col">
                           <span className="font-semibold text-n-900">{e.nombre as string}</span>
                           <span className="text-xs text-n-500">

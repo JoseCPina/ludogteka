@@ -69,7 +69,7 @@ export function EquipoForm({
         </div>
       )}
 
-      <div className="flex flex-col gap-3 rounded-md border-[1.5px] border-n-200 bg-white p-3">
+      <div className="flex flex-col gap-3 rounded-md border-[1.5px] border-border bg-white p-3">
         <p className="text-sm font-semibold text-n-800">Mantenimiento (opcional)</p>
         <div className="grid grid-cols-2 gap-4">
           <Field

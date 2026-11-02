@@ -88,9 +88,9 @@ export function Sucursales({ grupo, precioMensual, dominio }: { grupo: GrupoSucu
   }
 
   return (
-    <section aria-labelledby="t-sucursales" data-sucursales className="flex flex-col gap-4 rounded-xl border border-n-200 bg-white p-5">
+    <section aria-labelledby="t-sucursales" data-sucursales className="flex flex-col gap-4 rounded-xl border border-border bg-white p-5">
       <div>
-        <h2 id="t-sucursales" className="text-lg font-bold text-n-900">Sucursales</h2>
+        <h2 id="t-sucursales" className="text-lg font-semibold text-foreground">Sucursales</h2>
         <p className="mt-1 text-sm text-n-700">
           Cada sucursal es un negocio en PeluDesk, con su propia caja, agenda, personal y página.
           {precio && (
@@ -103,13 +103,13 @@ export function Sucursales({ grupo, precioMensual, dominio }: { grupo: GrupoSucu
       </div>
 
       {!grupo.es_principal && principal && (
-        <p className="rounded-md bg-n-50 px-3 py-2 text-sm text-n-800" data-es-sucursal>
+        <p className="rounded-md bg-muted px-3 py-2 text-sm text-n-800" data-es-sucursal>
           Esta es una sucursal de <strong>{principal.nombre}</strong>. Su cobro va en la suscripción de {principal.nombre}: el plan, la tarjeta, las facturas y
           los datos de facturación se ven desde ahí.
         </p>
       )}
 
-      <ul className="flex flex-col divide-y divide-n-100 rounded-lg border border-n-200">
+      <ul className="flex flex-col divide-y divide-n-100 rounded-lg border border-border">
         {grupo.negocios.map((n) => (
           <li key={n.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
             <span>

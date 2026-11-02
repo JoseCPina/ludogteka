@@ -24,23 +24,23 @@ export function HistorialTarifas({ filas, zona }: { filas: FilaHistorial[]; zona
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+    <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
       <TablaResponsiva className="w-full min-w-[720px] border-collapse">
         <thead>
           <tr>
-            <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+            <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
               Celda
             </th>
-            <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+            <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
               Precio
             </th>
-            <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+            <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
               Vigente desde
             </th>
-            <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+            <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
               Capturado por
             </th>
-            <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+            <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
               Capturado el
             </th>
           </tr>
@@ -48,7 +48,7 @@ export function HistorialTarifas({ filas, zona }: { filas: FilaHistorial[]; zona
         <tbody>
           {filas.map((f) => (
             <tr key={f.id}>
-              <td className="border-b border-n-200 px-4 py-3 text-n-900">
+              <td className="border-b border-border px-4 py-3 text-n-900">
                 {[
                   f.grupo_etiqueta,
                   f.tamano_etiqueta,
@@ -58,14 +58,14 @@ export function HistorialTarifas({ filas, zona }: { filas: FilaHistorial[]; zona
                   .filter((v) => v && v !== "—")
                   .join(" · ") || "Precio único"}
               </td>
-              <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-900">
+              <td className="border-b border-border px-4 py-3 tabular-nums text-n-900">
                 {f.no_aplica ? "No aplica" : `$${Number(f.precio).toFixed(2)}`}
               </td>
-              <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-900">
+              <td className="border-b border-border px-4 py-3 tabular-nums text-n-900">
                 {formatearFechaCalendario(f.vigencia_desde)}
               </td>
-              <td className="border-b border-n-200 px-4 py-3 text-n-600">{f.creado_por}</td>
-              <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-600">
+              <td className="border-b border-border px-4 py-3 text-n-600">{f.creado_por}</td>
+              <td className="border-b border-border px-4 py-3 tabular-nums text-n-600">
                 {formatearFecha(f.created_at, zona)}
               </td>
             </tr>

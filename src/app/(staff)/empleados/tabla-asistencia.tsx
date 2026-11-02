@@ -28,7 +28,7 @@ export function ResumenAsistencia({ dias }: { dias: DiaAsistencia[] }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       {cifras.map((c) => (
-        <div key={c.etiqueta} className="rounded-lg border border-n-200 bg-white p-3">
+        <div key={c.etiqueta} className="rounded-lg border border-border bg-card shadow-tarjeta p-3">
           <p className="text-xs font-bold uppercase tracking-wide text-n-500">{c.etiqueta}</p>
           <p className="mt-1 text-2xl font-bold text-n-900">{c.valor}</p>
           {c.sub && <p className="text-xs text-n-500">{c.sub}</p>}
@@ -57,7 +57,7 @@ export function TablaAsistencia({
   const visibles = [...dias].reverse().filter((d) => d.estado !== "descanso" || d.asistencia_id);
   if (visibles.length === 0) return <p className="text-sm text-n-600">No hay días que le tocara trabajar en este periodo.</p>;
   return (
-    <ul className="divide-y divide-n-200 rounded-lg border border-n-200 bg-white">
+    <ul className="divide-y divide-border rounded-lg border border-border bg-card shadow-tarjeta">
       {visibles.map((d) => {
         const estado = ESTADOS_DIA[d.estado];
         const suyas = correcciones.filter((c) => c.asistencia_id === d.asistencia_id);
@@ -86,7 +86,7 @@ export function TablaAsistencia({
               </span>
             </div>
             {suyas.length > 0 && (
-              <ul className="rounded-md bg-n-50 px-3 py-2 text-xs text-n-600">
+              <ul className="rounded-md bg-muted px-3 py-2 text-xs text-n-600">
                 {suyas.map((c) => (
                   <li key={c.created_at}>
                     {formatearFecha(c.created_at, zona)}: {c.entrada_anterior || c.salida_anterior ? `antes ${h(c.entrada_anterior)}–${h(c.salida_anterior)}` : "no había registro"}

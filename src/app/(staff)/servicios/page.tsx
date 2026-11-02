@@ -124,24 +124,24 @@ export default async function ServiciosPage() {
         </Alert>
       ) : !servicios || servicios.length === 0 ? (
         <div className="rounded-lg border-[1.5px] border-dashed border-n-300 bg-white p-10 text-center">
-          <h3 className="text-lg font-bold text-n-900">Todavía no hay servicios</h3>
+          <h3 className="text-lg font-semibold text-foreground">Todavía no hay servicios</h3>
           <p className="mt-1 text-n-600">En cuanto des de alta el primero, va a aparecer aquí.</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
           <TablaResponsiva className="w-full min-w-[720px] border-collapse">
             <thead>
               <tr>
-                <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+                <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                   Nombre
                 </th>
-                <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+                <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                   Categoría
                 </th>
-                <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+                <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                   Dimensiones de precio
                 </th>
-                <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+                <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                   Estado
                 </th>
               </tr>
@@ -151,15 +151,15 @@ export default async function ServiciosPage() {
                 const faltan = huecos.get(s.id) ?? 0;
                 return (
                   <tr key={s.id} className={s.deleted_at ? "opacity-60" : ""}>
-                    <td className="border-b border-n-200 px-4 py-3">
+                    <td className="border-b border-border px-4 py-3">
                       <Enlace href={esAdmin ? `/servicios/${s.id}` : `/servicios/${s.id}/tarifas`}>
                         {s.nombre}
                       </Enlace>
                     </td>
-                    <td className="border-b border-n-200 px-4 py-3 text-n-700">
+                    <td className="border-b border-border px-4 py-3 text-n-700">
                       {ETIQUETA_CATEGORIA[s.categoria] ?? s.categoria}
                     </td>
-                    <td className="border-b border-n-200 px-4 py-3">
+                    <td className="border-b border-border px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
                         {s.depende_grupo_raza && (
                           <span className="rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">
@@ -189,7 +189,7 @@ export default async function ServiciosPage() {
                           )}
                       </div>
                     </td>
-                    <td className="border-b border-n-200 px-4 py-3">
+                    <td className="border-b border-border px-4 py-3">
                       <div className="flex flex-wrap items-center gap-1.5">
                         {s.deleted_at ? (
                           <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">

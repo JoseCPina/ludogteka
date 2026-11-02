@@ -160,7 +160,7 @@ export function InsumoForm({
         />
       </div>
 
-      <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3">
+      <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-border bg-white p-3">
         <label className="flex items-center gap-2 text-n-900">
           <input
             type="checkbox"
@@ -185,7 +185,7 @@ export function InsumoForm({
         )}
       </div>
 
-      <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3">
+      <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-border bg-white p-3">
         <label className="flex items-center gap-2 text-n-900">
           <input
             type="checkbox"

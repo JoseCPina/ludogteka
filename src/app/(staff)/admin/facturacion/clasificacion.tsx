@@ -69,7 +69,7 @@ function FilaInsumo({ insumo, inicial, editable }: { insumo: { id: string; nombr
     router.refresh();
   }
   return (
-    <li className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-3">
+    <li className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-3">
       <p className="font-medium text-n-900">{insumo.nombre}</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <Select label="Tipo de producto" value={clase} onChange={(e) => setClase(e.target.value as FiscalInsumo["clase"])} disabled={!editable || patente}>
@@ -107,7 +107,7 @@ function FilaServicio({ servicio, inicial, editable }: { servicio: { id: string;
     router.refresh();
   }
   return (
-    <li className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-3">
+    <li className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-3">
       <p className="font-medium text-n-900">
         {servicio.nombre} <span className="text-xs font-normal text-n-500">({servicio.categoria})</span>
       </p>

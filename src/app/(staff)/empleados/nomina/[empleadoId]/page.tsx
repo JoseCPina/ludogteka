@@ -61,7 +61,7 @@ export default async function NominaEmpleadoPage({
         </p>
       </div>
 
-      <form method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-4">
+      <form method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <Field label="Desde" name="desde" type="date" defaultValue={desde} />
         <Field label="Hasta" name="hasta" type="date" defaultValue={hasta} />
         <Button type="submit" variante="secundario">Calcular</Button>
@@ -71,7 +71,7 @@ export default async function NominaEmpleadoPage({
         <Alert variante="error" titulo="No se pudo calcular">{error?.message}</Alert>
       ) : (
         <section className="flex flex-col gap-4">
-          <h2 className="text-lg font-bold text-n-900">
+          <h2 className="text-lg font-semibold text-foreground">
             {formatearFechaCalendario(desde)} al {formatearFechaCalendario(hasta)}
           </h2>
           <VistaDesglose d={d} />
@@ -90,7 +90,7 @@ export default async function NominaEmpleadoPage({
               Paga un periodo más largo o cancela un adelanto desde su ficha.
             </Alert>
           ) : (
-            <div className="rounded-lg border border-n-200 bg-white p-4">
+            <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <h3 className="mb-3 font-bold text-n-900">Marcar pagado: {moneda(d.total)}</h3>
               <FormularioAccion accion={registrarPago.bind(null, empleadoId, desde, hasta)} textoBoton="Marcar pagado" variante="primario" textoExito="Pago registrado">
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -113,8 +113,8 @@ export default async function NominaEmpleadoPage({
         </section>
       )}
 
-      <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Pagos registrados</h2>
+      <section className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Pagos registrados</h2>
         <ListaPagos zona={zona} pagos={(pagos ?? []) as PagoNomina[]} puedeRevertir />
       </section>
     </div>

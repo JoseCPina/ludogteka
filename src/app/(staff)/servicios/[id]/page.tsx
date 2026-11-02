@@ -120,8 +120,8 @@ export default async function EditarServicioPage({
       />
 
       {!servicio.deleted_at && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-          <h2 className="text-lg font-bold text-n-900">Dar de baja</h2>
+        <div className="flex flex-col gap-3 border-t border-border pt-6">
+          <h2 className="text-lg font-semibold text-foreground">Dar de baja</h2>
           <p className="text-n-600">
             Un servicio dado de baja deja de aparecer para cobrarse, pero su histórico de precios
             y las reservas/tickets que ya lo usaron no se afectan.

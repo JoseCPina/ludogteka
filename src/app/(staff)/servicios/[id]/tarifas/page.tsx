@@ -157,9 +157,9 @@ export default async function TarifasServicioPage({
       />
 
       {!servicio.monto_libre && (
-        <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <div className="flex flex-col gap-4 border-t border-border pt-6">
           <div>
-            <h2 className="text-lg font-bold text-n-900">Precio distinto por día de la semana</h2>
+            <h2 className="text-lg font-semibold text-foreground">Precio distinto por día de la semana</h2>
             <p className="mt-1 text-n-600">
               Reemplaza el precio de arriba ese día, para todas las tallas. Por ejemplo: guardería día
               completo en sábado, que es medio día.
@@ -174,8 +174,8 @@ export default async function TarifasServicioPage({
         </div>
       )}
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Historial de precios</h2>
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Historial de precios</h2>
         <HistorialTarifas zona={zona} filas={historial} />
       </div>
     </div>

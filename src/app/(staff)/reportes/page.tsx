@@ -197,7 +197,7 @@ export default async function ReportesPage({
         <p className="mt-1 text-n-600">Financiero y operativo. Solo para admin y para quien tenga el permiso «Reportes financieros».</p>
       </div>
 
-      <form method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-4">
+      <form method="get" className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <div>
           <label htmlFor="desde" className="mb-1.5 block text-sm font-semibold text-n-800">
             Desde
@@ -261,7 +261,7 @@ export default async function ReportesPage({
       ) : (
         <div className="flex flex-col gap-4 rounded-lg border-[1.5px] border-n-300 bg-white p-5">
           <div>
-            <p className="text-sm font-bold uppercase tracking-wide text-n-600">Utilidad del periodo</p>
+            <p className="text-[0.9375rem] font-semibold text-foreground">Utilidad del periodo</p>
             <p className={`mt-1 text-3xl font-extrabold ${Number(utilidad.utilidad) < 0 ? "text-coral-oscuro" : "text-n-900"}`}>
               {formatearMoneda(Number(utilidad.utilidad))}
             </p>
@@ -286,7 +286,7 @@ export default async function ReportesPage({
                     ["− Gastos del local", "gastos_local", -1],
                   ] as const
                 ).map(([etiqueta, clave]) => (
-                  <tr key={clave} className="border-t border-n-200">
+                  <tr key={clave} className="border-t border-border">
                     <td data-label="" className="py-1.5 pr-3">{etiqueta}</td>
                     <td data-label="Este periodo" className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(Number(utilidad[clave]))}</td>
                     <td data-label="Periodo anterior" className="py-1.5 pr-3 text-right tabular-nums text-n-600">{utilidadAnterior ? formatearMoneda(Number(utilidadAnterior[clave])) : "—"}</td>
@@ -318,7 +318,7 @@ export default async function ReportesPage({
                     {categoriasGasto.map((c) => {
                       const dif = c.monto - c.anterior;
                       return (
-                        <tr key={c.categoria_id} className="border-t border-n-200">
+                        <tr key={c.categoria_id} className="border-t border-border">
                           <td data-label="" className="py-1.5 pr-3">{c.categoria}</td>
                           <td data-label="Este periodo" className="py-1.5 pr-3 text-right tabular-nums">{formatearMoneda(c.monto)}</td>
                           <td data-label="Anterior" className="py-1.5 pr-3 text-right tabular-nums text-n-600">{formatearMoneda(c.anterior)}</td>
@@ -388,70 +388,70 @@ export default async function ReportesPage({
             </Alert>
           ) : (
             <>
-          <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+          <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
             <TablaResponsiva className="tabla-tarjetas w-full min-w-[720px] border-collapse">
               <thead>
                 <tr>
-                  <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+                  <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                     Concepto
                   </th>
-                  <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                  <th className="border-b border-border bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                     Efectivo
                   </th>
-                  <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                  <th className="border-b border-border bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                     Terminal
                   </th>
-                  <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                  <th className="border-b border-border bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                     Transferencia
                   </th>
-                  <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                  <th className="border-b border-border bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                     Tarjeta manual (sin verificar)
                   </th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td data-label="" className="border-b border-n-200 px-4 py-2.5 font-semibold text-n-900">Cobros</td>
-                  <td data-label="Efectivo" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                  <td data-label="" className="border-b border-border px-4 py-2.5 font-semibold text-n-900">Cobros</td>
+                  <td data-label="Efectivo" className="border-b border-border px-4 py-2.5 text-right text-n-700">
                     <Toque href={D("cobros:efectivo")} etiqueta="Ver los cobros en efectivo">{formatearMoneda(reporte.cobros_efectivo)}</Toque>
                   </td>
-                  <td data-label="Terminal" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                  <td data-label="Terminal" className="border-b border-border px-4 py-2.5 text-right text-n-700">
                     <Toque href={D("cobros:terminal")} etiqueta="Ver los cobros en terminal">{formatearMoneda(reporte.cobros_terminal)}</Toque>
                   </td>
-                  <td data-label="Transferencia" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                  <td data-label="Transferencia" className="border-b border-border px-4 py-2.5 text-right text-n-700">
                     <Toque href={D("cobros:transferencia")} etiqueta="Ver los cobros en transferencia">{formatearMoneda(reporte.cobros_transferencia)}</Toque>
                   </td>
-                  <td data-label="Tarjeta manual (sin verificar)" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                  <td data-label="Tarjeta manual (sin verificar)" className="border-b border-border px-4 py-2.5 text-right text-n-700">
                     <Toque href={D("cobros:tarjeta_manual")} etiqueta="Ver los cobros en tarjeta manual">{formatearMoneda(reporte.cobros_tarjeta_manual)}</Toque>
                   </td>
                 </tr>
                 <tr>
-                  <td data-label="" className="border-b border-n-200 px-4 py-2.5 text-n-700">Propinas</td>
-                  <td data-label="Efectivo" className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
+                  <td data-label="" className="border-b border-border px-4 py-2.5 text-n-700">Propinas</td>
+                  <td data-label="Efectivo" className="border-b border-border px-4 py-2.5 text-right text-n-600">
                     <Toque href={D("propinas:efectivo")} etiqueta="Ver los propinas en efectivo">{formatearMoneda(reporte.propinas_efectivo)}</Toque>
                   </td>
-                  <td data-label="Terminal" className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
+                  <td data-label="Terminal" className="border-b border-border px-4 py-2.5 text-right text-n-600">
                     <Toque href={D("propinas:terminal")} etiqueta="Ver los propinas en terminal">{formatearMoneda(reporte.propinas_terminal)}</Toque>
                   </td>
-                  <td data-label="Transferencia" className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
+                  <td data-label="Transferencia" className="border-b border-border px-4 py-2.5 text-right text-n-600">
                     <Toque href={D("propinas:transferencia")} etiqueta="Ver los propinas en transferencia">{formatearMoneda(reporte.propinas_transferencia)}</Toque>
                   </td>
-                  <td data-label="Tarjeta manual (sin verificar)" className="border-b border-n-200 px-4 py-2.5 text-right text-n-600">
+                  <td data-label="Tarjeta manual (sin verificar)" className="border-b border-border px-4 py-2.5 text-right text-n-600">
                     <Toque href={D("propinas:tarjeta_manual")} etiqueta="Ver los propinas en tarjeta manual">{formatearMoneda(reporte.propinas_tarjeta_manual)}</Toque>
                   </td>
                 </tr>
                 <tr>
-                  <td data-label="" className="border-b border-n-200 px-4 py-2.5 text-n-700">Devoluciones</td>
-                  <td data-label="Efectivo" className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
+                  <td data-label="" className="border-b border-border px-4 py-2.5 text-n-700">Devoluciones</td>
+                  <td data-label="Efectivo" className="border-b border-border px-4 py-2.5 text-right text-coral-oscuro">
                     <Toque href={D("devoluciones:efectivo")} etiqueta="Ver las devoluciones en efectivo">−{formatearMoneda(reporte.devoluciones_efectivo)}</Toque>
                   </td>
-                  <td data-label="Terminal" className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
+                  <td data-label="Terminal" className="border-b border-border px-4 py-2.5 text-right text-coral-oscuro">
                     <Toque href={D("devoluciones:terminal")} etiqueta="Ver las devoluciones en terminal">−{formatearMoneda(reporte.devoluciones_terminal)}</Toque>
                   </td>
-                  <td data-label="Transferencia" className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
+                  <td data-label="Transferencia" className="border-b border-border px-4 py-2.5 text-right text-coral-oscuro">
                     <Toque href={D("devoluciones:transferencia")} etiqueta="Ver las devoluciones en transferencia">−{formatearMoneda(reporte.devoluciones_transferencia)}</Toque>
                   </td>
-                  <td data-label="Tarjeta manual (sin verificar)" className="border-b border-n-200 px-4 py-2.5 text-right text-coral-oscuro">
+                  <td data-label="Tarjeta manual (sin verificar)" className="border-b border-border px-4 py-2.5 text-right text-coral-oscuro">
                     <Toque href={D("devoluciones:tarjeta_manual")} etiqueta="Ver las devoluciones en tarjeta manual">−{formatearMoneda(reporte.devoluciones_tarjeta_manual)}</Toque>
                   </td>
                 </tr>
@@ -490,17 +490,17 @@ export default async function ReportesPage({
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Enlace href={D("bonos_vendidos")} aria-label="Ver los bonos vendidos" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("bonos_vendidos")} aria-label="Ver los bonos vendidos" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Bonos vendidos</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(reporte.bonos_vendidos)}</p>
               <p className="mt-1 text-xs text-n-500">Ingreso diferido, ya cobrado</p>
             </Enlace>
-            <Enlace href={D("bonos_consumidos")} aria-label="Ver los bonos consumidos" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("bonos_consumidos")} aria-label="Ver los bonos consumidos" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Bonos consumidos</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(reporte.bonos_consumidos)}</p>
               <p className="mt-1 text-xs text-n-500">Ingreso reconocido este periodo</p>
             </Enlace>
-            <Enlace href={D("descuentos")} aria-label="Ver los descuentos otorgados" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("descuentos")} aria-label="Ver los descuentos otorgados" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Descuentos otorgados</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(reporte.descuentos_otorgados)}</p>
               <p className="mt-1 text-xs text-n-500">Ya restados del cobro, solo informativo</p>
@@ -510,30 +510,30 @@ export default async function ReportesPage({
       )}
 
       {!errorVentas && ventas && Number(ventas.ventas) > 0 && (
-        <div className="flex flex-col gap-4 border-t border-n-200 pt-6" data-reporte-ventas>
+        <div className="flex flex-col gap-4 border-t border-border pt-6" data-reporte-ventas>
           <div>
-            <h2 className="text-lg font-bold text-n-900">Ventas de mostrador</h2>
+            <h2 className="text-lg font-semibold text-foreground">Ventas de mostrador</h2>
             <p className="mt-1 text-sm text-n-600">
               Productos y conceptos vendidos en Caja → Venta rápida, aparte de los servicios. Ya están dentro de lo cobrado de arriba; el costo de
               los productos entra al costo de insumos de la utilidad.
             </p>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-            <Enlace href={D("ventas_vendido")} aria-label="Ver las ventas de mostrador" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("ventas_vendido")} aria-label="Ver las ventas de mostrador" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Vendido</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.total_vendido))}</p>
               <p className="mt-1 text-xs text-n-500">{Number(ventas.ventas)} {Number(ventas.ventas) === 1 ? "venta" : "ventas"}</p>
             </Enlace>
-            <Enlace href={D("ventas_productos")} aria-label="Ver los productos vendidos" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("ventas_productos")} aria-label="Ver los productos vendidos" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Productos</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.productos))}</p>
               <p className="mt-1 text-xs text-n-500">Costo {formatearMoneda(Number(ventas.costo_productos))}</p>
             </Enlace>
-            <Enlace href={D("ventas_conceptos")} aria-label="Ver los conceptos libres" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("ventas_conceptos")} aria-label="Ver los conceptos libres" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Conceptos libres</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.conceptos))}</p>
             </Enlace>
-            <Enlace href={D("ventas_cobrado")} aria-label="Ver lo cobrado de las ventas de mostrador" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("ventas_cobrado")} aria-label="Ver lo cobrado de las ventas de mostrador" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Cobrado (neto)</p>
               <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(Number(ventas.cobrado))}</p>
               <p className="mt-1 text-xs text-n-500">Menos devoluciones</p>
@@ -542,9 +542,9 @@ export default async function ReportesPage({
         </div>
       )}
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
         <div>
-          <h2 className="text-lg font-bold text-n-900">Costos y margen — estética</h2>
+          <h2 className="text-lg font-semibold text-foreground">Costos y margen — estética</h2>
           <p className="mt-1 text-sm text-n-600">
             Costo valorizado al promedio ponderado de compra de cada insumo (no por lote). Solo
             cubre servicios de estética con receta de consumo configurada — guardería y hotel no
@@ -571,8 +571,8 @@ export default async function ReportesPage({
                   además, la comisión del estilista que atendió cada cita.
                 </p>
               </div>
-              <div className="rounded-lg border border-n-200 bg-white p-5">
-                <p className="text-sm font-bold uppercase tracking-wide text-n-600">Compras del periodo</p>
+              <div className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
+                <p className="text-[0.9375rem] font-semibold text-foreground">Compras del periodo</p>
                 <p className="mt-1 text-3xl font-extrabold text-n-900">
                   {formatearMoneda(costos.compras_total)}
                 </p>
@@ -581,17 +581,17 @@ export default async function ReportesPage({
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Enlace href={D("estetica_ingreso")} aria-label="Ver las citas que forman el ingreso de estética" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+              <Enlace href={D("estetica_ingreso")} aria-label="Ver las citas que forman el ingreso de estética" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
                 <p className="text-xs font-bold uppercase tracking-wide text-n-600">Ingreso de estética</p>
                 <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(costos.ingreso_estetica)}</p>
               </Enlace>
-              <div className="rounded-lg border border-n-200 bg-white p-4">
+              <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-n-600">Costo de consumo (estética)</p>
                 <p className="mt-1 text-xl font-bold text-n-900">
                   {formatearMoneda(costos.consumo_estetica_valorizado)}
                 </p>
               </div>
-              <div className="rounded-lg border border-n-200 bg-white p-4">
+              <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <p className="text-xs font-bold uppercase tracking-wide text-n-600">Merma valorizada</p>
                 <p className="mt-1 text-xl font-bold text-n-900">{formatearMoneda(costos.merma_valorizada)}</p>
                 <p className="mt-1 text-xs text-n-500">Insumo perdido, no vendido</p>
@@ -599,29 +599,29 @@ export default async function ReportesPage({
             </div>
 
             {margenServicios.length > 0 && (
-              <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+              <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
                 <TablaResponsiva className="tabla-tarjetas w-full min-w-[760px] border-collapse">
                   <thead>
                     <tr>
-                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+                      <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                         Servicio
                       </th>
-                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                      <th className="border-b border-border bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                         Citas
                       </th>
-                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                      <th className="border-b border-border bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                         Ingreso
                       </th>
-                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                      <th className="border-b border-border bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                         Costo
                       </th>
-                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                      <th className="border-b border-border bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                         Margen
                       </th>
-                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                      <th className="border-b border-border bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                         Comisión
                       </th>
-                      <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
+                      <th className="border-b border-border bg-n-100 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-n-600">
                         Margen tras comisión
                       </th>
                     </tr>
@@ -629,25 +629,25 @@ export default async function ReportesPage({
                   <tbody>
                     {margenServicios.map((s) => (
                       <tr key={s.servicio_id}>
-                        <td data-label="" className="border-b border-n-200 px-4 py-2.5 font-semibold text-n-900">
+                        <td data-label="" className="border-b border-border px-4 py-2.5 font-semibold text-n-900">
                           {s.servicio_nombre}
                         </td>
-                        <td data-label="Citas" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                        <td data-label="Citas" className="border-b border-border px-4 py-2.5 text-right text-n-700">
                           <Toque href={D(`estetica_servicio:${s.servicio_id}`)} etiqueta={`Ver las citas de ${s.servicio_nombre}`}>{s.citas_finalizadas}</Toque>
                         </td>
-                        <td data-label="Ingreso" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                        <td data-label="Ingreso" className="border-b border-border px-4 py-2.5 text-right text-n-700">
                           <Toque href={D(`estetica_servicio:${s.servicio_id}`)} etiqueta={`Ver el ingreso de ${s.servicio_nombre}`}>{formatearMoneda(s.ingreso)}</Toque>
                         </td>
-                        <td data-label="Costo" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                        <td data-label="Costo" className="border-b border-border px-4 py-2.5 text-right text-n-700">
                           {formatearMoneda(s.costo_consumo)}
                         </td>
-                        <td data-label="Margen" className="border-b border-n-200 px-4 py-2.5 text-right font-semibold text-n-900">
+                        <td data-label="Margen" className="border-b border-border px-4 py-2.5 text-right font-semibold text-n-900">
                           {formatearMoneda(s.margen)}
                         </td>
-                        <td data-label="Comisión" className="border-b border-n-200 px-4 py-2.5 text-right text-n-700">
+                        <td data-label="Comisión" className="border-b border-border px-4 py-2.5 text-right text-n-700">
                           {formatearMoneda(Number(s.comision))}
                         </td>
-                        <td data-label="Margen tras comisión" className="border-b border-n-200 px-4 py-2.5 text-right font-semibold text-n-900">
+                        <td data-label="Margen tras comisión" className="border-b border-border px-4 py-2.5 text-right font-semibold text-n-900">
                           {formatearMoneda(Number(s.margen_con_comision))}
                         </td>
                       </tr>
@@ -660,9 +660,9 @@ export default async function ReportesPage({
         )}
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
         <div>
-          <h2 className="text-lg font-bold text-n-900">Operación del periodo</h2>
+          <h2 className="text-lg font-semibold text-foreground">Operación del periodo</h2>
           <p className="mt-1 text-sm text-n-600">
             No calcula % de ocupación contra el cupo configurado, solo cuenta días/noches reales.
           </p>
@@ -674,23 +674,23 @@ export default async function ReportesPage({
           </Alert>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-            <Enlace href={D("op_guarderia")} aria-label="Ver los días de guardería" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("op_guarderia")} aria-label="Ver los días de guardería" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Días de guardería</p>
               <p className="mt-1 text-xl font-bold text-n-900">{operativo.dias_guarderia}</p>
             </Enlace>
-            <Enlace href={D("op_hotel")} aria-label="Ver las noches de hotel" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("op_hotel")} aria-label="Ver las noches de hotel" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Noches de hotel</p>
               <p className="mt-1 text-xl font-bold text-n-900">{operativo.noches_hotel}</p>
             </Enlace>
-            <Enlace href={D("op_estetica")} aria-label="Ver las citas de estética finalizadas" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("op_estetica")} aria-label="Ver las citas de estética finalizadas" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Citas de estética</p>
               <p className="mt-1 text-xl font-bold text-n-900">{operativo.citas_estetica_finalizadas}</p>
             </Enlace>
-            <Enlace href={D("op_canceladas")} aria-label="Ver las estancias canceladas" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("op_canceladas")} aria-label="Ver las estancias canceladas" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Estancias canceladas</p>
               <p className="mt-1 text-xl font-bold text-n-900">{operativo.estancias_canceladas}</p>
             </Enlace>
-            <Enlace href={D("op_no_llego")} aria-label="Ver las citas en las que no llegó" data-desglose-enlace className="block rounded-lg border border-n-200 bg-white p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
+            <Enlace href={D("op_no_llego")} aria-label="Ver las citas en las que no llegó" data-desglose-enlace className="block rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado hover:bg-morado-suave" forma="bloque">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Citas no llegó</p>
               <p className="mt-1 text-xl font-bold text-n-900">{operativo.citas_no_llego}</p>
             </Enlace>
@@ -699,28 +699,28 @@ export default async function ReportesPage({
       </div>
 
       {diasPase && (
-        <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+        <div className="flex flex-col gap-4 border-t border-border pt-6">
           <div>
-            <h2 className="text-lg font-bold text-n-900">Días de pase: reales y ajustados a mano</h2>
+            <h2 className="text-lg font-semibold text-foreground">Días de pase: reales y ajustados a mano</h2>
             <p className="mt-1 text-sm text-n-600">
               Los días reales son los que cubrió un pase en una estancia. Los ajustados se corrigieron a mano en el
               saldo del pase: no son asistencia y no mueven dinero.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div className="rounded-lg border border-n-200 bg-white p-4">
+            <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Días reales con pase</p>
               <p className="mt-1 text-xl font-bold text-n-900">{diasPase.dias_reales}</p>
             </div>
-            <div className="rounded-lg border border-n-200 bg-white p-4">
+            <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Ajustados: se sumaron</p>
               <p className="mt-1 text-xl font-bold text-n-900">{diasPase.dias_ajustados_mas}</p>
             </div>
-            <div className="rounded-lg border border-n-200 bg-white p-4">
+            <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Ajustados: se devolvieron</p>
               <p className="mt-1 text-xl font-bold text-n-900">{diasPase.dias_ajustados_menos}</p>
             </div>
-            <div className="rounded-lg border border-n-200 bg-white p-4">
+            <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <p className="text-xs font-bold uppercase tracking-wide text-n-600">Uso previo a PeluDesk</p>
               <p className="mt-1 text-xl font-bold text-n-900">{diasPase.dias_uso_previo}</p>
             </div>
@@ -729,9 +729,9 @@ export default async function ReportesPage({
       )}
 
       {extras.length > 0 && (
-        <div className="flex flex-col gap-4 border-t border-n-200 pt-6" data-reporte-extras>
+        <div className="flex flex-col gap-4 border-t border-border pt-6" data-reporte-extras>
           <div>
-            <h2 className="text-lg font-bold text-n-900">Servicios extra de Hotel y guardería</h2>
+            <h2 className="text-lg font-semibold text-foreground">Servicios extra de Hotel y guardería</h2>
             <p className="mt-1 text-sm text-n-600">
               Lo que se hizo y se cobró en el periodo (paseos, traslados, entrenamiento…), por servicio y por la persona que
               lo marcó como hecho. Lo cubierto con un paquete de sesiones va aparte: no se cobró en ese momento.
@@ -741,9 +741,9 @@ export default async function ReportesPage({
             const filas = extras.filter((r) => r.agrupacion === grupo);
             if (filas.length === 0) return null;
             return (
-              <div key={grupo} className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+              <div key={grupo} className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
                 <TablaResponsiva className="tabla-tarjetas w-full text-left text-sm">
-                  <thead className="bg-n-50 text-xs font-bold uppercase tracking-wide text-n-600">
+                  <thead className="bg-muted text-xs font-bold uppercase tracking-wide text-n-600">
                     <tr>
                       <th className="px-3 py-2">{grupo === "servicio" ? "Servicio" : "Empleado"}</th>
                       <th className="px-3 py-2 text-right">Veces</th>
@@ -770,9 +770,9 @@ export default async function ReportesPage({
         </div>
       )}
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
         <div>
-          <h2 className="text-lg font-bold text-n-900">Estado actual</h2>
+          <h2 className="text-lg font-semibold text-foreground">Estado actual</h2>
           <p className="mt-1 text-sm text-n-600">
             Fotografía de ahora mismo — no cambia con el rango de fechas de arriba.
           </p>
@@ -784,7 +784,7 @@ export default async function ReportesPage({
           </Alert>
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border border-n-200 bg-white p-4">
+            <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <p className="text-sm font-bold text-n-900">Cumplimiento sanitario</p>
               <div className="mt-2 flex flex-col gap-1 text-sm">
                 <span className="text-menta-oscuro">Vigente: {estadoActual.sanitario_vigente}</span>
@@ -792,7 +792,7 @@ export default async function ReportesPage({
                 <span className="text-coral-oscuro">Vencido/sin registro: {estadoActual.sanitario_bloqueado}</span>
               </div>
             </div>
-            <div className="rounded-lg border border-n-200 bg-white p-4">
+            <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <p className="text-sm font-bold text-n-900">Contratos</p>
               <p className="mt-0.5 text-xs text-n-500">
                 Perros, contando todos los contratos que les aplican. No entran los que todavía no
@@ -804,7 +804,7 @@ export default async function ReportesPage({
                 <span className="text-ambar-oscuro">Sin firmar: {estadoActual.contrato_sin_firmar}</span>
               </div>
             </div>
-            <div className="rounded-lg border border-n-200 bg-white p-4">
+            <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <p className="text-sm font-bold text-n-900">Inventario</p>
               <div className="mt-2 flex flex-col gap-1 text-sm">
                 <span className="text-ambar-oscuro">Bajo mínimo: {estadoActual.insumos_bajo_minimo}</span>

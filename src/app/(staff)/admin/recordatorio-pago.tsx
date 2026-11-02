@@ -33,7 +33,7 @@ export function RecordatorioPago({ soloLecturaDesde }: { soloLecturaDesde: strin
   return (
     <div role="alertdialog" aria-labelledby="recordatorio-pago-titulo" className="fixed inset-0 z-50 flex items-center justify-center bg-grafito/50 p-4">
       <div className="flex w-full max-w-md flex-col gap-4 rounded-xl bg-white p-6 shadow-lg">
-        <h2 id="recordatorio-pago-titulo" className="text-lg font-bold text-n-900">
+        <h2 id="recordatorio-pago-titulo" className="text-lg font-semibold text-foreground">
           Recordatorio: no pudimos cobrar tu suscripción
         </h2>
         <p className="text-n-800">

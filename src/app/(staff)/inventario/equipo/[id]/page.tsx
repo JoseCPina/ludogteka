@@ -74,8 +74,8 @@ export default async function EquipoPage({ params }: { params: Promise<{ id: str
         hoy={hoy}
       />
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Datos del equipo</h2>
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Datos del equipo</h2>
         {/* La llave vuelve a montar el formulario cuando un mantenimiento
             registrado arriba cambia la fecha: si no, se quedaría con la
             vieja y al guardar la pisaría. */}
@@ -97,14 +97,14 @@ export default async function EquipoPage({ params }: { params: Promise<{ id: str
         />
       </div>
 
-      <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Bitácora</h2>
+      <div className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Bitácora</h2>
         {!eventos || eventos.length === 0 ? (
           <p className="text-sm text-n-600">Todavía no hay cambios registrados.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {eventos.map((e) => (
-              <li key={e.id} className="rounded-md border border-n-200 bg-white px-3 py-2 text-sm">
+              <li key={e.id} className="rounded-md border border-border bg-card px-3 py-2 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-semibold text-n-900">{describir(e)}</span>
                   <span className="text-n-500">
@@ -119,8 +119,8 @@ export default async function EquipoPage({ params }: { params: Promise<{ id: str
       </div>
 
       {puedeEditar && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-          <h2 className="text-lg font-bold text-n-900">Quitar del inventario</h2>
+        <div className="flex flex-col gap-3 border-t border-border pt-6">
+          <h2 className="text-lg font-semibold text-foreground">Quitar del inventario</h2>
           <p className="text-n-600">
             Para lo que se capturó por error. Si el equipo se descompuso o ya no sirve, mejor cambia su estado
             a «Dado de baja»: así queda en la bitácora.

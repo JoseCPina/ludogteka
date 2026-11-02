@@ -48,7 +48,7 @@ function Subir({ etiqueta, esLogo, accion }: { etiqueta: string; esLogo: boolean
       {fotoDemo && (
         <div className="flex flex-col gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={fotoDemo} alt="" className="h-24 w-32 rounded-md border border-n-200 object-cover" />
+          <img src={fotoDemo} alt="" className="h-24 w-32 rounded-md border border-border object-cover" />
           <AvisoDemo texto={AVISO_FOTO_DEMO} />
         </div>
       )}
@@ -126,8 +126,8 @@ export function PerfilForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">Datos</h2>
+      <section className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">Datos</h2>
         <form method="post"
           className="flex flex-col gap-4"
           onSubmit={async (e) => {
@@ -185,14 +185,14 @@ export function PerfilForm({
         </form>
       </section>
 
-      <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">Logo</h2>
+      <section className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">Logo</h2>
         <SubirLogo nombre={nombreNegocio} color={colorNegocio} logoUrl={logoUrl} ancho={logoAncho} alto={logoAlto} />
       </section>
 
-      <section className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
+      <section className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
         <div>
-          <h2 className="text-lg font-bold text-n-900">Fotos del negocio</h2>
+          <h2 className="text-lg font-semibold text-foreground">Fotos del negocio</h2>
           <p className="text-sm text-n-600">Tu local, tu equipo trabajando, perros felices. Al menos 3 para tu página web.</p>
         </div>
         {fotos.length > 0 && (
@@ -200,7 +200,7 @@ export function PerfilForm({
             {fotos.map((f) => (
               <li key={f.id} className="flex flex-col gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={f.url} alt="" className="aspect-[4/3] w-full rounded-md border border-n-200 object-cover" />
+                <img src={f.url} alt="" className="aspect-[4/3] w-full rounded-md border border-border object-cover" />
                 <Button type="button" onClick={async () => {
                     const r = await quitando.ejecutar(() => quitarFoto(f.id));
                     if (r.error) setRes(r);

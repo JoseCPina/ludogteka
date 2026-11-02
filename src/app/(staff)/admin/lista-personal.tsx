@@ -16,7 +16,7 @@ export type PersonaStaff = {
 export function ListaPersonal({ personas, zona }: { personas: PersonaStaff[]; zona: string }) {
   if (personas.length === 0) return <p className="text-sm text-n-600">Todavía no hay personal de recepción ni de estética.</p>;
   return (
-    <ul className="divide-y divide-n-200 rounded-md border border-n-200">
+    <ul className="divide-y divide-border rounded-md border border-border">
       {personas.map((p) => (
         <li key={p.id} className="flex flex-wrap items-baseline justify-between gap-2 px-4 py-3">
           <span className="flex flex-col">

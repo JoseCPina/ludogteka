@@ -141,7 +141,7 @@ export function Suscripcion({
 
   if (cobro.exento) {
     return (
-      <section className="rounded-xl border border-n-200 bg-white p-5 text-n-700">
+      <section className="rounded-xl border border-border bg-white p-5 text-n-700">
         Tu negocio está fuera del cobro de PeluDesk: no hay nada que pagar.
       </section>
     );
@@ -160,11 +160,11 @@ export function Suscripcion({
 
   return (
     // QA N151: contratar y pagar es justo lo que saca al negocio de la solo lectura: nunca se bloquea.
-    <section data-sin-bloqueo className="flex flex-col gap-5 rounded-xl border border-n-200 bg-white p-5">
+    <section data-sin-bloqueo className="flex flex-col gap-5 rounded-xl border border-border bg-white p-5">
       <EstadoActual cobro={cobro} contratado={contratado} fecha={fecha} diasQueQuedan={diasQueQuedan} planes={planes} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-n-900">{tieneSub ? "Cambiar de plan" : "Contratar PeluDesk"}</h2>
+        <h2 className="text-lg font-semibold text-foreground">{tieneSub ? "Cambiar de plan" : "Contratar PeluDesk"}</h2>
         <div role="radiogroup" aria-label="Periodicidad" className="inline-flex rounded-full bg-n-100 p-1 text-sm font-semibold">
           {(["mensual", "anual"] as const).map((p) => (
             <Alternar key={p} type="button" role="radio" aria-checked={sel.periodicidad === p} onClick={() => setSel({ ...sel, periodicidad: p })} className={`rounded-full px-4 py-1.5 ${sel.periodicidad === p ? "bg-white text-n-900 shadow-sm" : "text-n-600"}`}>
@@ -179,7 +179,7 @@ export function Suscripcion({
           const d = conIva(netoDe(p.precio_mensual, sel.periodicidad));
           const escogido = sel.plan === p.clave;
           return (
-            <Alternar key={p.id} type="button" role="radio" aria-checked={escogido} onClick={() => setSel({ ...sel, plan: p.clave })} className={`flex flex-col gap-2 rounded-lg border p-4 text-left ${escogido ? "border-morado ring-2 ring-morado" : "border-n-200 hover:border-n-400"}`}>
+            <Alternar key={p.id} type="button" role="radio" aria-checked={escogido} onClick={() => setSel({ ...sel, plan: p.clave })} className={`flex flex-col gap-2 rounded-lg border p-4 text-left ${escogido ? "border-morado ring-2 ring-morado" : "border-border hover:border-n-400"}`}>
               <span className="flex items-center justify-between gap-2 font-semibold text-n-900">
                 {p.nombre}
                 {tieneSub && contratado?.id === p.id && <span className="rounded-full bg-menta-suave px-2 py-0.5 text-xs text-menta-oscuro">Tu plan</span>}
@@ -198,7 +198,7 @@ export function Suscripcion({
             Tu página web es gratis de por vida: la ganaste completando tu perfil en la prueba.
           </p>
         ) : (
-          <label className="flex items-start gap-3 rounded-lg border border-n-200 p-4">
+          <label className="flex items-start gap-3 rounded-lg border border-border p-4">
             <input type="checkbox" checked={sel.web} onChange={(e) => setSel({ ...sel, web: e.target.checked })} className="mt-1 h-4 w-4 accent-morado" />
             <span className="flex-1">
               <span className="font-semibold text-n-900">{complementoWeb.nombre}</span>
@@ -215,7 +215,7 @@ export function Suscripcion({
       )}
 
       {oferta && (
-        <div className="rounded-lg bg-n-50 p-4 text-sm" aria-live="polite">
+        <div className="rounded-lg bg-muted p-4 text-sm" aria-live="polite">
           <h3 className="mb-2 font-semibold text-n-900">Resumen</h3>
           <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-n-800">
             <dt>
@@ -310,7 +310,7 @@ function EstadoActual({
   const cambio = cobro.cambio_programado;
   const planCambio = cambio?.plan ? planes.find((p) => p.clave === cambio.plan) : null;
   let texto: React.ReactNode = null;
-  let tono = "bg-n-50 text-n-800";
+  let tono = "bg-muted text-n-800";
   switch (cobro.estado) {
     case "prueba":
       texto = cobro.tiene_suscripcion ? (
@@ -371,7 +371,7 @@ function EstadoActual({
   }
   return (
     <div className="flex flex-col gap-2">
-      <h2 className="text-lg font-bold text-n-900">Tu suscripción</h2>
+      <h2 className="text-lg font-semibold text-foreground">Tu suscripción</h2>
       {texto && <p className={`rounded-md px-3 py-2 text-sm ${tono}`}>{texto}</p>}
       {(cobro.estado === "gracia" || cobro.estado === "solo_lectura") && cobro.factura_pendiente_url && (
         <Enlace href={cobro.factura_pendiente_url} className="self-start text-sm">
@@ -379,7 +379,7 @@ function EstadoActual({
         </Enlace>
       )}
       {cambio && (
-        <p className="rounded-md bg-n-50 px-3 py-2 text-sm text-n-800">
+        <p className="rounded-md bg-muted px-3 py-2 text-sm text-n-800">
           Programado: el {fecha(cambio.desde)} pasas al plan <strong>{planCambio?.nombre ?? cambio.plan}</strong> ({cambio.periodicidad}).
         </p>
       )}

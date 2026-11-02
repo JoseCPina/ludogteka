@@ -25,7 +25,7 @@ function SelectorIcono({ valor, onChange, etiquetaTexto }: { valor: string | nul
     <div className="flex items-center gap-2">
       <span
         aria-hidden="true"
-        className="grid h-12 w-12 flex-none place-items-center rounded-md border border-n-200 bg-n-50 p-1.5"
+        className="grid h-12 w-12 flex-none place-items-center rounded-md border border-border bg-muted p-1.5"
         dangerouslySetInnerHTML={{ __html: iconoSvg(valor, { color: "#4b3f72" }) }}
       />
       <select aria-label={etiquetaTexto} value={valor ?? ""} onChange={(e) => onChange(e.target.value || null)} className={campo}>
@@ -90,8 +90,8 @@ function FormConfig({ config, conReporte, coloresMarca }: { config: ConfigReport
   );
 
   return (
-    <form method="post" onSubmit={guardar} className="flex flex-col gap-4 rounded-xl border border-n-200 bg-white p-4 sm:p-5">
-      <h2 className="text-lg font-bold text-n-900">{conReporte ? "Encabezado, colores y retención" : "Retención"}</h2>
+    <form method="post" onSubmit={guardar} className="flex flex-col gap-4 rounded-xl border border-border bg-white p-4 sm:p-5">
+      <h2 className="text-lg font-semibold text-foreground">{conReporte ? "Encabezado, colores y retención" : "Retención"}</h2>
       {conReporte && (
         <>
           <label className={etiqueta}>
@@ -177,7 +177,7 @@ function FormSeccion({ s, indice, total }: { s: SeccionPlantilla; indice: number
 
   const conOpciones = d.presentacion !== "texto";
   return (
-    <section className={`rounded-xl border bg-white ${d.activa ? "border-n-200" : "border-n-200 opacity-80"}`}>
+    <section className={`rounded-xl border bg-white ${d.activa ? "border-border" : "border-border opacity-80"}`}>
       <div className="flex flex-wrap items-center gap-2 p-3 sm:p-4">
         <Alternar type="button" onClick={() => setAbierta((v) => !v)} aria-expanded={abierta} className="flex min-h-12 min-w-0 flex-1 items-center gap-3 text-left focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado">
           <span aria-hidden="true" className="text-n-500">
@@ -194,7 +194,7 @@ function FormSeccion({ s, indice, total }: { s: SeccionPlantilla; indice: number
         </Button>
       </div>
       {abierta && (
-        <form method="post" onSubmit={guardar} className="flex flex-col gap-4 border-t border-n-200 p-3 sm:p-4">
+        <form method="post" onSubmit={guardar} className="flex flex-col gap-4 border-t border-border p-3 sm:p-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={etiqueta}>
               Nombre de la sección
@@ -263,10 +263,10 @@ function FormSeccion({ s, indice, total }: { s: SeccionPlantilla; indice: number
 
           {conOpciones && (
             <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-n-600">Opciones</h3>
+              <h3 className="text-[0.9375rem] font-semibold text-foreground">Opciones</h3>
               <ul className="flex flex-col gap-2.5">
                 {d.opciones.map((o, i) => (
-                  <li key={o.id ?? `nueva-${i}`} className={`flex flex-col gap-2 rounded-lg border border-n-200 p-2.5 ${o.activa ? "bg-n-50" : "bg-n-100 opacity-75"}`}>
+                  <li key={o.id ?? `nueva-${i}`} className={`flex flex-col gap-2 rounded-lg border border-border p-2.5 ${o.activa ? "bg-muted" : "bg-n-100 opacity-75"}`}>
                     <div className="flex flex-wrap items-center gap-2">
                       <input
                         aria-label="Texto de la opción"
@@ -434,8 +434,8 @@ function VistaPrevia() {
     else setImagen(r.imagen);
   };
   return (
-    <section className="flex flex-col gap-3 rounded-xl border border-n-200 bg-white p-4 sm:p-5">
-      <h2 className="text-lg font-bold text-n-900">Vista previa de la tarjeta</h2>
+    <section className="flex flex-col gap-3 rounded-xl border border-border bg-white p-4 sm:p-5">
+      <h2 className="text-lg font-semibold text-foreground">Vista previa de la tarjeta</h2>
       <p className="text-sm text-n-600">Con datos de ejemplo y lo que ya guardaste (guarda primero y vuelve a verla).</p>
       <AccionesFormulario error={error}>
         <Button type="button" variante="secundario" onClick={ver} cargando={envio.cargando}>
@@ -443,7 +443,7 @@ function VistaPrevia() {
         </Button>
       </AccionesFormulario>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      {imagen && <img src={imagen} alt="Vista previa de la tarjeta del reporte" className="w-full max-w-md rounded-xl border border-n-200" />}
+      {imagen && <img src={imagen} alt="Vista previa de la tarjeta del reporte" className="w-full max-w-md rounded-xl border border-border" />}
     </section>
   );
 }
@@ -466,7 +466,7 @@ export function EditorPlantilla({
         <>
           <section className="flex flex-col gap-3" aria-label="Secciones">
             <div>
-              <h2 className="text-lg font-bold text-n-900">Secciones y opciones</h2>
+              <h2 className="text-lg font-semibold text-foreground">Secciones y opciones</h2>
               <p className="text-sm text-n-600">
                 Lo que cambies aquí vale para los reportes nuevos; los que ya guardaste se quedan como estaban. Apaga lo que no uses en vez de borrarlo.
               </p>

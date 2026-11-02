@@ -59,7 +59,7 @@ export default async function AusenciasPage() {
       <SubnavEmpleados activa="ausencias" puedeNomina={puedeNomina} ausenciasPorAprobar={(porAprobar ?? []).length} />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Por aprobar</h2>
+        <h2 className="text-lg font-semibold text-foreground">Por aprobar</h2>
         <ListaAusencias zona={zona}
           ausencias={(porAprobar ?? []) as unknown as Ausencia[]}
           esAdmin={esAdmin}
@@ -70,8 +70,8 @@ export default async function AusenciasPage() {
       </section>
 
       {porQuienPuedePedir.length > 0 && (
-        <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
-          <h2 className="text-lg font-bold text-n-900">Pedir una ausencia por alguien</h2>
+        <section className="flex flex-col gap-3 border-t border-border pt-6">
+          <h2 className="text-lg font-semibold text-foreground">Pedir una ausencia por alguien</h2>
           <p className="text-sm text-n-600">
             {esAdmin ? "Para cualquier empleado." : "Para quien no tiene cuenta en la app; quien sí la tiene la pide desde Mi asistencia."}
           </p>
@@ -104,8 +104,8 @@ export default async function AusenciasPage() {
         </section>
       )}
 
-      <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Aprobadas y resueltas</h2>
+      <section className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Aprobadas y resueltas</h2>
         <ListaAusencias zona={zona}
           ausencias={(resto ?? []) as unknown as Ausencia[]}
           citasPorAusencia={citasPorAusencia}

@@ -32,8 +32,8 @@ export function TopeTarjetaManual({ tope }: { tope: number }) {
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4" data-tope-tarjeta-manual>
-      <h2 className="text-lg font-bold text-n-900">Tarjeta registrada a mano</h2>
+    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4" data-tope-tarjeta-manual>
+      <h2 className="text-lg font-semibold text-foreground">Tarjeta registrada a mano</h2>
       <p className="text-sm text-n-700">
         Cuando la terminal vinculada no se puede usar, tu equipo registra el cobro con «Tarjeta (registro manual)» y el folio del voucher. Cuenta como pagado, pero
         queda sin verificar hasta que lo revises en Caja → Conciliación. Un cobro arriba de este tope se registra igual y sube a «Necesita atención».

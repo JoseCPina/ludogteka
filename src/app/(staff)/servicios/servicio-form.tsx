@@ -127,7 +127,7 @@ export function ServicioForm({
         <p className="mb-2 text-sm font-semibold text-n-800">
           Dimensiones de precio — determinan cuántas celdas tiene la matriz de tarifas
         </p>
-        <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3">
+        <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-border bg-white p-3">
           <label className="flex flex-col gap-1 text-n-900">
             <span className="flex items-center gap-2">
               <input
@@ -179,7 +179,7 @@ export function ServicioForm({
       </div>
 
       {esCargo && (
-        <label className="flex flex-col gap-1 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
+        <label className="flex flex-col gap-1 rounded-md border-[1.5px] border-border bg-white p-3 text-n-900">
           <span className="flex items-center gap-2">
             <input
               type="checkbox"

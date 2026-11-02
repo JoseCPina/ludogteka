@@ -58,7 +58,7 @@ export function ListaAusencias({
         const horas = a.hora_desde ? `, de ${a.hora_desde.slice(0, 5)} a ${(a.hora_hasta ?? "").slice(0, 5)}` : "";
         const rango = a.desde === a.hasta ? `${formatearFechaCalendario(a.desde)}${horas}` : `${formatearFechaCalendario(a.desde)} al ${formatearFechaCalendario(a.hasta)}`;
         return (
-          <li key={a.id} className="flex flex-col gap-2 rounded-md border border-n-200 bg-white p-3">
+          <li key={a.id} className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
                 <p className="font-semibold text-n-900">

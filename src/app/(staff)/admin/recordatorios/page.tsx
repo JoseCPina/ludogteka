@@ -43,7 +43,7 @@ export default async function RecordatoriosAjustesPage() {
         }}
         modulos={modulos}
       />
-      <section className="rounded-xl border border-n-200 bg-white p-4 text-sm text-n-700">
+      <section className="rounded-xl border border-border bg-white p-4 text-sm text-n-700">
         <h2 className="font-semibold text-n-900">Consentimiento y costo</h2>
         <ul className="mt-2 list-disc space-y-1 pl-5">
           <li>

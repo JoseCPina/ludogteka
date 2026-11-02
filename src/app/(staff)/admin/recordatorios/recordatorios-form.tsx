@@ -42,7 +42,7 @@ export function RecordatoriosForm({ inicial, modulos }: { inicial: AjustesRecord
           {error}
         </Alert>
       )}
-      <fieldset className="flex flex-col gap-3 rounded-xl border border-n-200 bg-white p-4">
+      <fieldset className="flex flex-col gap-3 rounded-xl border border-border bg-white p-4">
         <legend className="px-1 text-sm font-semibold text-n-900">Qué sale solo</legend>
         {TIPOS.map((t) => {
           const aplica = t.modulos.some((m) => modulos.includes(m));
@@ -65,7 +65,7 @@ export function RecordatoriosForm({ inicial, modulos }: { inicial: AjustesRecord
           );
         })}
       </fieldset>
-      <label className="flex flex-col gap-1 rounded-xl border border-n-200 bg-white p-4">
+      <label className="flex flex-col gap-1 rounded-xl border border-border bg-white p-4">
         <span className="text-sm font-semibold text-n-900">Hora de envío del día anterior</span>
         <input
           type="time"

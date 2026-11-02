@@ -41,7 +41,7 @@ export function CasillasPermisos({ profileId, activos }: { profileId: string; ac
             <li key={p.clave}>
               <label
                 className={`flex h-full items-start gap-3 rounded-md border-[1.5px] p-3 ${
-                  activo ? "border-morado bg-morado-suave" : "border-n-200 bg-white"
+                  activo ? "border-morado bg-morado-suave" : "border-border bg-white"
                 }`}
               >
                 <input

@@ -169,7 +169,7 @@ export function MovimientosInsumo({
       )}
 
       {formularioAbierto === "entrada" && (
-        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-border bg-muted p-4">
           <Select
             label="Proveedor (opcional)"
             value={proveedorId}
@@ -224,7 +224,7 @@ export function MovimientosInsumo({
       )}
 
       {formularioAbierto === "salida" && (
-        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-border bg-muted p-4">
           <Select label="Tipo" value={tipoSalida} onChange={(e) => setTipoSalida(e.target.value as "consumo" | "merma")} disabled={enviando.cargando}>
             <option value="consumo">Consumo</option>
             <option value="merma">Merma</option>
@@ -256,7 +256,7 @@ export function MovimientosInsumo({
       )}
 
       {formularioAbierto === "ajuste" && (
-        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+        <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-border bg-muted p-4">
           <Select
             label="Sentido"
             value={sentidoAjuste}
@@ -294,7 +294,7 @@ export function MovimientosInsumo({
           {movimientos.map((m) => {
             const cantidadMostrada = m.cantidad_base / equivalenciaConsumo;
             return (
-              <li key={m.id} className="rounded-md border border-n-200 bg-white px-3 py-2 text-sm">
+              <li key={m.id} className="rounded-md border border-border bg-card px-3 py-2 text-sm">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ESTILO_TIPO[m.tipo]}`}>

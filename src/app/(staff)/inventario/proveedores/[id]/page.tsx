@@ -53,8 +53,8 @@ export default async function EditarProveedorPage({ params }: { params: Promise<
       />
 
       {!proveedor.deleted_at && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-          <h2 className="text-lg font-bold text-n-900">Dar de baja</h2>
+        <div className="flex flex-col gap-3 border-t border-border pt-6">
+          <h2 className="text-lg font-semibold text-foreground">Dar de baja</h2>
           <BajaServicioBoton accion={bajaConId} nombre={proveedor.nombre} />
         </div>
       )}

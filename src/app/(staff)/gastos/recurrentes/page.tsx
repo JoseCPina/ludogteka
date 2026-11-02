@@ -61,7 +61,7 @@ export default async function RecurrentesPage() {
       ) : (
         <ul className="flex flex-col gap-2">
           {lista.map((r) => (
-            <li key={r.id} className={`flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-3 ${r.activo ? "" : "opacity-60"}`}>
+            <li key={r.id} className={`flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-3 ${r.activo ? "" : "opacity-60"}`}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-semibold text-n-900">
@@ -92,8 +92,8 @@ export default async function RecurrentesPage() {
         </ul>
       )}
 
-      <section className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Nuevo gasto recurrente</h2>
+      <section className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Nuevo gasto recurrente</h2>
         <FormularioAccion accion={crearRecurrente} textoBoton="Guardar" reiniciar>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Concepto" name="concepto" required placeholder="Renta del local, internet, luz (CFE)…" />
