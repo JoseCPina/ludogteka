@@ -7,5 +7,5 @@ import "./app-duenos.css";
 export const viewport: Viewport = { themeColor: "#fff8ee", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export default function AppDuenosLayout({ children }: { children: React.ReactNode }) {
-  return <div className="apd flex min-h-full flex-1 flex-col">{children}</div>;
+  return <div data-lenguaje="calido" className="apd flex min-h-full flex-1 flex-col">{children}</div>;
 }

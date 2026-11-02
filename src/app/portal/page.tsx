@@ -129,8 +129,8 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
 
       {politicas.length > 0 && (
         <section data-politicas-portal>
-          <h2 className="mb-2 text-lg font-bold text-n-900">Reglas de la casa</h2>
-          <ul className="flex flex-col gap-1 rounded-lg border border-n-200 bg-white p-4 text-sm text-n-800">
+          <h2 className="mb-2 text-lg font-semibold text-foreground">Reglas de la casa</h2>
+          <ul className="flex flex-col gap-1 rounded-lg border border-border bg-card shadow-tarjeta p-4 text-sm text-n-800">
             {politicas.map((p) => (
               <li key={p.clave} data-politica={p.clave}>
                 {p.texto}
@@ -147,7 +147,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
       </Link>
 
       <div>
-        <h2 className="mb-4 text-lg font-bold text-n-900">{vocabularioMascota({ conVet: usaVeterinaria(sesion.modulos ?? []) }).tus.replace(/^t/, "T")}</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">{vocabularioMascota({ conVet: usaVeterinaria(sesion.modulos ?? []) }).tus.replace(/^t/, "T")}</h2>
 
         {!perros || perros.length === 0 ? (
           <div className="rounded-lg border-[1.5px] border-dashed border-n-300 bg-white p-8 text-center">
@@ -161,7 +161,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
                 <li key={perro.id}>
                   <Link
                     href={`/portal/perros/${perro.id}`}
-                    className="flex items-center gap-3 rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 hover:border-morado"
+                    className="flex items-center gap-3 rounded-md border-[1.5px] border-border bg-white px-4 py-3 hover:border-morado"
                   >
                     <PerroFoto
                       perroId={perro.id}
@@ -190,12 +190,12 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
       </div>
       {retiradas.length > 0 && (
         <div data-mascotas-retiradas>
-          <h2 className="mb-2 text-lg font-bold text-n-900">{vocabularioMascota({ conVet: usaVeterinaria(sesion.modulos ?? []) }).Plural} que ya no vienen</h2>
+          <h2 className="mb-2 text-lg font-semibold text-foreground">{vocabularioMascota({ conVet: usaVeterinaria(sesion.modulos ?? []) }).Plural} que ya no vienen</h2>
           <p className="mb-3 text-sm text-n-600">Su historial se conserva y puedes abrirlo cuando quieras.</p>
           <ul className="flex flex-col gap-2">
             {retiradas.map((perro) => (
               <li key={perro.id}>
-                <Link href={`/portal/perros/${perro.id}`} className="flex items-center gap-3 rounded-md border-[1.5px] border-n-200 bg-n-50 px-4 py-3 hover:border-morado">
+                <Link href={`/portal/perros/${perro.id}`} className="flex items-center gap-3 rounded-md border-[1.5px] border-border bg-muted px-4 py-3 hover:border-morado">
                   <PerroFoto perroId={perro.id} urlInicial={urlsFotos.get(perro.id) ?? null} tieneFotoInicial={Boolean(perro.foto_path)} soloLectura tamano="miniatura" />
                   <span className="font-semibold text-n-900">{perro.nombre}</span>
                   <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">{perro.fallecido ? "Falleció" : nombreMotivoBaja(perro.baja_motivo)}</span>
@@ -208,7 +208,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
       {cuantasFacturas > 0 && (
         <Link
           href="/portal/facturas"
-          className="flex items-center justify-between rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 font-semibold text-n-900 hover:border-morado"
+          className="flex items-center justify-between rounded-md border-[1.5px] border-border bg-white px-4 py-3 font-semibold text-n-900 hover:border-morado"
         >
           <span>Mis facturas</span>
           <span className="text-sm font-normal text-n-600">{cuantasFacturas} {cuantasFacturas === 1 ? "factura" : "facturas"} →</span>

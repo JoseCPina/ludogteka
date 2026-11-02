@@ -77,7 +77,7 @@ export function ProponerComprobante({
   }
 
   return (
-    <div className="mt-2 flex flex-col gap-3 rounded-md border-[1.5px] border-n-200 bg-white p-3">
+    <div className="mt-2 flex flex-col gap-3 rounded-md border-[1.5px] border-border bg-white p-3">
       <p className="text-sm text-n-700">
         <strong>{etiqueta}.</strong> Toma una foto clara del carnet o del comprobante donde se vea la
         fecha, o sube su PDF. Recepción lo revisa y, si todo cuadra, queda registrado.

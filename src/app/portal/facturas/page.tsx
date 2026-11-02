@@ -25,13 +25,13 @@ export default async function MisFacturasPage() {
         <h1 className="mt-1 text-2xl font-bold text-n-900">Mis facturas</h1>
       </div>
       {facturas.length === 0 ? (
-        <p className="rounded-lg border border-n-200 bg-n-50 p-4 text-sm text-n-700">Todavía no tienes facturas. Si necesitas una, pídela en recepción con tus datos fiscales.</p>
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-sm text-n-700">Todavía no tienes facturas. Si necesitas una, pídela en recepción con tus datos fiscales.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {facturas.map((f) => {
             const st = ESTADOS_FACTURA[f.estado] ?? { texto: f.estado, tono: "neutro" as const };
             return (
-              <li key={f.id} className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
+              <li key={f.id} className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-semibold text-n-900">Factura {f.folio || "sin folio"}</p>
                   <Chip tono={st.tono}>{st.texto}</Chip>

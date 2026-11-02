@@ -26,12 +26,12 @@ export function PortalShell({
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-full flex-1 flex-col" data-portal-shell>
+    <div className="flex min-h-full flex-1 flex-col" data-portal-shell data-lenguaje="calido">
       {aviso}
       {/* N102: una sola fila de 56 px, fija arriba, también en el celular: negocio a la izquierda, «Salir» a la
           derecha. El saludo va en el cuerpo. */}
       <header
-        className="sticky top-0 z-30 flex h-14 flex-none items-center justify-between gap-3 border-b border-n-200 bg-white px-4 md:px-8"
+        className="sticky top-0 z-30 flex h-14 flex-none items-center justify-between gap-3 border-b border-border bg-white px-4 md:px-8"
         data-encabezado-portal
       >
         <Link
@@ -50,7 +50,7 @@ export function PortalShell({
       {SECCIONES_PORTAL.length > 0 && (
         <nav
           aria-label="Secciones"
-          className="flex flex-none flex-wrap gap-1 border-b border-n-200 bg-white px-4 md:px-8"
+          className="flex flex-none flex-wrap gap-1 border-b border-border bg-white px-4 md:px-8"
         >
           {SECCIONES_PORTAL.map((item) => {
             const esActivo = pathname === item.href;
@@ -70,7 +70,7 @@ export function PortalShell({
         </nav>
       )}
 
-      <main className="flex-1 bg-n-50 p-4 md:p-8">
+      <main className="flex-1 bg-background p-4 md:p-8">
         {/* La portada ya saluda en su título; las demás pantallas, aquí arriba del contenido. */}
         {nombreCompleto && pathname !== "/portal" && (
           <p className="mb-3 text-sm text-n-600" data-saludo-portal>
@@ -80,7 +80,7 @@ export function PortalShell({
         {children}
       </main>
       {/* «Instalar la app» siempre a la mano, al final del portal (nunca flotando encima de nada). */}
-      <footer className="bg-n-50 px-4 pb-6 md:px-8">
+      <footer className="bg-muted px-4 pb-6 md:px-8">
         <BotonInstalar className="max-w-xs" />
       </footer>
     </div>

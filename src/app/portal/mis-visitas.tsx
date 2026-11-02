@@ -133,7 +133,7 @@ export async function MisVisitas({ supabase, hoy, comoSeAgenda }: { supabase: Su
   return (
     <section className="flex flex-col gap-5">
       <div>
-        <h2 className="text-lg font-bold text-n-900">Citas y reservas</h2>
+        <h2 className="text-lg font-semibold text-foreground">Citas y reservas</h2>
         {/* Cómo se agenda lo redacta el negocio (Políticas y reglas); el
             link a su WhatsApp va aparte, si lo tiene. */}
         {comoSeAgenda && (
@@ -165,7 +165,7 @@ export async function MisVisitas({ supabase, hoy, comoSeAgenda }: { supabase: Su
                 No tienes citas ni reservas próximas.
               </p>
             ) : (
-              <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+              <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
                 {proximas.slice(0, MAX_PROXIMAS).map((v) => (
                   <Fila key={v.id} v={v} zona={zona} />
                 ))}
@@ -181,7 +181,7 @@ export async function MisVisitas({ supabase, hoy, comoSeAgenda }: { supabase: Su
           {historial.length > 0 && (
             <div>
               <h3 className="mb-2 font-bold text-n-800">Historial</h3>
-              <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+              <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
                 {historial.slice(0, MAX_HISTORIAL).map((v) => (
                   <Fila key={v.id} v={v} zona={zona} enHistorial />
                 ))}

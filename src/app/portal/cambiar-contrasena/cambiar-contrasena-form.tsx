@@ -15,7 +15,7 @@ export function CambiarContrasenaForm({ obligatorio }: { obligatorio: boolean })
   const [estado, formAction, enviando] = useActionState(useAccionConTope(cambiarMiContrasena), ESTADO_INICIAL);
 
   return (
-    <div className="max-w-lg rounded-lg border border-n-200 bg-white p-5">
+    <div className="max-w-lg rounded-lg border border-border bg-card shadow-tarjeta p-5">
       <form action={formAction} className="flex flex-col gap-4" data-modo-cambio={obligatorio ? "obligatorio" : "voluntario"}>
         {estado.error && (
           <Alert variante="error" titulo="No se pudo cambiar">

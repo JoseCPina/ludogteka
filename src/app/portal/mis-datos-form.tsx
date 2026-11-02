@@ -26,8 +26,8 @@ export function MisDatosForm({
   const [estado, formAction, enviando] = useActionState(useAccionConTope(actualizarMisDatos), ESTADO_INICIAL);
 
   return (
-    <div className="max-w-lg rounded-lg border border-n-200 bg-white p-5">
-      <h2 className="mb-1 text-lg font-bold text-n-900">Tus datos</h2>
+    <div className="max-w-lg rounded-lg border border-border bg-card shadow-tarjeta p-5">
+      <h2 className="mb-1 text-lg font-semibold text-foreground">Tus datos</h2>
       <p className="mb-4 text-sm text-n-600">
         Tu nombre lo maneja recepción — si está mal, avísales directamente.
       </p>
@@ -42,7 +42,7 @@ export function MisDatosForm({
 
         <div>
           <p className="mb-1.5 text-sm font-semibold text-n-800">Nombre</p>
-          <p className="flex min-h-12 items-center rounded-md border-[1.5px] border-n-200 bg-n-50 px-3.5 text-n-600">
+          <p className="flex min-h-12 items-center rounded-md border-[1.5px] border-border bg-muted px-3.5 text-n-600">
             {nombre}
           </p>
         </div>
@@ -66,7 +66,7 @@ export function MisDatosForm({
         />
 
         <input type="hidden" name="recordatorios_whatsapp_presente" value="1" />
-        <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900" data-consentimiento-recordatorios>
+        <label className="flex items-start gap-2 rounded-md border-[1.5px] border-border bg-white p-3 text-n-900" data-consentimiento-recordatorios>
           <input type="checkbox" name="recordatorios_whatsapp" value="si" defaultChecked={recordatorios} disabled={enviando} className="mt-1 h-4 w-4" />
           <span>
             Quiero recibir recordatorios por WhatsApp

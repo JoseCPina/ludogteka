@@ -259,7 +259,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         tamano="grande"
       />
 
-      <div className="grid max-w-lg grid-cols-2 gap-4 rounded-lg border border-n-200 bg-white p-4">
+      <div className="grid max-w-lg grid-cols-2 gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-n-600">Raza</p>
           <p className="text-n-900">{perro.raza ?? "—"}</p>
@@ -323,7 +323,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
 
       {(sesion?.modulos ?? []).some((m) => m === "guarderia" || m === "hotel") && (
       <div className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Estado de salud</h2>
+        <h2 className="text-lg font-semibold text-foreground">Estado de salud</h2>
         {aplicanRequisitosDe({ modulos: sesion.modulos ?? [], usaGuarderiaHotel: Boolean(usaGuarderiaHotel), tieneCitasEstetica: serviciosQueUsa.includes("estética") }) && (
           <ResumenSanitario items={(estadoSanitario as EstadoRequisitoItem[]) ?? []} tamano="grande" />
         )}
@@ -350,7 +350,7 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
 
       {esPropio && contratos.length > 0 && (sesion?.modulos ?? []).includes("contratos") && (
         <div className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">
+          <h2 className="text-lg font-semibold text-foreground">
             {contratos.length === 1 ? "Contrato" : "Contratos"}
           </h2>
           {contratos.map((contrato) => (
@@ -366,20 +366,20 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
       )}
 
       <div className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Bitácora</h2>
+        <h2 className="text-lg font-semibold text-foreground">Bitácora</h2>
         <BitacoraCliente zona={zona} entradas={entradasBitacora} mascota={v} />
       </div>
 
       {medicamentos.length > 0 && (
         <div className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">Medicamentos</h2>
+          <h2 className="text-lg font-semibold text-foreground">Medicamentos</h2>
           <MedicamentosCliente zona={zona} medicamentos={medicamentos} mascota={v} />
         </div>
       )}
 
       {alergias && alergias.length > 0 && (
         <div className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">Alergias</h2>
+          <h2 className="text-lg font-semibold text-foreground">Alergias</h2>
           <ul className="flex flex-col gap-2">
             {alergias.map((a) => (
               <li
@@ -403,8 +403,8 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Tus datos</h2>
+      <div className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Tus datos</h2>
         {esPropio ? (
           <MiPerroForm
             perroId={id}
