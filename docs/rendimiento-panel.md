@@ -114,3 +114,20 @@ Los índices de todo lo que `cuentas_abiertas` recorre ya existen (se revisaron 
 - `tiempo-panel-dev.mjs`: topes de consultas bajados a lo que queda: /recepcion 61 (era 64), /admin 77 (era 81), /hotel 20 y /estetica 19 igual. La primera corrida en la laptop confirma el conteo exacto (si queda abajo, se baja a lo que quedó + 2).
 
 **Esperado después (servidor, producción):** /admin completo ≈ 500–600 ms (el tablero ya no espera a la página: −300–400 ms; menos dos viajes de saldos: −40 ms); /recepcion ≈ 450–550 ms (−2 viajes de saldos, −1 de videos; la tanda principal la sigue limitando `cuentas_abiertas` ~85 ms). Si /recepcion sigue arriba de 600 ms en la laptop o en producción, lo siguiente es `cuentas_abiertas`: acotar la segunda rama de `candidatas` (reservas creadas en la ventana sin estancia ni cita) con un índice parcial por `negocio_id, created_at` que excluya las ya canceladas, o una vista materializada por hora; ninguna de las dos es caché de pantalla.
+
+## Producción después de la segunda vuelta (1 de noviembre de 2026, laptop, PR #225)
+
+Medido con `tiempo-panel-prod.mjs --muestras 6` justo después de desplegar (mediana; TTFB y total desde la laptop, ~90–105 ms de red incluidos). Topes de `tiempo-panel-dev.mjs` confirmados en la laptop: /admin **65** consultas (tope 67), /recepcion **49** (tope 51).
+
+| Negocio · rol · pantalla | Antes (después del PR #221) | Después (PR #225) |
+|---|---|---|
+| patitasyco · admin · /admin | 934 ms encabezados · **1,251 ms** completo | 790 ms encabezados · **977 ms** completo |
+| ludogteka · admin · /admin | 626 ms encabezados · **1,088 ms** completo | 702 ms encabezados · **889 ms** completo |
+| patitasyco · admin · /recepcion | 802 ms | 698 ms encabezados · 828 ms completo |
+| ludogteka · admin · /recepcion | 699–702 ms | 608 ms encabezados · 987 ms completo |
+| patitasyco · recepción · /recepcion | — | 826 ms encabezados · 861 ms completo |
+| ludogteka · recepción · /recepcion | — | 711 ms encabezados · 752 ms completo |
+| /hotel (los dos) | 528–550 ms | 464–599 ms |
+| /estetica (los dos) | 553–614 ms | 508–636 ms |
+
+**Lectura:** /admin completo bajó 200–270 ms en los dos negocios (el tablero ya no espera a la página). Sin la red (~100 ms) /admin queda en ≈ 790–880 ms y /recepcion en ≈ 510–730 ms: **la meta de 600 ms todavía no se cumple en /admin ni en /recepcion**. El encabezado de /admin en Ludogteka no bajó (626 → 702 ms, dentro de la variación entre corridas en frío y caliente); lo que manda ahí es lo que espera el layout antes de pintar. Lo siguiente sigue siendo lo de arriba (`cuentas_abiertas`) y medir qué espera el layout del personal antes del primer byte.
