@@ -221,7 +221,7 @@ export function BonosCliente({
             <p className="text-sm font-bold text-n-800">{nombrePerro}</p>
             <ul className="flex flex-col gap-2">
               {lista.map((b) => (
-                <li key={b.id} className="rounded-md border border-n-200 bg-white px-4 py-3">
+                <li key={b.id} className="rounded-md border border-border bg-card px-4 py-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-semibold text-n-900">{b.servicio_nombre}</p>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ESTILO_ESTADO[b.estado] ?? "bg-n-100"}`}>
@@ -262,7 +262,7 @@ export function BonosCliente({
           </Button>
         </AccionesFormulario>
       ) : (
-        <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <Select label={vm.Nombre} value={perroId} onChange={(e) => setPerroId(e.target.value)}>
             {perros.length > 1 && <option value="">Escoge {vm.el}…</option>}
             {perros.map((p) => (
@@ -347,7 +347,7 @@ export function BonosCliente({
           </Button>
 
           {puedeAjustar && (
-            <div className="flex flex-col gap-2 rounded-md border border-n-200 bg-white p-3">
+            <div className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
               <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-n-800">
                 <input
                   type="checkbox"

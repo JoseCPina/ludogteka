@@ -39,9 +39,9 @@ export function GruposDeRaza({
   return (
     <ul className="flex flex-col gap-3">
       {razas.map((r) => (
-        <li key={r.id} className="rounded-lg border border-n-200 bg-white p-4">
+        <li key={r.id} className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <p className="text-lg font-bold text-n-900">{r.nombre}</p>
+            <p className="text-lg font-semibold text-foreground">{r.nombre}</p>
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-semibold text-n-700">{r.perros === 1 ? "1 perro" : `${r.perros} perros`}</span>
               <Antiguedad

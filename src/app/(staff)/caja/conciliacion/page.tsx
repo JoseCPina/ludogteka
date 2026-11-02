@@ -102,7 +102,7 @@ export default async function ConciliacionPage() {
 
       {(porConfirmar ?? []).length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Por confirmar</h2>
+          <h2 className="text-[0.9375rem] font-semibold text-foreground">Por confirmar</h2>
           <ul className="flex flex-col gap-2">
             {(porConfirmar ?? []).map((o) => (
               <li key={o.id as string} className="rounded-md border border-ambar bg-ambar-suave px-3 py-2 text-sm">
@@ -122,7 +122,7 @@ export default async function ConciliacionPage() {
 
       {esAdmin && (
         <section className="flex flex-col gap-2" data-tarjetas-manuales>
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Tarjetas manuales por revisar</h2>
+          <h2 className="text-[0.9375rem] font-semibold text-foreground">Tarjetas manuales por revisar</h2>
           <p className="text-sm text-n-600">
             Cobros que se registraron con «{ETIQUETA_TARJETA_MANUAL}» (la terminal vinculada no se pudo usar). Cuentan como pagados, pero no los verificó ningún
             proveedor: contrástalos con el voucher y el estado de cuenta, del más viejo al más nuevo.
@@ -177,7 +177,7 @@ export default async function ConciliacionPage() {
       )}
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Diferencias</h2>
+        <h2 className="text-[0.9375rem] font-semibold text-foreground">Diferencias</h2>
         {filas.length === 0 ? (
           <p className="text-sm text-n-600">Todo cuadra: no hay diferencias abiertas.</p>
         ) : (
@@ -186,7 +186,7 @@ export default async function ConciliacionPage() {
               const dias = diasDesde(f.detectada_at, hoy, zona);
               const reserva = f.cobro_id ? reservaDe.get(f.cobro_id) : null;
               return (
-                <li key={f.id} data-conciliacion className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
+                <li key={f.id} data-conciliacion className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
                   <p className="font-semibold text-n-900">
                     {f.tipo === "cobro_sin_pago" ? "Cobrado en la app, sin pago aprobado en Mercado Pago" : "Pago aprobado en Mercado Pago, sin cobro en la caja"} · ${Number(f.monto).toFixed(2)}
                     <Antiguedad dias={dias} />
@@ -221,7 +221,7 @@ export default async function ConciliacionPage() {
 
       {mostrarAjenos === true && (
         <section className="flex flex-col gap-2" data-pagos-ajenos>
-          <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Otros pagos de tu cuenta (informativo)</h2>
+          <h2 className="text-[0.9375rem] font-semibold text-foreground">Otros pagos de tu cuenta (informativo)</h2>
           <p className="text-sm text-n-600">
             Pagos aprobados en tu cuenta de Mercado Pago que no se cobraron desde PeluDesk (otra tienda, una transferencia, otra terminal…). No son alertas ni
             cuentan en «Necesita atención». Apaga esta lista en Cobro con terminal.
@@ -231,7 +231,7 @@ export default async function ConciliacionPage() {
           ) : (
             <ul className="flex flex-col gap-2">
               {ajenos.map((f) => (
-                <li key={f.id} data-pago-ajeno className="flex flex-col gap-1 rounded-lg border border-n-200 bg-n-50 p-3">
+                <li key={f.id} data-pago-ajeno className="flex flex-col gap-1 rounded-lg border border-border bg-card shadow-tarjeta p-3">
                   <p className="font-semibold text-n-900">${Number(f.monto).toFixed(2)}{f.mp_pago_id ? ` · pago ${f.mp_pago_id}` : ""}</p>
                   <p className="text-sm text-n-700">{formatearFecha(f.ocurrio_at, zona)} {horaLocalDeInstante(f.ocurrio_at, zona)}</p>
                   {esAdmin && <DarPorRevisada id={f.id} />}

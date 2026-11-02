@@ -95,12 +95,12 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
         </Alert>
       )}
 
-      <article className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
+      <article className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
         <LogoNegocio nombre={negocio.nombre} marca={negocio.marca} variante="recibo" />
         <header className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <p className="text-xs uppercase tracking-wide text-n-500">Recibo</p>
-            <p className="text-lg font-bold text-n-900">{d.recibo}</p>
+            <p className="text-lg font-semibold text-foreground">{d.recibo}</p>
           </div>
           <p className="text-sm text-n-600">{formatearFecha(d.fecha, zona)}</p>
         </header>
@@ -110,7 +110,7 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
           <p className="text-sm text-n-600">{ETIQUETA_ORIGEN[d.origen] ?? d.origen}</p>
         </div>
 
-        <ul className="flex flex-col divide-y divide-n-200 border-y border-n-200">
+        <ul className="flex flex-col divide-y divide-border border-y border-border">
           {d.cuentas.map((c) => (
             <li key={c.cobro_id} className="flex flex-wrap items-start justify-between gap-2 py-2">
               <div className="min-w-0">
@@ -135,7 +135,7 @@ export default async function ReciboJuntoPage({ params }: { params: Promise<{ gr
               <span className="font-semibold tabular-nums">{dinero(d.propina)}</span>
             </p>
           )}
-          <p className="flex justify-between border-t border-n-200 pt-1 text-base">
+          <p className="flex justify-between border-t border-border pt-1 text-base">
             <span className="font-bold text-n-900">Pagado</span>
             <span className="font-bold tabular-nums text-n-900">{dinero(d.total + d.propina)}</span>
           </p>

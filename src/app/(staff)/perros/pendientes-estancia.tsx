@@ -226,7 +226,7 @@ function FormularioCaptura({
   const pide = (c: string) => campos.includes(c);
 
   return (
-    <form action={formAction} className="flex flex-col gap-4 rounded-md border border-n-200 bg-white p-4">
+    <form action={formAction} className="flex flex-col gap-4 rounded-md border border-border bg-card p-4">
       <p className="text-sm text-n-600">Solo aparecen los datos que faltan. Lo que dejes vacío sigue pendiente.</p>
 
       {pide("tamano_id") && (

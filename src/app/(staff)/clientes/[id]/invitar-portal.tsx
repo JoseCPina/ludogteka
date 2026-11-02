@@ -40,8 +40,8 @@ export function InvitarPortal({ clienteId, clienteNombre, tieneCuenta }: { clien
   }
 
   return (
-    <div id="invitar-portal" className="flex flex-col gap-3 border-t border-n-200 pt-6">
-      <h2 className="text-lg font-bold text-n-900">Invitar al portal</h2>
+    <div id="invitar-portal" className="flex flex-col gap-3 border-t border-border pt-6">
+      <h2 className="text-lg font-semibold text-foreground">Invitar al portal</h2>
       {cuentaActiva ? (
         <Alert variante="exito" titulo="Este cliente ya tiene cuenta activa">
           {clienteNombre} ya activó su cuenta del portal (el enlace que se mandó ya se usó). Ya no hace falta generar otro; entra con su teléfono y su contraseña.

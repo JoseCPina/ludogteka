@@ -52,7 +52,7 @@ export function VincularFila({
 
   if (seleccionado) {
     return (
-      <div className="flex flex-col gap-3 border-b border-n-200 bg-morado-suave p-4">
+      <div className="flex flex-col gap-3 border-b border-border bg-morado-suave p-4">
         {error && (
           <Alert variante="error" titulo="No se pudo vincular">
             {error}
@@ -79,7 +79,7 @@ export function VincularFila({
 
   if (buscando) {
     return (
-      <div className="flex flex-col gap-3 border-b border-n-200 bg-n-50 p-4">
+      <div className="flex flex-col gap-3 border-b border-border bg-muted p-4">
         <BuscadorClientes
           clientes={clientes}
           etiqueta={`Buscar por ${vocabularioMascota({ conVet: conVetFila }).nombre}, dueño o teléfono para vincular con ${cuenta.email}`}
@@ -96,7 +96,7 @@ export function VincularFila({
   }
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-n-200 px-4 py-3 last:border-b-0">
+    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border px-4 py-3 last:border-b-0">
       <div className="flex flex-col gap-1">
         <p className="font-semibold text-n-900">{cuenta.email}</p>
         <p className="text-sm text-n-600">Registrada el {formatearFecha(cuenta.creado_en, zona)}</p>

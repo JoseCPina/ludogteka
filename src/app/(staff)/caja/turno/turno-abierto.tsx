@@ -303,7 +303,7 @@ export function TurnoAbierto({
         </Alert>
       )}
 
-      <div className="rounded-lg border border-n-200 bg-white p-5">
+      <div className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
         <p className="font-semibold text-n-900">Turno abierto</p>
         <p className="text-sm text-n-600">
           Abrió {abiertoPorNombre} el {formatearFecha(abiertoEn, zona)} · Fondo inicial {dinero(fondoInicial)}
@@ -339,7 +339,7 @@ export function TurnoAbierto({
       ) : null}
 
       {registrandoRetiro && !cerrando && (
-        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+        <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <div className="w-32">
             <Field
               label="Monto"
@@ -365,7 +365,7 @@ export function TurnoAbierto({
       )}
 
       {agregandoEfectivo && !cerrando && (
-        <div data-form-efectivo className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+        <div data-form-efectivo className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <p className="text-sm text-n-700">
             Efectivo que entra al cajón sin ser una venta: se acabó el cambio, se pidió prestado a otra caja o el dueño aportó. Cuenta en el efectivo esperado del
             corte y no aparece como ingreso en los reportes de ventas.
@@ -394,7 +394,7 @@ export function TurnoAbierto({
 
       {(ingresos.length > 0 || puedeAgregarEfectivo) && (
         <div className="flex flex-col gap-2" data-efectivo-agregado>
-          <p className="text-sm font-bold uppercase tracking-wide text-n-600">
+          <p className="text-[0.9375rem] font-semibold text-foreground">
             Efectivo agregado a este turno {ingresos.length > 0 ? `— total ${dinero(totalEfectivoAgregado)}` : ""}
           </p>
           {ingresos.length === 0 ? (
@@ -402,7 +402,7 @@ export function TurnoAbierto({
           ) : (
             <ul className="flex flex-col gap-1">
               {ingresos.map((r) => (
-                <li key={r.id} data-ingreso={r.cancelado ? "cancelado" : "vivo"} className={`flex flex-col gap-2 rounded-md border border-n-200 bg-white px-3 py-2 text-sm ${r.cancelado ? "opacity-70" : ""}`}>
+                <li key={r.id} data-ingreso={r.cancelado ? "cancelado" : "vivo"} className={`flex flex-col gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm ${r.cancelado ? "opacity-70" : ""}`}>
                   <div className="flex justify-between gap-3">
                     <span className={`text-n-700 ${r.cancelado ? "line-through" : ""}`}>
                       <span className="mr-2 rounded-full bg-n-100 px-2 py-0.5 text-xs font-bold text-n-700" data-motivo-efectivo>{ETIQUETA_ORIGEN_EFECTIVO[r.origen] ?? r.origen}</span>
@@ -442,7 +442,7 @@ export function TurnoAbierto({
       )}
 
       <div className="flex flex-col gap-2">
-        <p className="text-sm font-bold uppercase tracking-wide text-n-600">
+        <p className="text-[0.9375rem] font-semibold text-foreground">
           Retiros de este turno {retiros.length > 0 ? `— total ${dinero(totalRetiros)}` : ""}
         </p>
         {retiros.length === 0 ? (
@@ -453,7 +453,7 @@ export function TurnoAbierto({
               <li
                 key={r.id}
                 data-retiro={r.cancelado ? "cancelado" : "vivo"}
-                className={`flex flex-col gap-2 rounded-md border border-n-200 bg-white px-3 py-2 text-sm ${r.cancelado ? "opacity-70" : ""}`}
+                className={`flex flex-col gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm ${r.cancelado ? "opacity-70" : ""}`}
               >
                 <div className="flex justify-between gap-3">
                   <span className={`text-n-700 ${r.cancelado ? "line-through" : ""}`}>

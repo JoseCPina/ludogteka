@@ -47,7 +47,7 @@ export function AlertasManejo({
       )}
 
       {disponibles.length > 0 && (
-        <form action={formAction} className="flex max-w-md flex-col gap-3 border-t border-n-200 pt-4">
+        <form action={formAction} className="flex max-w-md flex-col gap-3 border-t border-border pt-4">
           {estado.error && (
             <Alert variante="error" titulo="No se pudo guardar">
               {estado.error}

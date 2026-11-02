@@ -481,7 +481,7 @@ export default async function PerroPage({
         return aplicanRequisitos ? (
           panel
         ) : (
-          <details data-pendientes-solo-estetica className="rounded-md border border-n-200 bg-white px-4 py-3">
+          <details data-pendientes-solo-estetica className="rounded-md border border-border bg-card px-4 py-3">
             <summary className="cursor-pointer text-sm font-semibold text-n-700">
               Solo viene a estética. Si algún día va a guardería u hotel, esto es lo que le faltaría
             </summary>
@@ -562,8 +562,8 @@ export default async function PerroPage({
 
       {estanciasAplican && (
       <>
-      <div id="requisitos-estancia" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Requisitos para guardería y hotel</h2>
+      <div id="requisitos-estancia" className="flex scroll-mt-6 flex-col gap-4 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Requisitos para guardería y hotel</h2>
         <RequisitosEstancia
           perroId={id}
           clienteId={perro.cliente_id ?? null}
@@ -587,8 +587,8 @@ export default async function PerroPage({
         />
       </div>
 
-      <div id="sanitarios" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Requisitos sanitarios</h2>
+      <div id="sanitarios" className="flex scroll-mt-6 flex-col gap-4 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Requisitos sanitarios</h2>
 
         {propuestasPendientes && propuestasPendientes.length > 0 && (
           <Alert variante="advertencia" titulo="El dueño mandó comprobantes desde su portal">
@@ -623,14 +623,14 @@ export default async function PerroPage({
       </>
       )}
 
-      <div id="peso" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Peso</h2>
+      <div id="peso" className="flex scroll-mt-6 flex-col gap-4 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Peso</h2>
         <PesoForm perroId={id} />
         <PesoResumen historial={(pesos as PesoFila[]) ?? []} mascota={v} />
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Alertas de manejo</h2>
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Alertas de manejo</h2>
         <AlertasManejo
           perroId={id}
           catalogo={(catalogoAlertas as CatalogoAlertaOpcion[]) ?? []}
@@ -639,14 +639,14 @@ export default async function PerroPage({
         />
       </div>
 
-      <div id="alergias" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Alergias</h2>
+      <div id="alergias" className="flex scroll-mt-6 flex-col gap-4 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Alergias</h2>
         <AlergiasSeccion perroId={id} alergias={alergiasFilas} mascota={v} />
       </div>
 
       {!soloLectura && perro.cliente_id && conContratos && (
-        <div id="contrato" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
-          <h2 className="text-lg font-bold text-n-900">Contrato</h2>
+        <div id="contrato" className="flex scroll-mt-6 flex-col gap-4 border-t border-border pt-6">
+          <h2 className="text-lg font-semibold text-foreground">Contrato</h2>
           <ContratoSeccion
             perroId={id}
             clienteId={perro.cliente_id}
@@ -658,9 +658,9 @@ export default async function PerroPage({
 
       {/* Los pases son de guardería (con bonos): no aplican a una clínica ni a un gato. */}
       {!soloLectura && perro.cliente_id && estanciasAplican && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
+        <div className="flex flex-col gap-3 border-t border-border pt-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-bold text-n-900">Day pass y mensualidad</h2>
+            <h2 className="text-lg font-semibold text-foreground">Day pass y mensualidad</h2>
             {!perro.fallecido && puede(`/guarderia/pases`) && (
               <Enlace href={`/guarderia/pases?cliente=${perro.cliente_id}&perro=${id}`} className="text-sm">
                 Vender paquete para {perro.nombre}
@@ -675,7 +675,7 @@ export default async function PerroPage({
           ) : (
             <ul className="flex flex-col gap-2">
               {paquetes.map((b) => (
-                <li key={b.id} className="flex flex-col gap-2 rounded-md border border-n-200 bg-white px-4 py-3">
+                <li key={b.id} className="flex flex-col gap-2 rounded-md border border-border bg-card px-4 py-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                   <span>
                     <span className="font-semibold text-n-900">{b.servicio_nombre}</span>
@@ -700,16 +700,16 @@ export default async function PerroPage({
         </div>
       )}
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Bitácora</h2>
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Bitácora</h2>
         <p className="-mt-2 text-sm text-n-600">
           Fotos y notas del día a día — el dueño las ve en su portal.
         </p>
         <BitacoraSeccion perroId={id} entradas={entradasBitacora} mascota={v} />
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Medicamentos</h2>
+      <div className="flex flex-col gap-4 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Medicamentos</h2>
         <p className="-mt-2 text-sm text-n-600">
           Régimen prescrito y cada dosis administrada — el dueño también lo ve.
         </p>

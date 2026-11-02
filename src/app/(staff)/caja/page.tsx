@@ -1,3 +1,5 @@
+import { Cifra } from "@/components/ui/tarjeta";
+import { Receipt, Wallet } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -94,13 +96,20 @@ export default async function CajaPage() {
       </div>
 
       {turno ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-menta bg-menta-suave px-4 py-3 text-sm text-menta-oscuro">
-          <span>
-            Turno abierto desde el {formatearFecha(turno.abierto_at as string, zona)} · fondo ${Number(turno.fondo_inicial).toFixed(2)}
-          </span>
-          <span>
-            Pendiente de cobrar hoy: <strong>${totalHoy.toFixed(2)}</strong>
-          </span>
+        // Rediseño (bloque statistics-component; Mobbin: Fresha y Square, el resumen del día arriba del cobro).
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-lg border border-border bg-card p-4 shadow-tarjeta" data-turno-abierto>
+            <Cifra
+              etiqueta="Turno abierto"
+              valor="Abierto"
+              sub={<>Turno abierto desde el {formatearFecha(turno.abierto_at as string, zona)} · fondo ${Number(turno.fondo_inicial).toFixed(2)}</>}
+              icono={<Wallet />}
+              tono="menta"
+            />
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4 shadow-tarjeta">
+            <Cifra etiqueta="Pendiente de cobrar hoy" valor={`$${totalHoy.toFixed(2)}`} icono={<Receipt />} tono="ambar" />
+          </div>
         </div>
       ) : (
         <Alert variante="advertencia" titulo="No hay turno de caja abierto">

@@ -78,16 +78,16 @@ export function FueraDeCatalogo({
   return (
     <div className="flex flex-col gap-6">
       {grupos.length === 0 ? (
-        <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No hay textos de raza fuera del catálogo.</p>
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">No hay textos de raza fuera del catálogo.</p>
       ) : (
         <ul className="flex flex-col gap-4">
           {grupos.map((g) => {
             const msg = mensajes[g.texto_norm];
             const abierta = nueva === g.texto_norm;
             return (
-              <li key={g.texto_norm} className="rounded-lg border border-n-200 bg-white p-4">
+              <li key={g.texto_norm} className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="text-lg font-bold text-n-900">{g.textos.map(primeraMayuscula).join(" · ")}</p>
+                  <p className="text-lg font-semibold text-foreground">{g.textos.map(primeraMayuscula).join(" · ")}</p>
                   <p className="text-sm font-semibold text-n-700">{g.perros === 1 ? "1 perro" : `${g.perros} perros`}</p>
                 </div>
                 {g.propuesta_estado === "pendiente" && (
@@ -149,7 +149,7 @@ export function FueraDeCatalogo({
                     </div>
 
                     {abierta && (
-                      <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+                      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
                         <p className="text-sm text-n-700">
                           La plataforma revisa la propuesta antes de agregarla al catálogo que usan todos los negocios. No lleva ningún precio: el grupo de precio lo decides tú después.
                         </p>
@@ -194,10 +194,10 @@ export function FueraDeCatalogo({
 
       {asignaciones.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-bold text-n-900">Asignaciones recientes</h2>
+          <h2 className="text-lg font-semibold text-foreground">Asignaciones recientes</h2>
           <ul className="flex flex-col gap-2">
             {asignaciones.map((a) => (
-              <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-n-200 bg-white p-3">
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-3">
                 <div>
                   <p className="font-semibold text-n-900">
                     {a.textos.map(primeraMayuscula).join(" · ")} → {a.raza} <span className="font-normal text-n-600">· {a.perros} {a.perros === 1 ? "perro" : "perros"}</span>

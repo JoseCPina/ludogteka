@@ -84,8 +84,8 @@ export function LinkComplemento({
 
   if (cuentaActiva) {
     return (
-      <div id="link-complemento" data-link-cuenta-activa className="flex scroll-mt-6 flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Mandarle un link para completar</h2>
+      <div id="link-complemento" data-link-cuenta-activa className="flex scroll-mt-6 flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Mandarle un link para completar</h2>
         <Alert variante="exito" titulo="Este cliente ya tiene cuenta activa">
           {clienteNombre} entra a su portal con su teléfono y su contraseña: ahí sube el comprobante de las vacunas, firma
           el contrato y llena sus datos. Mándale el link de su portal.
@@ -104,8 +104,8 @@ export function LinkComplemento({
   }
 
   return (
-    <div id="link-complemento" className="flex scroll-mt-6 flex-col gap-3 border-t border-n-200 pt-6">
-      <h2 className="text-lg font-bold text-n-900">Mandarle un link para completar</h2>
+    <div id="link-complemento" className="flex scroll-mt-6 flex-col gap-3 border-t border-border pt-6">
+      <h2 className="text-lg font-semibold text-foreground">Mandarle un link para completar</h2>
       <p className="text-n-600">
         Si {clienteNombre} va a usar un servicio nuevo, este link le pide{" "}
         <strong>solo lo que falte</strong> de su expediente y el contrato que no haya firmado. No le

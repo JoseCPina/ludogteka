@@ -59,7 +59,7 @@ export default async function GruposDeRazaPage() {
           {razas.length > 0 && <GruposDeRaza razas={razas} grupos={listaGrupos} puedeAsignar={tienePermiso(sesion, "tarifas")} />}
           {propuestas.length > 0 && (
             <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-bold text-n-900">Razas propuestas, en revisión</h2>
+              <h2 className="text-lg font-semibold text-foreground">Razas propuestas, en revisión</h2>
               <p className="text-n-600">
                 Son razas que se propusieron al capturar un perro y que PeluDesk todavía no aprueba. Si les das grupo ahora, sus perros ya se pueden agendar; al aprobarse, queda como el grupo de la raza en este negocio.
               </p>

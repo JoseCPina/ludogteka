@@ -37,7 +37,7 @@ function Fila({ r }: { r: ReembolsoPorAtender }) {
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
   return (
-    <li className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
+    <li className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-semibold text-n-900">
           ${r.monto.toFixed(2)} · {r.clienteNombre}

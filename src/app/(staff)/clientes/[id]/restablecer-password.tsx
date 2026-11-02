@@ -33,8 +33,8 @@ export function RestablecerPassword({
 
 
   return (
-    <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-      <h2 className="text-lg font-bold text-n-900">Contraseña del portal</h2>
+    <div className="flex flex-col gap-3 border-t border-border pt-6">
+      <h2 className="text-lg font-semibold text-foreground">Contraseña del portal</h2>
 
       <>
           <p className="text-n-600" data-texto-recuperacion>

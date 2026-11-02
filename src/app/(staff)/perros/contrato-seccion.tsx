@@ -143,7 +143,7 @@ function AccionesPendiente({
         )}
       </div>
       {cancelandoId === contrato.id && (
-        <div className="mt-3 flex flex-col gap-2 border-t border-n-200 pt-3">
+        <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
           <Field
             label="Motivo de la cancelación"
             value={motivoCancelar}
@@ -301,7 +301,7 @@ export function ContratoSeccion({
           {tipos.map((tipo) => {
             const pendiente = pendientePorTipo.get(tipo.id) ?? null;
             return (
-              <li key={tipo.id} className="rounded-lg border border-n-200 bg-white p-4">
+              <li key={tipo.id} className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-n-900">{tipo.nombre}</span>
@@ -344,12 +344,12 @@ export function ContratoSeccion({
 
       {pendientesHuerfanos.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-bold uppercase tracking-wide text-n-600">
+          <p className="text-[0.9375rem] font-semibold text-foreground">
             Pendientes de un contrato archivado
           </p>
           <ul className="flex flex-col gap-3">
             {pendientesHuerfanos.map((c) => (
-              <li key={c.id} className="rounded-lg border border-n-200 bg-white p-4">
+              <li key={c.id} className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <span className="font-semibold text-n-900">{c.tipoNombre}</span>
                 <AccionesPendiente
                   contrato={c}
@@ -371,10 +371,10 @@ export function ContratoSeccion({
 
       {historial.length > 0 && (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-bold uppercase tracking-wide text-n-600">Historial</p>
+          <p className="text-[0.9375rem] font-semibold text-foreground">Historial</p>
           <ul className="flex flex-col gap-2">
             {historial.map((c) => (
-              <li key={c.id} className="flex items-center justify-between gap-3 rounded-md border border-n-200 bg-n-50 px-3 py-2 text-sm">
+              <li key={c.id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted px-3 py-2 text-sm">
                 <div>
                   <span className={`mr-2 rounded-full px-2 py-0.5 text-xs font-semibold ${ESTILO_ESTADO[c.estado]}`}>
                     {ETIQUETA_ESTADO[c.estado]}

@@ -108,7 +108,7 @@ export function BitacoraSeccion({ perroId, entradas, mascota = vocabularioMascot
         </Alert>
       )}
 
-      <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+      <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-border bg-muted p-4">
         <Select label="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value as "actualizacion" | "incidencia")} disabled={enviando.cargando}>
           <option value="actualizacion">Actualización (foto, nota del día)</option>
           <option value="incidencia">Incidencia (mordida, escape, enfermedad)</option>
@@ -147,7 +147,7 @@ export function BitacoraSeccion({ perroId, entradas, mascota = vocabularioMascot
             <li
               key={e.id}
               className={`rounded-lg border-[1.5px] p-4 ${
-                e.tipo === "incidencia" ? "border-coral bg-coral-suave" : "border-n-200 bg-white"
+                e.tipo === "incidencia" ? "border-coral bg-coral-suave" : "border-border bg-white"
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">

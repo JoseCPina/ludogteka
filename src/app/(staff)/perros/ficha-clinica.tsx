@@ -84,10 +84,10 @@ export function FichaClinica({
   );
 
   return (
-    <section id="ficha-clinica" className="flex scroll-mt-6 flex-col gap-4 border-t border-n-200 pt-6">
-      <h2 className="text-lg font-bold text-n-900">Ficha clínica</h2>
+    <section id="ficha-clinica" className="flex scroll-mt-6 flex-col gap-4 border-t border-border pt-6">
+      <h2 className="text-lg font-semibold text-foreground">Ficha clínica</h2>
 
-      <dl className="grid gap-3 rounded-md border border-n-200 bg-white px-4 py-3 sm:grid-cols-2">
+      <dl className="grid gap-3 rounded-md border border-border bg-card px-4 py-3 sm:grid-cols-2">
         <Dato etiqueta="Peso actual">
           {pesoActual ? (
             <>

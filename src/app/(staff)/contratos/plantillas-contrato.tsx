@@ -73,7 +73,7 @@ function SelectorCategorias({
   }
 
   return (
-    <div className="rounded-md border-[1.5px] border-n-200 bg-white p-3">
+    <div className="rounded-md border-[1.5px] border-border bg-white p-3">
       <p className="text-sm font-bold text-n-900">¿A qué servicios aplica?</p>
       <p className="mt-0.5 text-sm text-n-600">
         Solo se le va a pedir a los perros que usan esos servicios. Si no marcas ninguno, se le pide a
@@ -98,7 +98,7 @@ function SelectorCategorias({
 
 function AyudaTokens() {
   return (
-    <div className="rounded-md border border-n-200 bg-white p-3">
+    <div className="rounded-md border border-border bg-card p-3">
       <p className="mb-2 text-xs font-bold uppercase tracking-wide text-n-600">Campos que se llenan solos</p>
       <ul className="grid gap-x-4 gap-y-1 text-xs text-n-700 sm:grid-cols-2">
         {CAMPOS_CONTRATO.map((c) => (
@@ -147,9 +147,9 @@ function RevisionPlantilla({ titulo, cuerpo }: { titulo: string; cuerpo: string 
         </Button>
       </div>
       {verPrevia && (
-        <div className="max-h-[32rem] overflow-y-auto rounded-md border border-n-200 bg-white p-5">
+        <div className="max-h-[32rem] overflow-y-auto rounded-md border border-border bg-card p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-n-500">Vista previa · datos de ejemplo</p>
-          <p className="mt-2 text-lg font-bold text-n-900">{resolverPlantilla(titulo, camposDeEjemplo())}</p>
+          <p className="mt-2 text-lg font-semibold text-foreground">{resolverPlantilla(titulo, camposDeEjemplo())}</p>
           <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-n-800">
             {resolverPlantilla(cuerpo, camposDeEjemplo())}
           </div>
@@ -167,7 +167,7 @@ function CasillaRefirma({
   onCambio: (v: boolean) => void;
 }) {
   return (
-    <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
+    <label className="flex items-start gap-2 rounded-md border-[1.5px] border-border bg-white p-3 text-n-900">
       <input
         type="checkbox"
         checked={valor}
@@ -220,8 +220,8 @@ function FormularioNuevoTipo({ onListo }: { onListo: () => void }) {
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-n-50 p-5">
-      <h2 className="text-lg font-bold text-n-900">Nuevo contrato</h2>
+    <div className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+      <h2 className="text-lg font-semibold text-foreground">Nuevo contrato</h2>
       <AvisoBorrador estado={borrador} />
 
       {error && (
@@ -309,7 +309,7 @@ function FormularioNuevaVersion({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-n-200 bg-n-50 p-5">
+    <div className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
       <AvisoBorrador estado={borrador} />
       <Alert variante="advertencia" titulo="Esto publica una versión nueva">
         Los contratos ya firmados conservan el texto de su propia versión — no se modifican. Esta
@@ -392,7 +392,7 @@ function FormularioDatosTipo({
   }
 
   return (
-    <div className="mt-3 flex flex-col gap-3 border-t border-n-200 pt-3">
+    <div className="mt-3 flex flex-col gap-3 border-t border-border pt-3">
       {error && (
         <Alert variante="error" titulo="No se pudo guardar">
           {error}
@@ -468,7 +468,7 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
   }
 
   return (
-    <div className="rounded-lg border border-n-200 bg-white p-5">
+    <div className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
       {publicada && (
         <div className="mb-3" data-version-publicada>
           <Alert variante="exito" titulo={publicada}>Los contratos que se generen de aquí en adelante usan esta versión.</Alert>
@@ -476,7 +476,7 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
       )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-lg font-bold text-n-900">{tipo.nombre}</p>
+          <p className="text-lg font-semibold text-foreground">{tipo.nombre}</p>
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             {tipo.categorias.length === 0 ? (
               <span className="rounded-full bg-n-100 px-2 py-0.5 text-xs font-semibold text-n-600">
@@ -515,7 +515,7 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
       {activa && (
         <>
           <p className="mt-3 font-semibold text-n-900">{activa.titulo}</p>
-          <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-n-50 p-4 text-sm text-n-700">
+          <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-4 text-sm text-n-700">
             {activa.cuerpo}
           </pre>
         </>
@@ -540,7 +540,7 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
       )}
 
       {esAdmin && confirmandoArchivo && (
-        <div className="mt-3 flex flex-col gap-2 border-t border-n-200 pt-3">
+        <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
           <p className="text-sm text-n-700">
             Archivar deja de pedir este contrato y de poder generarlo. Los que ya se firmaron siguen
             en el expediente de cada perro, con su texto intacto. Se puede reactivar después.
@@ -557,15 +557,15 @@ function TarjetaTipo({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin: bool
       )}
 
       {tipo.versiones.length > 0 && (
-        <div className="mt-4 flex flex-col gap-2 border-t border-n-200 pt-3">
-          <p className="text-sm font-bold uppercase tracking-wide text-n-600">Versiones</p>
+        <div className="mt-4 flex flex-col gap-2 border-t border-border pt-3">
+          <p className="text-[0.9375rem] font-semibold text-foreground">Versiones</p>
           <ul className="flex flex-col gap-2">
             {[activa, ...historial]
               .filter((v): v is VersionPlantilla => v !== null)
               .map((v) => (
                 <li
                   key={v.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-n-200 bg-n-50 px-3 py-2 text-sm"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm"
                 >
                   <span className="text-n-700">
                     Versión {v.version} · {v.titulo}
@@ -614,7 +614,7 @@ function TarjetaArchivado({ tipo, esAdmin }: { tipo: TipoContratoVista; esAdmin:
   }
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-n-200 bg-n-50 px-3 py-2 text-sm">
+    <li className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm">
       <span className="text-n-600">
         {tipo.nombre} · {tipo.versiones.length}{" "}
         {tipo.versiones.length === 1 ? "versión" : "versiones"}
@@ -664,8 +664,8 @@ export function PlantillasContrato({
       )}
 
       {archivados.length > 0 && (
-        <div className="flex flex-col gap-2 border-t border-n-200 pt-4">
-          <p className="text-sm font-bold uppercase tracking-wide text-n-600">Archivados</p>
+        <div className="flex flex-col gap-2 border-t border-border pt-4">
+          <p className="text-[0.9375rem] font-semibold text-foreground">Archivados</p>
           <p className="-mt-1 text-sm text-n-600">
             Ya no se piden ni se generan. Lo que se firmó con ellos sigue en el expediente del perro.
           </p>

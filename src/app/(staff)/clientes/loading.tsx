@@ -7,7 +7,7 @@ export default function CargandoClientes() {
       <EsqueletoTitulo ancho="w-40" />
       <EsqueletoBotones n={2} />
       <Barra className="h-12 w-full" />
-      <div className="flex flex-col divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+      <div className="flex flex-col divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
         {Array.from({ length: 8 }, (_, i) => (
           <div key={i} className="flex items-center gap-4 px-4 py-3">
             <Barra className="h-10 w-10 rounded-full" />

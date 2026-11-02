@@ -128,7 +128,7 @@ export function ClienteForm({
 
       {/* Consentimiento para los recordatorios automáticos por WhatsApp: marcado por omisión, con texto claro. */}
       <input type="hidden" name="recordatorios_whatsapp_presente" value="1" />
-      <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900" data-consentimiento-recordatorios>
+      <label className="flex items-start gap-2 rounded-md border-[1.5px] border-border bg-white p-3 text-n-900" data-consentimiento-recordatorios>
         <input type="checkbox" name="recordatorios_whatsapp" value="si" defaultChecked={valoresIniciales?.recordatorios ?? true} disabled={enviando} className="mt-1 h-4 w-4" />
         <span>
           El cliente acepta recordatorios por WhatsApp
@@ -137,7 +137,7 @@ export function ClienteForm({
       </label>
 
       {pedirDireccion && corta && tiene("recoleccion") && (
-        <label className="flex items-start gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3 text-n-900">
+        <label className="flex items-start gap-2 rounded-md border-[1.5px] border-border bg-white p-3 text-n-900">
           <input type="checkbox" checked={quiereRecoleccion} onChange={(e) => setQuiereRecoleccion(e.target.checked)} className="mt-1 h-4 w-4" />
           <span>Quiere que pasemos por {vocabularioMascota({ conVet: tiene("veterinaria") }).su} a su casa</span>
         </label>

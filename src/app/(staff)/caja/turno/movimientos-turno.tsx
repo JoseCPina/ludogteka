@@ -84,12 +84,12 @@ export function MovimientosTurno({
       {movimientos.length === 0 ? (
         <p className="text-sm text-n-500">Todavía no hay movimientos en este turno.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+        <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
           <TablaResponsiva className="w-full border-collapse text-sm max-sm:block">
             <thead className="max-sm:hidden">
               <tr>
                 {["Hora", "Movimiento", "Cliente / motivo", "Método"].map((h) => (
-                  <th key={h} className="border-b border-n-200 bg-n-100 px-3 py-2 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+                  <th key={h} className="border-b border-border bg-muted px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
                     {h}
                   </th>
                 ))}
@@ -97,11 +97,11 @@ export function MovimientosTurno({
             </thead>
             <tbody className="max-sm:block">
               {movimientos.map((m) => (
-                <tr key={`${m.tipo}-${m.id}`} data-movimiento-ajuste={m.ajusteTipo ?? undefined} className={`max-sm:block max-sm:border-b max-sm:border-n-200 max-sm:px-3 max-sm:py-2 ${m.ajusteTipo === "original_anulado" ? "opacity-60" : ""}`}>
-                  <td className="border-b border-n-200 px-3 py-2 max-sm:flex max-sm:justify-between max-sm:gap-3 max-sm:border-0 max-sm:px-0 max-sm:py-0.5 tabular-nums text-n-600"><span data-hora-movimiento>{formatearHoraNegocio(m.fecha, zona)}</span>
+                <tr key={`${m.tipo}-${m.id}`} data-movimiento-ajuste={m.ajusteTipo ?? undefined} className={`max-sm:block max-sm:border-b max-sm:border-border max-sm:px-3 max-sm:py-2 ${m.ajusteTipo === "original_anulado" ? "opacity-60" : ""}`}>
+                  <td className="border-b border-border px-3 py-2 max-sm:flex max-sm:justify-between max-sm:gap-3 max-sm:border-0 max-sm:px-0 max-sm:py-0.5 tabular-nums text-n-600"><span data-hora-movimiento>{formatearHoraNegocio(m.fecha, zona)}</span>
                   <span className="ml-2 text-xs text-n-500 sm:ml-0 sm:block">{formatearFecha(m.fecha, zona)}</span>
                 </td>
-                  <td className="border-b border-n-200 px-3 py-2 max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-900">
+                  <td className="border-b border-border px-3 py-2 max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-900">
                     {ETIQUETA_TIPO[m.tipo] ?? m.tipo}
                     {m.ajusteTipo && <span className="ml-2 rounded-full bg-ambar-suave px-2 py-0.5 text-xs font-semibold text-ambar-oscuro">{ETIQUETA_AJUSTE[m.ajusteTipo] ?? m.ajusteTipo}</span>}
                     {m.tipo === "ingreso_efectivo" ? (
@@ -115,7 +115,7 @@ export function MovimientosTurno({
                       </Enlace>
                     )}
                   </td>
-                  <td className="border-b border-n-200 px-3 py-2 max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-700">
+                  <td className="border-b border-border px-3 py-2 max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-700">
                     {m.reservaId ? (
                       <Enlace href={`/caja/cobrar/${m.reservaId}`}>
                         {m.clienteNombre ?? "Cuenta"}
@@ -126,7 +126,7 @@ export function MovimientosTurno({
                     {m.descripcion ? <span className="block text-xs text-n-500">{m.descripcion}</span> : null}
                     <span className="block text-xs text-n-500">{m.hechoPorNombre}</span>
                   </td>
-                  <td className="border-b border-n-200 px-3 py-2 max-sm:flex max-sm:justify-between max-sm:gap-3 max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-700"><span className="hidden text-xs font-bold uppercase text-n-500 max-sm:inline">Método</span>{ETIQUETA_METODO[m.metodo] ?? m.metodo}</td>
+                  <td className="border-b border-border px-3 py-2 max-sm:flex max-sm:justify-between max-sm:gap-3 max-sm:border-0 max-sm:px-0 max-sm:py-0.5 text-n-700"><span className="hidden text-xs font-bold uppercase text-n-500 max-sm:inline">Método</span>{ETIQUETA_METODO[m.metodo] ?? m.metodo}</td>
                 </tr>
               ))}
             </tbody>

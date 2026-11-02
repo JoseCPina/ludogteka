@@ -89,8 +89,8 @@ export function DistanciaSeccion({
   }
 
   return (
-    <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-      <h2 className="text-lg font-bold text-n-900">Dirección y distancia de recolección</h2>
+    <div className="flex flex-col gap-3 border-t border-border pt-6">
+      <h2 className="text-lg font-semibold text-foreground">Dirección y distancia de recolección</h2>
 
       {error && (
         <Alert variante="error" titulo="No se pudo completar">
@@ -118,7 +118,7 @@ export function DistanciaSeccion({
         </Button>
       </div>
 
-      <div className="rounded-md border-[1.5px] border-n-200 bg-n-50 p-3">
+      <div className="rounded-md border-[1.5px] border-border bg-muted p-3">
         {distanciaKm === null ? (
           <p className="text-n-600">Todavía no hay una distancia calculada para este cliente.</p>
         ) : (

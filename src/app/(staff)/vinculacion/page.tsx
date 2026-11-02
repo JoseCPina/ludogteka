@@ -37,7 +37,7 @@ export default async function VinculacionPage() {
       </div>
 
       <section>
-        <h2 className="mb-4 text-lg font-bold text-n-900">Pendientes de vincular</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Pendientes de vincular</h2>
         {pendientesRes.error ? (
           <Alert variante="error" titulo="No pudimos cargar las cuentas pendientes">
             Recarga la página. Si el problema sigue, avísale al equipo técnico.
@@ -47,7 +47,7 @@ export default async function VinculacionPage() {
             <p className="text-n-600">No hay cuentas pendientes de vincular.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
+          <div className="overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
             {pendientes.map((cuenta) => (
               <VincularFila key={cuenta.id} cuenta={cuenta} clientes={clientes} diasEsperando={diasDesde(cuenta.creado_en, hoy, zona)} />
             ))}
@@ -56,7 +56,7 @@ export default async function VinculacionPage() {
       </section>
 
       <section>
-        <h2 className="mb-4 text-lg font-bold text-n-900">Cuentas vinculadas</h2>
+        <h2 className="mb-4 text-lg font-semibold text-foreground">Cuentas vinculadas</h2>
         {vinculadasRes.error ? (
           <Alert variante="error" titulo="No pudimos cargar las cuentas vinculadas">
             Recarga la página. Si el problema sigue, avísale al equipo técnico.
@@ -66,7 +66,7 @@ export default async function VinculacionPage() {
             <p className="text-n-600">Todavía no hay cuentas vinculadas.</p>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
+          <div className="overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
             {vinculadas.map((cuenta) => (
               <DesvincularFila key={cuenta.profile_id} cuenta={cuenta} />
             ))}

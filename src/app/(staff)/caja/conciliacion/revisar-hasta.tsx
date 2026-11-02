@@ -36,7 +36,7 @@ export function RevisarHasta({ fechas, hoy }: { fechas: string[]; hoy: string })
     );
   }
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4" data-revisar-hasta-formulario>
+    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4" data-revisar-hasta-formulario>
       <p className="text-sm text-n-700">
         Se dan por revisadas todas las diferencias cuyo pago o cobro ocurrió <strong>antes</strong> de la fecha que escojas (las de esa fecha en adelante se quedan). Queda tu nota en cada una.
       </p>

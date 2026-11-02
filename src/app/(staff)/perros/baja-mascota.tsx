@@ -108,7 +108,7 @@ export function BajaMascota({ perroId, nombre, version, resumen, puedeEscribir, 
             <p className="text-sm text-n-800">Decide si se devuelven (desde la cuenta de la compra, en Caja) o se traspasan a otra mascota del mismo dueño.</p>
             <ul className="mt-2 flex flex-col gap-2">
               {resumen.pases_con_saldo.map((p) => (
-                <li key={p.id} className="flex flex-col gap-2 rounded-md border border-n-200 bg-white px-3 py-2 sm:flex-row sm:items-end sm:justify-between">
+                <li key={p.id} className="flex flex-col gap-2 rounded-md border border-border bg-card px-3 py-2 sm:flex-row sm:items-end sm:justify-between">
                   <span className="text-sm text-n-900">
                     <strong>{p.servicio}</strong>: {p.disponibles} de {p.total} disponibles{vence(p.vence, zona)}
                   </span>
@@ -143,8 +143,8 @@ export function BajaMascota({ perroId, nombre, version, resumen, puedeEscribir, 
 
   // ── Activa: la solicitud del dueño (si la hay) y «Dar de baja» ──
   return (
-    <section className="flex flex-col gap-3 border-t border-n-200 pt-6" data-baja-mascota data-estado="activa">
-      <h2 className="text-lg font-bold text-n-900">Dar de baja</h2>
+    <section className="flex flex-col gap-3 border-t border-border pt-6" data-baja-mascota data-estado="activa">
+      <h2 className="text-lg font-semibold text-foreground">Dar de baja</h2>
       {solicitud && (
         <Alert variante="info" titulo={`El dueño pidió dar de baja a ${nombre}`} >
           El {formatearFecha(solicitud.pedida_at, zona)}: {nombreMotivoBaja(solicitud.motivo).toLowerCase()}.{solicitud.nota ? ` «${solicitud.nota}».` : ""} Confírmala aquí abajo o recházala
@@ -183,7 +183,7 @@ export function BajaMascota({ perroId, nombre, version, resumen, puedeEscribir, 
         </Button>
       )}
       {rechazando && solicitud && (
-        <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-white p-4" data-rechazar-solicitud>
+        <div className="flex flex-col gap-3 rounded-md border border-border bg-card p-4" data-rechazar-solicitud>
           <Textarea ref={campoRespuesta} label="¿Por qué no se da de baja? (el dueño lo lee en su portal)" value={respuesta} onChange={(e) => setRespuesta(e.target.value)} rows={2} />
           <AccionesFormulario error={error} exito={ctl.exito}>
             <Button type="button" variante="peligro" cargando={envio.cargando} onClick={rechazar}>Rechazar con este motivo</Button>
