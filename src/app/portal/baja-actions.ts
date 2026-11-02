@@ -20,5 +20,6 @@ export async function solicitarBajaMascota(perroId: string, motivo: string, nota
   if (error) return { error: error.message };
   revalidatePath(`/portal/perros/${perroId}`);
   revalidatePath("/portal");
-  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "perros_bajas", i: data as string }]) };
+  // La bitácora perros_bajas es solo del personal: la pantalla recibe lo que la acción ya sabe de su solicitud.
+  return { error: null, ok: true, registros: await registrosDe(supabase, [{ t: "perros_bajas", i: data as string, datos: { id: data, perro_id: perroId, tipo: "solicitud", resultado: "pendiente", motivo, nota: nota.trim() || null } }]) };
 }

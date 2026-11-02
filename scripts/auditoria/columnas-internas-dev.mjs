@@ -38,9 +38,16 @@ const COLUMNAS_QUE_NO_EXISTEN = [
   ["contratos", "regenerar_motivo"],
   ["contratos", "regenerar_marcado_at"],
   ["contratos", "motivo_cancelacion"],
+  // 1 de noviembre de 2026 (migración 20261203001400): la nota y el autor de la baja viven en perros_bajas; quién corrigió
+  // o anuló un requisito sanitario, y por qué, en requisitos_sanitarios_internos.
+  ["perros", "baja_nota"],
+  ["perros", "baja_por"],
+  ["requisitos_sanitarios_aplicados", "anulado_por"],
+  ["requisitos_sanitarios_aplicados", "anulado_motivo"],
+  ["requisitos_sanitarios_aplicados", "historial"],
 ];
 // Las tablas internas: el dueño las lee VACÍAS.
-const TABLAS_INTERNAS = ["clientes_notas_internas", "perros_notas_clinicas", "perros_evaluaciones", "contratos_internos"];
+const TABLAS_INTERNAS = ["clientes_notas_internas", "perros_notas_clinicas", "perros_evaluaciones", "contratos_internos", "perros_bajas", "requisitos_sanitarios_internos"];
 const RPC_SOLO_PERSONAL = [
   ["cliente_notas_guardar", (c) => ({ p_cliente: c.cliente, p_notas: MARCA })],
   ["perro_notas_clinicas_guardar", (c) => ({ p_perro: c.perro, p_notas: MARCA })],
@@ -84,6 +91,21 @@ try {
   comprobar(Boolean(ctx.contrato), "hay un contrato del dueño con motivos internos para probar");
   // Una nota del personal en un peso.
   await SB.from("pesos_registrados").insert({ negocio_id: B, perro_id: ctx.perro, peso_kg: 7.5, fecha: "2026-01-02", notas: `peso ${MARCA}` });
+  // 1 de noviembre de 2026: la nota de una baja hecha por el negocio (bitácora perros_bajas) y el motivo de la anulación de
+  // un requisito sanitario (requisitos_sanitarios_internos) tampoco salen al dueño.
+  const bitacora = await SB.from("perros_bajas").insert({ negocio_id: B, perro_id: ctx.perro, perro_nombre: "Interno", cliente_id: ctx.cliente, tipo: "baja", motivo: "error", nota: `baja ${MARCA}`, resultado: "inactiva" }).select("id").single();
+  comprobar(!bitacora.error, `se siembra una baja con nota interna en perros_bajas (${bitacora.error?.message ?? "ok"})`);
+  const tipoReq = await SB.from("tipos_requisito_sanitario").select("id").eq("negocio_id", B).is("deleted_at", null).limit(1).maybeSingle();
+  if (tipoReq.data) {
+    const req = await SB.from("requisitos_sanitarios_aplicados").insert({ negocio_id: B, perro_id: ctx.perro, tipo_requisito_id: tipoReq.data.id, fecha_aplicacion: "2026-01-02", detalle: "prueba" }).select("id").single();
+    comprobar(!req.error, `se siembra un requisito sanitario del perro (${req.error?.message ?? "ok"})`);
+    if (!req.error) {
+      const an = await rpc(P.admin, "anular_requisito_aplicado", { p_id: req.data.id, p_motivo: `anulado ${MARCA}` });
+      comprobar(an.ok, `el admin lo anula con motivo (${an.mensaje ?? "ok"})`);
+      const interno = await SB.from("requisitos_sanitarios_internos").select("anulado_motivo").eq("requisito_id", req.data.id).maybeSingle();
+      comprobar(Boolean(interno.data?.anulado_motivo?.includes(MARCA)), "el motivo quedó en requisitos_sanitarios_internos (no en la tabla que el dueño lee)");
+    }
+  } else comprobar(false, "Huellitas no tiene un tipo de requisito sanitario para la prueba");
 
   // Lo que el personal SÍ ve (si no, la prueba no probaría nada).
   const staff = await get(P.admin, `clientes_notas_internas?cliente_id=eq.${ctx.cliente}&select=notas`);
@@ -155,6 +177,8 @@ try {
   const funciones = [
     ["mi_carnet", { p_perro_id: ctx.perro }], ["mi_expediente", { p_perro: ctx.perro }], ["mis_recetas", { p_perro: ctx.perro }],
     ["mis_visitas", {}], ["mis_negocios", {}], ["mis_modulos", {}], ["mis_facturas", {}], ["mis_tickets_con_respuesta", {}],
+    // Lo que el dueño ve de las bajas sale por aquí: solo SUS solicitudes, nunca la nota de una baja del negocio.
+    ["portal_solicitudes_baja", { p_perro_id: ctx.perro }],
   ];
   const fugasFn = [];
   for (const [fn, args] of funciones) {
@@ -218,6 +242,8 @@ try {
     await SB.from("contratos").delete().eq("id", ctx.contrato);
   }
   if (ctx.perro) {
+    await SB.from("perros_bajas").delete().eq("perro_id", ctx.perro);
+    await SB.from("requisitos_sanitarios_aplicados").delete().eq("perro_id", ctx.perro); // arrastra requisitos_sanitarios_internos
     await SB.from("pesos_registrados").delete().eq("perro_id", ctx.perro);
     await SB.from("perros_notas_clinicas").delete().eq("perro_id", ctx.perro);
     await SB.from("perros_evaluaciones").delete().eq("perro_id", ctx.perro);

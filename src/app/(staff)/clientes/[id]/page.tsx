@@ -99,10 +99,15 @@ export default async function EditarClientePage({
     .order("nombre");
   // Las dadas de baja (inactivas, con historial): su expediente sigue abierto desde aquí, con «Reactivar»; y lo que
   // el dueño pidió desde su portal y nadie ha confirmado.
-  const [{ data: perrosBaja }, { data: solicitudesBaja }] = await Promise.all([
-    supabase.from("perros").select("id, nombre, fallecido, deleted_at, baja_motivo, baja_nota").eq("cliente_id", id).not("deleted_at", "is", null).order("deleted_at", { ascending: false }).limit(100),
+  // La nota de la baja vive en la bitácora perros_bajas (solo personal), no en perros (1 de noviembre de 2026).
+  const [{ data: perrosBajaCrudo }, { data: solicitudesBaja }, { data: notasBaja }] = await Promise.all([
+    supabase.from("perros").select("id, nombre, fallecido, deleted_at, baja_motivo").eq("cliente_id", id).not("deleted_at", "is", null).order("deleted_at", { ascending: false }).limit(100),
     supabase.from("perros_bajas").select("id, perro_id, perro_nombre, motivo, created_at").eq("cliente_id", id).eq("tipo", "solicitud").eq("resultado", "pendiente").is("deleted_at", null).order("created_at"),
+    supabase.from("perros_bajas").select("perro_id, nota, created_at").eq("cliente_id", id).eq("tipo", "baja").is("deleted_at", null).order("created_at", { ascending: false }).limit(200),
   ]);
+  const notaDeBaja = new Map<string, string | null>();
+  for (const b of (notasBaja ?? []) as { perro_id: string | null; nota: string | null }[]) if (b.perro_id && !notaDeBaja.has(b.perro_id)) notaDeBaja.set(b.perro_id, b.nota);
+  const perrosBaja = (perrosBajaCrudo ?? []).map((p) => ({ ...p, baja_nota: notaDeBaja.get(p.id as string) ?? null }));
   const zonaBaja = await zonaActual();
 
   const urlsFotos = new Map<string, string>();
