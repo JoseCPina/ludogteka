@@ -2,7 +2,6 @@ import { fechaParaAgendar } from "@/lib/estetica/proponer-hora";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { BotonNuevoCliente } from "@/components/boton-nuevo-cliente";
 import { contarPerrosSinRazaCatalogo } from "@/lib/razas";
 import { AvisoRazasSinCatalogar } from "@/components/aviso-razas-sin-catalogar";
@@ -45,7 +44,6 @@ export default async function AgendaPage({
   const zona = await zonaActual();
   const { vista: vistaParam, fecha: fechaParam } = await searchParams;
   const supabase = await createSupabaseServerClient();
-  const sesion = await obtenerSesionConRol();
 
   // El día del negocio se calcula aquí con su zona (lo mismo que fecha_negocio() en la base), sin un viaje más.
   const hoy = hoyNegocio(zona);
@@ -59,12 +57,26 @@ export default async function AgendaPage({
   const desdeConsulta = sumarDiasFecha(desde, -1);
   const hastaConsulta = sumarDiasFecha(hasta, 2);
 
+  const citasDelRango = leerTodo<Record<string, unknown>>(() =>
+    supabase
+      .from("citas_estetica")
+      .select("id, inicio, estado, fuera_de_horario, empleado_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
+      .is("deleted_at", null)
+      .gte("inicio", desdeConsulta)
+      .lt("inicio", hastaConsulta)
+      .order("inicio")
+      .order("id")
+  );
+
   const [
     { data: empleados, error: errorEmpleados },
     { data: citasCrudo, error: errorCitas },
     perrosSinRaza,
     // Citas con una estilista ausente (antes era otro viaje después de la tanda).
     { data: enAusenciaCrudo },
+    sesion,
+    // El recordatorio automático por WhatsApp de cada cita (encadenado a las citas, dentro de la misma tanda).
+    recordatorios,
   ] = await Promise.all([
       // Por la RPC: recepción no puede leer los perfiles del personal.
       supabase.rpc("listar_personal_estetica").then((r) => ({
@@ -75,18 +87,12 @@ export default async function AgendaPage({
         })),
         error: r.error,
       })),
-      leerTodo<Record<string, unknown>>(() =>
-        supabase
-          .from("citas_estetica")
-          .select("id, inicio, estado, fuera_de_horario, empleado_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)")
-          .is("deleted_at", null)
-          .gte("inicio", desdeConsulta)
-          .lt("inicio", hastaConsulta)
-          .order("inicio")
-          .order("id")
-      ),
+      citasDelRango,
       contarPerrosSinRazaCatalogo(supabase),
       supabase.rpc("citas_en_ausencia"),
+      // La sesión va en la tanda (antes era un viaje solo, antes de todo lo demás).
+      obtenerSesionConRol(),
+      citasDelRango.then((r) => recordatoriosDeCitas(supabase, (r.data ?? []).map((c) => c.id as string))),
     ]);
 
   const error = errorEmpleados ?? errorCitas;
@@ -111,8 +117,6 @@ export default async function AgendaPage({
     })
     .filter((c) => c.fecha_local >= desde && c.fecha_local <= hasta);
 
-  // El recordatorio automático por WhatsApp de cada cita: «Confirmó por WhatsApp» en verde, «Pide cambio», enviado…
-  const recordatorios = await recordatoriosDeCitas(supabase, citas.map((c) => c.id));
 
   const diasVista =
     vista === "semana" ? Array.from({ length: 7 }, (_, i) => sumarDiasFecha(desde, i)) : [desde];
