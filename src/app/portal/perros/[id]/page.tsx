@@ -23,7 +23,7 @@ import { RecetasCliente, type RecetaDelDueno } from "./recetas-cliente";
 import { zonaActual } from "@/lib/negocio/actual";
 import { usaVeterinaria } from "@/lib/plan/modulos";
 import { ETIQUETA_ESPECIE, esEspecie } from "@/lib/perros/ficha-clinica";
-import { leerTodo } from "@/lib/supabase/paginar";
+import { leerTodo } from "@/lib/supabase/paginar";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { nombreMotivoBaja } from "@/lib/perros/baja";
 import { PedirBajaMascota, type SolicitudBajaPortal } from "../../pedir-baja-mascota";
@@ -87,8 +87,10 @@ export default async function MiPerroPage({ params }: { params: Promise<{ id: st
   const esPropio = perro.cliente_id === sesion.clienteId;
   // Dada de baja (deleted_at): se abre en solo lectura, sin avisos ni propuestas. Lo que el dueño pidió sobre la baja.
   const dadaDeBaja = Boolean(perro.deleted_at);
+  // Por función (portal_solicitudes_baja): la bitácora perros_bajas es solo del personal (la nota de una baja hecha por el
+  // negocio es interna); el dueño ve únicamente sus solicitudes, con la respuesta del negocio (1 de noviembre de 2026).
   const { data: solicitudesBaja } = esPropio
-    ? await supabase.from("perros_bajas").select("id, motivo, nota, resultado, respuesta, created_at, atendida_at").eq("perro_id", id).eq("tipo", "solicitud").is("deleted_at", null).order("created_at", { ascending: false }).limit(5)
+    ? await supabase.rpc("portal_solicitudes_baja", { p_perro_id: id }).then((r) => ({ data: ((r.data ?? []) as { id: string; motivo: string; nota: string | null; resultado: string; respuesta: string | null; created_at: string; atendida_at: string | null }[]).slice(0, 5) }))
     : { data: [] };
 
   // Ficha de la mascota (solo con Veterinaria activa). Las notas clínicas son

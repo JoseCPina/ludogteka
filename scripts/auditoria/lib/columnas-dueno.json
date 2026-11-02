@@ -1,4 +1,39 @@
 {
+ "app_avisos": [
+  "id",
+  "dueno_id",
+  "mascota_id",
+  "tipo",
+  "titulo",
+  "cuerpo",
+  "url",
+  "datos",
+  "leido_at",
+  "created_at",
+  "updated_at",
+  "deleted_at",
+  "created_by"
+ ],
+ "app_recordatorios": [
+  "id",
+  "dueno_id",
+  "mascota_id",
+  "tipo",
+  "ref_id",
+  "para_at",
+  "titulo",
+  "cuerpo",
+  "estado",
+  "push_enviadas",
+  "wa_estado",
+  "wa_id",
+  "enviado_at",
+  "error",
+  "created_at",
+  "updated_at",
+  "deleted_at",
+  "created_by"
+ ],
  "bitacora_entradas": [
   "id",
   "perro_id",
@@ -102,6 +137,20 @@
   "regenerar_marcado_at",
   "espera_desde"
  ],
+ "duenos": [
+  "id",
+  "telefono",
+  "nombre",
+  "lat",
+  "lng",
+  "ciudad",
+  "ultimo_acceso_at",
+  "created_at",
+  "updated_at",
+  "deleted_at",
+  "created_by",
+  "recordatorios_whatsapp"
+ ],
  "estancia_pertenencias": [
   "id",
   "estancia_id",
@@ -142,6 +191,33 @@
   "pelajes_permitidos",
   "depende_pelaje"
  ],
+ "mascotas": [
+  "id",
+  "dueno_id",
+  "nombre",
+  "especie",
+  "especie_detalle",
+  "sexo",
+  "fecha_nacimiento",
+  "esterilizado",
+  "raza_texto",
+  "microchip",
+  "foto_path",
+  "fallecido",
+  "fecha_fallecimiento",
+  "origen",
+  "created_at",
+  "updated_at",
+  "deleted_at",
+  "created_by",
+  "token_publico",
+  "perdida_at",
+  "perdida_nota",
+  "perdida_lat",
+  "perdida_lng",
+  "encontrada_at",
+  "recordatorios_apagados"
+ ],
  "mascotas_cartilla": [
   "id",
   "mascota_id",
@@ -161,6 +237,52 @@
   "deleted_at",
   "created_by",
   "atencion_id"
+ ],
+ "mascotas_cartilla_fotos": [
+  "id",
+  "mascota_id",
+  "foto_path",
+  "estado",
+  "lectura",
+  "modelo",
+  "ms",
+  "tokens_in",
+  "tokens_out",
+  "error",
+  "confirmada_at",
+  "registros",
+  "created_at",
+  "updated_at",
+  "deleted_at",
+  "created_by"
+ ],
+ "mascotas_gastos": [
+  "id",
+  "mascota_id",
+  "concepto",
+  "categoria",
+  "monto",
+  "fecha",
+  "notas",
+  "created_at",
+  "updated_at",
+  "deleted_at",
+  "created_by"
+ ],
+ "mascotas_medicamentos": [
+  "id",
+  "mascota_id",
+  "nombre",
+  "dosis",
+  "horas",
+  "fecha_inicio",
+  "fecha_fin",
+  "activo",
+  "notas",
+  "created_at",
+  "updated_at",
+  "deleted_at",
+  "created_by"
  ],
  "mascotas_pesos": [
   "id",
@@ -345,7 +467,8 @@
   "especie",
   "especie_detalle",
   "microchip",
-  "folio_registro"
+  "folio_registro",
+  "baja_motivo"
  ],
  "perros_con_guarderia_hotel": [
   "perro_id"
@@ -425,7 +548,8 @@
   "created_by",
   "es_desconocida",
   "tamano_tipico_id",
-  "pelaje_tipico_id"
+  "pelaje_tipico_id",
+  "especie"
  ],
  "razas_variantes": [
   "raza_id",
@@ -448,7 +572,8 @@
   "updated_at",
   "deleted_at",
   "created_by",
-  "negocio_id"
+  "negocio_id",
+  "anulado_at"
  ],
  "requisitos_sanitarios_propuestos": [
   "id",

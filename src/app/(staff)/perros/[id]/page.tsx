@@ -36,7 +36,7 @@ import { RequisitosEstancia } from "../requisitos-estancia";
 import { NotaSoloEstetica } from "../nota-solo-estetica";
 import { hoyNegocio, formatearFechaCalendario } from "@/lib/formato";
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
-import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
+import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
 import { vocabularioMascota } from "@/lib/perros/vocabulario";
 import { BajaMascota } from "../baja-mascota";
 import type { ResumenBaja } from "@/lib/perros/baja";
@@ -170,7 +170,8 @@ export default async function PerroPage({
     supabase
       .from("requisitos_sanitarios_aplicados")
       .select(
-        "id, fecha_aplicacion, fecha_vencimiento, detalle, notas, comprobante_path, deleted_at, anulado_motivo, historial, tipos_requisito_sanitario(etiqueta)"
+        // Quién corrigió o anuló, y por qué, vive en la tabla interna (solo personal; 1 de noviembre de 2026).
+        "id, fecha_aplicacion, fecha_vencimiento, detalle, notas, comprobante_path, deleted_at, tipos_requisito_sanitario(etiqueta), requisitos_sanitarios_internos(anulado_motivo, historial)"
       )
       .eq("perro_id", id)
       // Los anulados se quedan en la tabla (marcados): nada se borra.
@@ -251,6 +252,8 @@ export default async function PerroPage({
         comprobante_url = data?.signedUrl ?? null;
       }
       const tipo = fila.tipos_requisito_sanitario as unknown as { etiqueta: string } | null;
+      const internoCrudo = fila.requisitos_sanitarios_internos as unknown as { anulado_motivo: string | null; historial: unknown } | { anulado_motivo: string | null; historial: unknown }[] | null;
+      const interno = Array.isArray(internoCrudo) ? (internoCrudo[0] ?? null) : internoCrudo;
       return {
         id: fila.id,
         fecha_aplicacion: fila.fecha_aplicacion,
@@ -260,8 +263,8 @@ export default async function PerroPage({
         tipo_etiqueta: tipo?.etiqueta ?? "—",
         comprobante_url,
         anulado: Boolean(fila.deleted_at),
-        anulado_motivo: (fila.anulado_motivo as string | null) ?? null,
-        correcciones: Array.isArray(fila.historial) ? (fila.historial as unknown[]).filter((h) => (h as { tipo?: string }).tipo === "correccion").length : 0,
+        anulado_motivo: ((interno?.anulado_motivo as string | null | undefined) ?? null),
+        correcciones: Array.isArray(interno?.historial) ? (interno.historial as unknown[]).filter((h) => (h as { tipo?: string }).tipo === "correccion").length : 0,
       };
     })
   );
