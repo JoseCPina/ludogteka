@@ -12,7 +12,7 @@ export function IlustracionDeArticulo({ a, className = "" }: { a: Pick<Articulo,
 
 export function TarjetaArticulo({ a }: { a: Articulo }) {
   return (
-    <article className="pd-tarjeta group flex flex-col overflow-hidden rounded-2xl border border-n-200 bg-white">
+    <article className="pd-tarjeta group flex flex-col overflow-hidden rounded-2xl border border-border bg-white">
       <Link
         href={`/blog/${a.slug}`}
         className="grid aspect-[16/9] place-items-center bg-menta-suave p-4 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-morado-suave"
@@ -55,7 +55,7 @@ export function RejillaArticulos({ articulos }: { articulos: Articulo[] }) {
 /** La invitación sobria al final de un artículo o de una página: prueba y demo. */
 export function LlamadaSobria({ titulo = "¿Quieres dejar la libreta?", texto = "Pruébalo 15 días con todo abierto, sin tarjeta, o mira cómo se ve con un negocio de ejemplo." }: { titulo?: string; texto?: string }) {
   return (
-    <aside aria-label="Prueba PeluDesk" className="rounded-2xl border border-n-200 bg-white p-6 sm:p-8">
+    <aside aria-label="Prueba PeluDesk" className="rounded-2xl border border-border bg-white p-6 sm:p-8">
       <p className="text-xl font-bold text-n-900">{titulo}</p>
       <p className="mt-2 max-w-[52ch] text-n-700">{texto}</p>
       <div className="mt-5 flex flex-col gap-3 sm:flex-row">

@@ -58,7 +58,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
           <li
             key={m.id as string}
             data-autor={m.autor as string}
-            className={`rounded-lg p-3 ${m.autor === "plataforma" ? "border border-morado bg-morado-suave" : "border border-n-200 bg-white"}`}
+            className={`rounded-lg p-3 ${m.autor === "plataforma" ? "border border-morado bg-morado-suave" : "border border-border bg-white"}`}
           >
             <p className="text-xs font-semibold text-n-600">
               {m.autor === "plataforma" ? "PeluDesk" : "Tu negocio"} · {formatearFecha(m.created_at as string, zona)}
@@ -69,7 +69,7 @@ export default async function TicketPage({ params, searchParams }: { params: Pro
       </ol>
       {captura && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={captura} alt="Captura de pantalla que se mandó con el ticket" className="max-w-2xl rounded-lg border border-n-200" />
+        <img src={captura} alt="Captura de pantalla que se mandó con el ticket" className="max-w-2xl rounded-lg border border-border" />
       )}
       <ResponderTicket ticketId={id} resuelto={t.estado === "resuelto"} />
     </div>

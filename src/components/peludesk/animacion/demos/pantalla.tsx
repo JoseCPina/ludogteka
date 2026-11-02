@@ -23,7 +23,7 @@ export function Pantalla({
   const visible = useVisible(ref, 0.35);
   const { paso, ciclo, saliendo } = useSecuencia(tiempos, visible, retencion, 450);
   return (
-    <div ref={ref} role="img" aria-label={etiqueta} className={`relative overflow-hidden rounded-2xl border border-n-200 bg-crema ${altura} ${saliendo ? "pd-sale" : ""}`}>
+    <div ref={ref} role="img" aria-label={etiqueta} className={`relative overflow-hidden rounded-2xl border border-border bg-crema ${altura} ${saliendo ? "pd-sale" : ""}`}>
       <div aria-hidden="true" className="pointer-events-none h-full select-none p-3 sm:p-4">
         {children({ paso, ciclo })}
       </div>

@@ -23,7 +23,7 @@ function Cuerpo({ paso }: { paso: number }) {
   const contado = useContador(ESPERADO, paso >= 5, 900);
   return (
     <div className="grid h-full gap-3 sm:grid-cols-2">
-      <div className="rounded-xl border border-n-200 bg-white p-3">
+      <div className="rounded-xl border border-border bg-white p-3">
         <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-n-600">Cobros del turno</p>
         <ul className="mt-2 flex flex-col gap-2">
           {COBROS.map(([quien, que, monto], i) => (
@@ -48,14 +48,14 @@ function Cuerpo({ paso }: { paso: number }) {
       <div className="rounded-xl border border-dashed border-n-300 bg-white/60 p-3">
         <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-n-600">Corte de caja</p>
         {paso >= 5 && (
-          <div className="pd-pop mt-2 rounded-lg border border-n-200 bg-white p-3 text-xs">
+          <div className="pd-pop mt-2 rounded-lg border border-border bg-card shadow-tarjeta p-3 text-xs">
             <p className="flex justify-between text-n-700">
               Esperado <span className="font-bold tabular-nums text-n-900">{pesosEjemplo(ESPERADO)}</span>
             </p>
             <p className="mt-1 flex justify-between text-n-700">
               Contado <span className="font-bold tabular-nums text-n-900">{pesosEjemplo(contado)}</span>
             </p>
-            <p className="mt-1 flex justify-between border-t border-n-200 pt-1 text-n-700">
+            <p className="mt-1 flex justify-between border-t border-border pt-1 text-n-700">
               Diferencia <span className="font-bold tabular-nums text-n-900">$0</span>
             </p>
           </div>

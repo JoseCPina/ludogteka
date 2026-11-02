@@ -63,7 +63,7 @@ export function Reclamar({ slug, nombre }: { slug: string; nombre: string }) {
   if (reclamo?.estado === "verificado" || reclamo?.estado === "registrado") {
     return (
       <div data-reclamo-verificado className="hta-aparece rounded-2xl bg-menta-suave p-5 sm:p-6">
-        <p className="text-lg font-bold text-n-900">Listo: verificamos que {nombre} es tuyo.</p>
+        <p className="text-lg font-semibold text-foreground">Listo: verificamos que {nombre} es tuyo.</p>
         <p className="mt-1 text-n-700">
           Abre tu prueba gratis de 15 días y esta ficha queda como tu página web en PeluDesk, con la insignia «Negocio verificado». Sin tarjeta.
           {reclamo.telefonoCoincide ? "" : " Tu WhatsApp no es el que aparece en Google: en tu página podrás poner el que quieras."}
@@ -75,9 +75,9 @@ export function Reclamar({ slug, nombre }: { slug: string; nombre: string }) {
 
   if (reclamo) {
     return (
-      <div data-reclamo-pendiente className="hta-aparece rounded-2xl border border-n-200 bg-white p-5 sm:p-6">
+      <div data-reclamo-pendiente className="hta-aparece rounded-2xl border border-border bg-white p-5 sm:p-6">
         <p className="hta-etiqueta">Paso 2 de 2</p>
-        <p className="text-lg font-bold text-n-900">Mándanos este código por WhatsApp desde tu número</p>
+        <p className="text-lg font-semibold text-foreground">Mándanos este código por WhatsApp desde tu número</p>
         <p className="mt-1 text-n-700">Así comprobamos que el teléfono es tuyo. En cuanto llegue, esta página lo detecta sola.</p>
         <div className="mt-4"><CampoCopiable valor={`RECLAMO ${reclamo.codigo}`} etiqueta="Tu código" textoBoton="Copiar" monoespaciado /></div>
         <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -104,7 +104,7 @@ export function Reclamar({ slug, nombre }: { slug: string; nombre: string }) {
     <form
       method="post"
       data-reclamar
-      className="rounded-2xl border border-n-200 bg-white p-5 sm:p-6"
+      className="rounded-2xl border border-border bg-white p-5 sm:p-6"
       onSubmit={async (e) => {
         e.preventDefault();
         setError(null);
@@ -120,7 +120,7 @@ export function Reclamar({ slug, nombre }: { slug: string; nombre: string }) {
       }}
     >
       <p className="hta-etiqueta">Paso 1 de 2</p>
-      <p className="text-lg font-bold text-n-900">¿Es tu negocio? Reclámalo</p>
+      <p className="text-lg font-semibold text-foreground">¿Es tu negocio? Reclámalo</p>
       <p className="mt-1 max-w-[56ch] text-n-700">Deja tu WhatsApp, te damos un código y nos lo mandas desde tu número. Con eso la ficha es tuya: la conviertes en tu página web con la insignia «Negocio verificado».</p>
       <div className="mt-4 max-w-sm">
         <label htmlFor="reclamo-tel" className="hta-etiqueta">Tu WhatsApp</label>

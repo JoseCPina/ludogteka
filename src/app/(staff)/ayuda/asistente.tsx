@@ -62,7 +62,7 @@ export function Asistente({ pantalla, disponible }: { pantalla: string | null; d
             <li
               key={i}
               data-mensaje={m.quien}
-              className={m.quien === "persona" ? "self-end rounded-lg bg-morado-suave px-3 py-2 text-n-900" : "rounded-lg border border-n-200 bg-white p-3"}
+              className={m.quien === "persona" ? "self-end rounded-lg bg-morado-suave px-3 py-2 text-n-900" : "rounded-lg border border-border bg-card shadow-tarjeta p-3"}
             >
               {m.quien === "persona" ? (
                 m.texto

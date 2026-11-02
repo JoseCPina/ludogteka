@@ -86,13 +86,13 @@ export default async function PaginaVeterinaria() {
       />
 
       {/* ── Lo que hace ── */}
-      <section aria-labelledby="funciones" className="border-y border-n-200 bg-white">
+      <section aria-labelledby="funciones" className="border-y border-border bg-white">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <h2 id="funciones" className="text-2xl font-bold text-n-900">Lo que ya hace por tu clínica</h2>
           <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {FUNCIONES_VET.map((f) => (
-              <li key={f.titulo} className="rounded-2xl border border-n-200 bg-crema p-5">
-                <h3 className="text-lg font-bold text-n-900">{f.titulo}</h3>
+              <li key={f.titulo} className="rounded-2xl border border-border bg-crema p-5">
+                <h3 className="text-lg font-semibold text-foreground">{f.titulo}</h3>
                 <p className="mt-2 text-n-700">{f.texto}</p>
               </li>
             ))}
@@ -117,9 +117,9 @@ export default async function PaginaVeterinaria() {
                 alt={c.alt}
                 loading="lazy"
                 decoding="async"
-                className="h-auto w-full rounded-[18px] border border-n-200 bg-white"
+                className="h-auto w-full rounded-[18px] border border-border bg-white"
               />
-              <h3 className="text-lg font-bold text-n-900">{c.titulo}</h3>
+              <h3 className="text-lg font-semibold text-foreground">{c.titulo}</h3>
               <p className="text-n-700">{c.texto}</p>
             </li>
           ))}
@@ -127,7 +127,7 @@ export default async function PaginaVeterinaria() {
       </section>
 
       {/* ── Lo que cuidamos ── */}
-      <section aria-labelledby="cuidado" className="border-y border-n-200 bg-white">
+      <section aria-labelledby="cuidado" className="border-y border-border bg-white">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <h2 id="cuidado" className="text-2xl font-bold text-n-900">Lo clínico se cuida</h2>
           <ul className="mt-6 grid gap-4 md:grid-cols-2">
@@ -137,7 +137,7 @@ export default async function PaginaVeterinaria() {
               ["Un controlado no sale sin su receta", "El inventario se niega a darlo de baja sin el documento que le toca."],
               ["Cada médico, con su cédula", "La firma lleva la cédula y el nombre de quien atendió, y solo un médico designado firma o emite recetas."],
             ].map(([t, x]) => (
-              <li key={t} className="rounded-2xl border border-n-200 bg-crema p-5">
+              <li key={t} className="rounded-2xl border border-border bg-crema p-5">
                 <p className="text-lg font-semibold text-n-900">{t}</p>
                 <p className="mt-2 text-n-700">{x}</p>
               </li>
@@ -154,8 +154,8 @@ export default async function PaginaVeterinaria() {
         </p>
         <ul className="mt-6 grid gap-5 md:grid-cols-3">
           {MODULOS_TRES.map((m) => (
-            <li key={m.clave} className="rounded-2xl border border-n-200 bg-white p-5">
-              <h3 className="text-lg font-bold text-n-900">{m.nombre}</h3>
+            <li key={m.clave} className="rounded-2xl border border-border bg-white p-5">
+              <h3 className="text-lg font-semibold text-foreground">{m.nombre}</h3>
               <p className="mt-2 text-n-700">{m.texto}</p>
             </li>
           ))}
@@ -176,8 +176,8 @@ export default async function PaginaVeterinaria() {
         <h2 id="preguntas" className="text-2xl font-bold text-n-900">Preguntas frecuentes</h2>
         <dl className="mt-6 flex flex-col gap-3">
           {preguntas.map(([q, r]) => (
-            <div key={q} className="rounded-2xl border border-n-200 bg-white p-5">
-              <dt className="text-lg font-bold text-n-900">{q}</dt>
+            <div key={q} className="rounded-2xl border border-border bg-white p-5">
+              <dt className="text-lg font-semibold text-foreground">{q}</dt>
               <dd className="mt-2 text-n-700">{r}</dd>
             </div>
           ))}

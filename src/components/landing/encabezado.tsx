@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SignIn } from "@phosphor-icons/react/dist/ssr";
+import { LogInIcon as SignIn } from "lucide-react";
 import { Marca } from "./comunes";
 import { cargarNegocioLanding } from "@/lib/landing/negocio";
 
@@ -38,7 +38,7 @@ export async function Encabezado() {
           href="/login"
           className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 text-[0.9375rem] font-semibold text-[var(--lp-tinta)]/70 transition-colors hover:bg-[var(--lp-menta)] hover:text-[var(--lp-tinta)] focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-[var(--lp-indigo)]"
         >
-          <SignIn size={18} weight="bold" aria-hidden />
+          <SignIn size={18} aria-hidden />
           Entrar
         </Link>
       </div>

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Info, Moon } from "@phosphor-icons/react/dist/ssr";
+import { InfoIcon as Info, MoonIcon as Moon } from "lucide-react";
 import { BotonWhatsApp, Ola, Rotulo } from "./comunes";
 import { datosLanding, pesos } from "@/lib/landing/negocio";
 import fotoCamita from "./fotos/lugar/hotel-camita.jpg";
@@ -14,7 +14,7 @@ export async function Hotel() {
         <div className="mx-auto grid max-w-7xl items-center gap-14 px-4 sm:px-6 lg:grid-cols-12 lg:px-8">
           <div className="lg:col-span-7">
             <p className="lp-revela lp-display inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-lg font-bold text-[var(--lp-indigo)]">
-              <Moon size={20} weight="fill" aria-hidden />
+              <Moon size={20} aria-hidden />
               Hotel por noche
             </p>
             <Rotulo className="lp-revela mt-5 text-5xl sm:text-6xl">Noches tranquilas, como en casa.</Rotulo>
@@ -42,15 +42,15 @@ export async function Hotel() {
 
             <ul className="lp-revela mt-8 flex flex-col gap-2 text-lg font-bold text-[var(--lp-tinta)]">
               <li className="flex items-center gap-2">
-                <Info size={22} weight="bold" className="shrink-0 text-[var(--lp-tinta)]" aria-hidden />
+                <Info size={22} className="shrink-0 text-[var(--lp-tinta)]" aria-hidden />
                 No incluye servicios extra.
               </li>
               <li className="flex items-center gap-2">
-                <Info size={22} weight="bold" className="shrink-0 text-[var(--lp-tinta)]" aria-hidden />
+                <Info size={22} className="shrink-0 text-[var(--lp-tinta)]" aria-hidden />
                 No recibimos ni entregamos perros de hotel los domingos.
               </li>
               <li className="flex items-center gap-2">
-                <Info size={22} weight="bold" className="shrink-0 text-[var(--lp-tinta)]" aria-hidden />
+                <Info size={22} className="shrink-0 text-[var(--lp-tinta)]" aria-hidden />
                 Aplican los mismos requisitos que en guardería.
               </li>
             </ul>

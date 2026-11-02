@@ -84,7 +84,7 @@ export function SeccionLudogteka() {
           alt="Logotipo de Ludogteka: la cara de un perro dentro de un círculo y el nombre en letras azules y naranja"
           width={112}
           height={112}
-          className="h-28 w-28 shrink-0 rounded-[24px] border border-n-200 bg-white object-contain p-1"
+          className="h-28 w-28 shrink-0 rounded-[24px] border border-border bg-white object-contain p-1"
         />
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.1em] text-morado">Un negocio de verdad</p>
@@ -125,7 +125,7 @@ export function SeccionLudogteka() {
             {FRASES.map((t, i) => (
               <li key={t} className="min-h-[76px]">
                 {enFrases && (
-                  <figure className="pd-pop h-full rounded-[16px] border border-n-200 border-l-4 border-l-menta bg-white px-4 py-3" style={{ animationDelay: `${i * 140}ms` }}>
+                  <figure className="pd-pop h-full rounded-[16px] border border-border border-l-4 border-l-menta bg-white px-4 py-3" style={{ animationDelay: `${i * 140}ms` }}>
                     <blockquote className="text-[15px] font-semibold leading-snug text-n-900">«{t}»</blockquote>
                     <figcaption className="mt-1 text-xs text-n-600">Equipo Ludogteka</figcaption>
                   </figure>
@@ -247,7 +247,7 @@ function ReelTarjeta() {
         onClick={(e) => {
           if (e.target === dialogo.current) dialogo.current?.close();
         }}
-        className="pd-modal m-auto max-h-[92vh] w-[min(94vw,34rem)] overflow-y-auto rounded-[24px] border border-n-200 bg-white p-0 text-n-900 shadow-2xl"
+        className="pd-modal m-auto max-h-[92vh] w-[min(94vw,34rem)] overflow-y-auto rounded-[24px] border border-border bg-white p-0 text-n-900 shadow-2xl"
       >
         <div className="p-4 sm:p-6">
           <div className="flex items-start justify-between gap-4">
@@ -346,7 +346,7 @@ export function PreguntalesModal() {
           // Un clic en el fondo (el propio <dialog>, no su contenido) cierra.
           if (e.target === dialogo.current) dialogo.current?.close();
         }}
-        className="pd-modal m-auto w-[min(92vw,26rem)] rounded-[24px] border border-n-200 bg-white p-0 text-n-900 shadow-2xl"
+        className="pd-modal m-auto w-[min(92vw,26rem)] rounded-[24px] border border-border bg-white p-0 text-n-900 shadow-2xl"
       >
         <div className="p-6 sm:p-7">
           <div className="flex items-start justify-between gap-4">

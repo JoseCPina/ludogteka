@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { CalendarCheck, CarProfile, HouseLine, MapPin } from "@phosphor-icons/react/dist/ssr";
+import { CalendarCheckIcon as CalendarCheck, CarIcon as CarProfile, HouseIcon as HouseLine, MapPinIcon as MapPin } from "lucide-react";
 import { BotonWhatsApp, Rotulo } from "./comunes";
 import { datosLanding, pesos } from "@/lib/landing/negocio";
 import fotoCoche from "./fotos/lugar/recoleccion-coche.jpg";
@@ -44,12 +44,12 @@ export async function Recoleccion() {
           <div className="lp-revela mt-8 rounded-2xl bg-white/70 px-4 pb-4 pt-3">
             <div className="flex items-center justify-between text-base font-bold text-[var(--lp-indigo)]">
               <span className="inline-flex items-center gap-1.5">
-                <HouseLine size={22} weight="fill" aria-hidden />
+                <HouseLine size={22} aria-hidden />
                 Tu casa
               </span>
               <span className="inline-flex items-center gap-1.5">
                 {NOMBRE}
-                <MapPin size={22} weight="fill" aria-hidden />
+                <MapPin size={22} aria-hidden />
               </span>
             </div>
             <div className="relative mt-2 h-12 [container-type:inline-size]">
@@ -59,7 +59,7 @@ export async function Recoleccion() {
                 aria-hidden
               />
               <span className="lp-camioneta absolute left-0 top-0 grid size-12 place-items-center rounded-full bg-[var(--lp-turquesa)] text-white shadow-[0_4px_0_var(--lp-turquesa-hondo)]">
-                <CarProfile size={28} weight="fill" aria-hidden />
+                <CarProfile size={28} aria-hidden />
               </span>
             </div>
           </div>
@@ -71,7 +71,7 @@ export async function Recoleccion() {
                 className="lp-revela flex items-start gap-2 rounded-2xl bg-white p-4 text-base font-bold leading-snug shadow-[0_5px_0_rgb(27_33_64/0.12)]"
                 style={{ "--i": i } as React.CSSProperties}
               >
-                <CalendarCheck size={22} weight="bold" className="mt-px shrink-0 text-[var(--lp-indigo)]" aria-hidden />
+                <CalendarCheck size={22} className="mt-px shrink-0 text-[var(--lp-indigo)]" aria-hidden />
                 {r}
               </li>
             ))}

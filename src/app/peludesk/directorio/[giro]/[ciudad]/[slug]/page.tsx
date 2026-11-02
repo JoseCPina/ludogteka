@@ -90,14 +90,14 @@ export default async function FichaDirectorio({ params }: Props) {
           </p>
         </div>
       </div>
-      <div className="mt-4 border-y border-n-200">
+      <div className="mt-4 border-y border-border">
         <PaginaWeb datos={datos} modo="demo" portal={portalEjemplo(datos.giro)} />
       </div>
       <div className="hta mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         {n.verificado ? (
           <div className="rounded-2xl bg-menta-suave p-5 sm:p-6">
             <NegocioVerificado />
-            <p className="mt-2 text-lg font-bold text-n-900">El dueño ya reclamó esta ficha.</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">El dueño ya reclamó esta ficha.</p>
             <p className="mt-1 text-n-700">Su página web está en PeluDesk; aquí ves la ficha pública del directorio.</p>
           </div>
         ) : (

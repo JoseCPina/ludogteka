@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Eye, PawPrint } from "@phosphor-icons/react/dist/ssr";
+import { EyeIcon as Eye, PawPrintIcon as PawPrint } from "lucide-react";
 import { BotonWhatsApp, Hueso, Ola, Rotulo } from "./comunes";
 import { datosLanding } from "@/lib/landing/negocio";
 import { PERROS } from "./perros";
@@ -17,7 +17,7 @@ export async function Hero() {
             className="lp-entra lp-display inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-base font-semibold text-[var(--lp-indigo)] shadow-[0_4px_0_rgb(27_33_64/0.18)]"
             style={{ "--d": 0 } as React.CSSProperties}
           >
-            <Eye size={20} weight="bold" aria-hidden />
+            <Eye size={20} aria-hidden />
             {TEXTOS.etiqueta_hero}
           </p>
           <Rotulo como="h1" className="mt-6 text-[2.75rem] sm:text-6xl lg:text-[4.4rem]">
@@ -29,7 +29,7 @@ export async function Hero() {
           >
             {["Guardería", "Hotel", "Estética", "Recolección"].map((s) => (
               <li key={s} className="flex items-center gap-1.5">
-                <PawPrint size={20} weight="fill" aria-hidden />
+                <PawPrint size={20} aria-hidden />
                 {s}
               </li>
             ))}

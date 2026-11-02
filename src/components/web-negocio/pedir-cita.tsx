@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowLeft, CalendarCheck, Check, WhatsappLogo } from "@phosphor-icons/react/dist/ssr";
+import { ArrowLeftIcon as ArrowLeft, CalendarCheckIcon as CalendarCheck, CheckIcon as Check } from "lucide-react";
+import { IconoWhatsApp as WhatsappLogo } from "@/components/iconos/whatsapp";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Alert } from "@/components/ui/alert";
@@ -143,7 +144,7 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
       <div ref={caja} data-pedido-listo className="flex min-w-0 scroll-mt-24 flex-col gap-6">
         <div className="flex items-start gap-3 rounded-[var(--w-radio-tarjeta)] bg-white p-5 shadow-sm ring-1 ring-black/5">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white" style={{ background: "var(--w-acento)" }} aria-hidden>
-            <Check size={22} weight="bold" />
+            <Check size={22} />
           </span>
           <div className="min-w-0">
             <p className="text-lg font-bold leading-snug">{modo === "demo" ? "Así quedaría la solicitud" : "Te abrimos WhatsApp con tu solicitud"}</p>
@@ -181,7 +182,7 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
         {PASOS.map((p, i) => (
           <li key={p} className={`flex items-center gap-1.5 ${i <= paso ? "text-[var(--w-tinta)]" : "text-black/40"}`} aria-current={i === paso ? "step" : undefined}>
             <span className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] text-white" style={{ background: i <= paso ? "var(--w-acento)" : "rgba(0,0,0,.25)" }}>
-              {i < paso ? <Check size={12} weight="bold" aria-hidden /> : i + 1}
+              {i < paso ? <Check size={12} aria-hidden /> : i + 1}
             </span>
             {p}
             {i < PASOS.length - 1 && <span className="mx-1 h-px w-4 bg-black/15" aria-hidden />}
@@ -225,7 +226,7 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
         <div className="flex flex-col gap-5">
           <p className="text-sm text-black/65">
             <button type="button" className="inline-flex items-center gap-1 font-semibold text-[var(--w-acento)]" onClick={() => ir(0)}>
-              <ArrowLeft size={14} weight="bold" aria-hidden /> {servicio.nombre}
+              <ArrowLeft size={14} aria-hidden /> {servicio.nombre}
             </button>
           </p>
           <fieldset className="min-w-0">
@@ -344,7 +345,7 @@ export function PedirCita({ catalogo, horario, zona, negocio, modo, telefono, pr
           </Button>
         ) : (
           <Button key="confirmar" type="submit" form="form-pedir" style={boton} data-confirmar-pedido>
-            {modo === "real" && <WhatsappLogo size={20} weight="fill" aria-hidden />}
+            {modo === "real" && <WhatsappLogo size={20} aria-hidden />}
             {modo === "real" ? "Enviar por WhatsApp" : servicio?.modo === "cita" ? "Pedir cita" : "Pedir reserva"}
           </Button>
         )}

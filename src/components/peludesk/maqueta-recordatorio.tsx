@@ -174,9 +174,9 @@ export function MaquetaRecordatorio(props: DatosMaqueta & { className?: string }
 
       {/* ── La agenda del negocio ── */}
       <div aria-hidden="true" className="pointer-events-none mx-auto w-full max-w-[460px] select-none md:mx-0">
-        <div className="rounded-[18px] border border-n-200 bg-white p-4 shadow-[0_18px_40px_-30px_rgb(43_42_51/0.45)] sm:p-5">
+        <div className="rounded-[18px] border border-border bg-white p-4 shadow-[0_18px_40px_-30px_rgb(43_42_51/0.45)] sm:p-5">
           <p className="truncate text-xs font-semibold uppercase tracking-[0.08em] text-n-600">Agenda de {negocio}</p>
-          <p className="mt-0.5 text-lg font-bold text-n-900 first-letter:uppercase">{dia}</p>
+          <p className="mt-0.5 text-lg font-semibold text-foreground first-letter:uppercase">{dia}</p>
           <ul className="mt-3 flex flex-col gap-2">
             {filas.map((f) => {
               const conChipConfirmada = f.principal ? confirmada : f.hora === filas[0].hora;
@@ -184,7 +184,7 @@ export function MaquetaRecordatorio(props: DatosMaqueta & { className?: string }
                 <li
                   key={`${f.hora}-${f.mascota}`}
                   className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors duration-500 motion-reduce:transition-none ${
-                    f.principal ? (confirmada ? "pd-mr-pulso border-morado/30 bg-crema" : "border-n-300 bg-crema") : "border-n-200 bg-white"
+                    f.principal ? (confirmada ? "pd-mr-pulso border-morado/30 bg-crema" : "border-n-300 bg-crema") : "border-border bg-white"
                   }`}
                 >
                   <span className="w-11 shrink-0 text-sm font-bold tabular-nums text-n-900">{f.hora}</span>

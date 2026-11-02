@@ -17,7 +17,7 @@ export function ReproductorTutorial({ t }: { t: Pick<Tutorial, "titulo" | "video
 
   if (t.youtube_id) {
     return (
-      <div className="aspect-video w-full overflow-hidden rounded-lg border border-n-200 bg-black">
+      <div className="aspect-video w-full overflow-hidden rounded-lg border border-border bg-black">
         <iframe
           title={t.titulo}
           src={`https://www.youtube-nocookie.com/embed/${t.youtube_id}?rel=0&cc_lang_pref=es&cc_load_policy=1`}
@@ -34,7 +34,7 @@ export function ReproductorTutorial({ t }: { t: Pick<Tutorial, "titulo" | "video
   const vtt = urlArchivoTutorial(t.vtt_path);
   return (
     <div className="flex flex-col gap-2" data-reproductor-tutorial>
-      <div className="aspect-video w-full overflow-hidden rounded-lg border border-n-200 bg-black">
+      <div className="aspect-video w-full overflow-hidden rounded-lg border border-border bg-black">
         <video
           ref={ref}
           controls

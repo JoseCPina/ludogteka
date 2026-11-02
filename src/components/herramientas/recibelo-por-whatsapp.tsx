@@ -60,7 +60,7 @@ export function ReciboPorWhatsApp({
   if (resultado && !resultado.error) {
     return (
       <div data-recibelo-listo className="hta-aparece rounded-2xl bg-menta-suave p-5 sm:p-6">
-        <p className="text-lg font-bold text-n-900">{resultado.enviado ? "Listo: ya va en camino a tu WhatsApp." : "Guardado. Este es tu link:"}</p>
+        <p className="text-lg font-semibold text-foreground">{resultado.enviado ? "Listo: ya va en camino a tu WhatsApp." : "Guardado. Este es tu link:"}</p>
         {!resultado.enviado && <p className="mt-1 text-sm text-n-700">{resultado.motivo === "baja" ? "Tu número pidió no recibir mensajes de PeluDesk, así que no te lo mandamos; aquí lo tienes." : "El mensaje automático no salió en este momento; aquí tienes el link para guardarlo."}</p>}
         <div className="mt-3"><CampoCopiable valor={urlCompleta} etiqueta="Link a tu resultado" textoBoton="Copiar link" /></div>
         <p className="mt-4 text-n-800">
@@ -75,7 +75,7 @@ export function ReciboPorWhatsApp({
     <form
       method="post"
       data-recibelo
-      className="rounded-2xl border border-n-200 bg-white p-5 sm:p-6"
+      className="rounded-2xl border border-border bg-white p-5 sm:p-6"
       onSubmit={async (e) => {
         e.preventDefault();
         setError(null);
@@ -102,7 +102,7 @@ export function ReciboPorWhatsApp({
         setResultado(res);
       }}
     >
-      <p className="text-lg font-bold text-n-900">{titulo}</p>
+      <p className="text-lg font-semibold text-foreground">{titulo}</p>
       <p className="mt-1 max-w-[56ch] text-n-700">{texto}</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <div>

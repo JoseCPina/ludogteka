@@ -38,7 +38,7 @@ export default async function VideoPublico({ params }: { params: Promise<{ slug:
   const { video, siguiente } = r;
   const articulos = articulosDeVideo(video.numero).map((s) => articuloPorSlug(s)).filter((a) => a !== null);
   return (
-    <div className="min-h-full bg-n-50">
+    <div className="min-h-full bg-muted">
       <JsonLd datos={[{ "@context": "https://schema.org", ...ldVideo(video) }, migas([{ nombre: "Inicio", ruta: "/" }, { nombre: "Ayuda", ruta: "/ayuda" }, { nombre: "Videos", ruta: "/ayuda/videos" }, { nombre: video.titulo, ruta: `/ayuda/videos/${video.slug}` }])]} />
       <EncabezadoAyuda />
       <main id="contenido" className="mx-auto flex max-w-4xl flex-col gap-5 px-4 py-8">
@@ -59,7 +59,7 @@ export default async function VideoPublico({ params }: { params: Promise<{ slug:
           </section>
         )}
         {siguiente && (
-          <Link href={`/ayuda/videos/${siguiente.slug}`} className="rounded-lg border border-n-200 bg-white p-4 hover:border-morado">
+          <Link href={`/ayuda/videos/${siguiente.slug}`} className="rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado">
             <span className="text-sm text-n-600">Siguiente video</span>
             <span className="block font-semibold text-n-900">{siguiente.titulo} →</span>
           </Link>

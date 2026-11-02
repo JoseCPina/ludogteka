@@ -35,7 +35,7 @@ export default async function Escuela() {
             const v = vivas.find((x) => x.clave === s.clave);
             const fecha = fechaEnTexto(v?.fecha_at);
             return (
-              <li key={s.clave} className="grid gap-x-10 gap-y-3 border-b border-n-200 py-8 md:grid-cols-[5rem_minmax(0,1.3fr)_minmax(0,1fr)]" data-sesion={s.clave}>
+              <li key={s.clave} className="grid gap-x-10 gap-y-3 border-b border-border py-8 md:grid-cols-[5rem_minmax(0,1.3fr)_minmax(0,1fr)]" data-sesion={s.clave}>
                 <span className="text-sm font-bold tracking-[0.14em] text-morado">{String(i + 1).padStart(2, "0")}</span>
                 <div>
                   <h2 className="text-2xl font-bold tracking-tight text-n-900"><Link href={`/escuela/${s.clave}`} className="hover:underline">{s.titulo}</Link></h2>

@@ -21,7 +21,7 @@ export async function ArticuloAyuda({ articulo, linkDe, videos = [] }: { articul
           src={`/ayuda/capturas/${articulo.captura}`}
           alt={`Captura de pantalla: ${articulo.titulo} (negocio de ejemplo)`}
           loading="lazy"
-          className="h-auto w-full rounded-lg border border-n-200 bg-white"
+          className="h-auto w-full rounded-lg border border-border bg-card shadow-tarjeta"
         />
       )}
       <MarkdownAyuda texto={cuerpo} linkDe={linkDe} />

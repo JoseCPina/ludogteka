@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Dog, Cat, Syringe, CalendarBlank, Stethoscope } from "@phosphor-icons/react/dist/ssr";
+import { DogIcon as Dog, CatIcon as Cat, SyringeIcon as Syringe, CalendarIcon as CalendarBlank, StethoscopeIcon as Stethoscope } from "lucide-react";
 import { Chip, type TonoChip } from "@/components/ui/chip";
 import type { PortalEjemplo } from "@/lib/web-negocio/catalogo";
 
@@ -46,7 +46,7 @@ export function PortalDemo({ negocio, datos }: { negocio: string; datos: PortalE
           datos.mascotas.map((m) => (
             <div key={m.nombre} className="flex items-center gap-3 rounded-[14px] bg-white p-3">
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-morado-suave text-morado" aria-hidden>
-                {m.especie === "Gato" ? <Cat size={26} weight="duotone" /> : <Dog size={26} weight="duotone" />}
+                {m.especie === "Gato" ? <Cat size={26} /> : <Dog size={26} />}
               </span>
               <span>
                 <span className="block font-bold">{m.nombre}</span>

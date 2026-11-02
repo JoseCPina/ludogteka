@@ -93,14 +93,14 @@ export default async function Aterrizaje({ params }: Props) {
         </div>
       </section>
 
-      <SeccionRecordatorios textos={recordatorios} ejemplo={EJEMPLO[a.slug as keyof typeof GIRO]} className="border-t border-n-200" />
+      <SeccionRecordatorios textos={recordatorios} ejemplo={EJEMPLO[a.slug as keyof typeof GIRO]} className="border-t border-border" />
 
-      <section aria-labelledby="alivios" className="border-y border-n-200 bg-white">
+      <section aria-labelledby="alivios" className="border-y border-border bg-white">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
           <h2 id="alivios" className="text-2xl font-bold text-n-900">Lo que te quitas de encima</h2>
           <ul className="mt-6 grid gap-4 md:grid-cols-2">
             {a.alivios.map((x) => (
-              <li key={x.antes} className="rounded-2xl border border-n-200 bg-crema p-5">
+              <li key={x.antes} className="rounded-2xl border border-border bg-crema p-5">
                 <p className="text-sm font-semibold uppercase tracking-[0.08em] text-n-600 line-through decoration-coral/60">{x.antes}</p>
                 <p className="mt-2 text-lg font-semibold text-n-900">{x.ahora}</p>
               </li>
@@ -113,8 +113,8 @@ export default async function Aterrizaje({ params }: Props) {
         <h2 id="funciones" className="text-2xl font-bold text-n-900">Lo que hace por tu negocio</h2>
         <ul className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {a.funciones.map((f) => (
-            <li key={f.titulo} className="rounded-2xl border border-n-200 bg-white p-5">
-              <h3 className="text-lg font-bold text-n-900">{f.titulo}</h3>
+            <li key={f.titulo} className="rounded-2xl border border-border bg-white p-5">
+              <h3 className="text-lg font-semibold text-foreground">{f.titulo}</h3>
               <p className="mt-2 text-n-700">{f.texto}</p>
             </li>
           ))}
@@ -131,7 +131,7 @@ export default async function Aterrizaje({ params }: Props) {
       <BloquePrecio plan={plan} />
 
       {arts.length > 0 && (
-        <section aria-labelledby="guias" className="border-t border-n-200 bg-white">
+        <section aria-labelledby="guias" className="border-t border-border bg-white">
           <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
             <h2 id="guias" className="text-2xl font-bold text-n-900">Guías para leer antes</h2>
             <p className="mt-2 max-w-[60ch] text-n-700">Sirven aunque nunca uses PeluDesk.</p>
@@ -146,8 +146,8 @@ export default async function Aterrizaje({ params }: Props) {
         <h2 id="preguntas" className="text-2xl font-bold text-n-900">Preguntas frecuentes</h2>
         <dl className="mt-6 flex flex-col gap-3">
           {preguntas.map(([q, r]) => (
-            <div key={q} className="rounded-2xl border border-n-200 bg-white p-5">
-              <dt className="text-lg font-bold text-n-900">{q}</dt>
+            <div key={q} className="rounded-2xl border border-border bg-white p-5">
+              <dt className="text-lg font-semibold text-foreground">{q}</dt>
               <dd className="mt-2 text-n-700">{r}</dd>
             </div>
           ))}

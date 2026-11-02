@@ -60,7 +60,7 @@ export default async function Precios() {
         <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-n-900 md:text-[2.6rem]">Un solo plan, con todo incluido</h1>
         <p className="mt-4 max-w-[56ch] text-lg text-n-700">Sin elegir módulos, sin costo de alta y sin tarjeta para probar.</p>
         {plan && (
-          <div className="mt-8 rounded-3xl border border-n-200 bg-white p-6 sm:p-8">
+          <div className="mt-8 rounded-3xl border border-border bg-white p-6 sm:p-8">
             <PrecioPlan plan={plan} desglose />
             <p className="mt-3 text-n-700">Plan anual: {pesos(plan.anual)} + IVA (diez mensualidades por doce meses).</p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -86,8 +86,8 @@ export default async function Precios() {
         <h2 className="mt-12 text-2xl font-bold text-n-900">Los tres servicios</h2>
         <ul className="mt-4 grid gap-4 md:grid-cols-3">
           {MODULOS_TRES.map((m) => (
-            <li key={m.clave} className="rounded-2xl border border-n-200 bg-white p-5">
-              <h3 className="text-lg font-bold text-n-900">{m.nombre}</h3>
+            <li key={m.clave} className="rounded-2xl border border-border bg-white p-5">
+              <h3 className="text-lg font-semibold text-foreground">{m.nombre}</h3>
               <p className="mt-2 text-n-700">{m.texto}</p>
             </li>
           ))}
@@ -95,8 +95,8 @@ export default async function Precios() {
         <h2 className="mt-12 text-2xl font-bold text-n-900">Preguntas sobre el precio</h2>
         <dl className="mt-4 flex flex-col gap-3">
           {preguntas.map(([q, r]) => (
-            <div key={q} className="rounded-2xl border border-n-200 bg-white p-5">
-              <dt className="text-lg font-bold text-n-900">{q}</dt>
+            <div key={q} className="rounded-2xl border border-border bg-white p-5">
+              <dt className="text-lg font-semibold text-foreground">{q}</dt>
               <dd className="mt-2 text-n-700">{r}</dd>
             </div>
           ))}

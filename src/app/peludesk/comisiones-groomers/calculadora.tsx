@@ -73,7 +73,7 @@ export function CalculadoraComisiones() {
             <thead><tr className="text-xs font-bold uppercase tracking-wide text-n-600"><th className="py-2 font-bold">Esquema</th><th className="py-2 text-right font-bold">Estilista</th><th className="py-2 text-right font-bold">Negocio</th><th className="py-2 text-right font-bold">%</th></tr></thead>
             <tbody>
               {res.map((r) => (
-                <tr key={r.clave} className="border-t border-n-200" data-esquema={r.clave}>
+                <tr key={r.clave} className="border-t border-border" data-esquema={r.clave}>
                   <td className="py-3 pr-2"><b className="text-n-900">{r.nombre}</b><br /><span className="text-xs text-n-600">{r.detalle}</span></td>
                   <td className="py-3 text-right text-lg font-bold tabular-nums text-n-900">{pesos(r.estilista)}</td>
                   <td className="py-3 text-right tabular-nums text-n-800">{pesos(r.negocio)}</td>

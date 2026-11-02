@@ -47,7 +47,7 @@ export default async function ArticuloPublico({ params }: { params: Promise<{ sl
   const [videos, precios] = await Promise.all([videosPublicos(base.slug), preciosAyuda()]);
   const a = articuloConPrecios(base, precios);
   return (
-    <div className="min-h-full bg-n-50">
+    <div className="min-h-full bg-muted">
       <JsonLd datos={[ORGANIZACION_RAIZ, ldArticuloAyuda(a, videos), migas([{ nombre: "Inicio", ruta: "/" }, { nombre: "Ayuda", ruta: "/ayuda" }, { nombre: a.titulo, ruta: `/ayuda/${a.slug}` }])]} />
       <EncabezadoAyuda />
       <main id="contenido" className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8">

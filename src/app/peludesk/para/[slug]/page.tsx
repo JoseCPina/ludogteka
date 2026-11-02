@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { Rocket, WhatsappLogo, Sparkle, PlayCircle, ArrowRight, X, Check } from "@phosphor-icons/react/dist/ssr";
+import { RocketIcon as Rocket, SparklesIcon as Sparkle, CirclePlayIcon as PlayCircle, ArrowRightIcon as ArrowRight, XIcon as X, CheckIcon as Check } from "lucide-react";
+import { IconoWhatsApp as WhatsappLogo } from "@/components/iconos/whatsapp";
 import { LogoPeluDesk } from "@/components/marca/peludesk";
 import { PaginaWeb } from "@/components/web-negocio/pagina-web";
 import { BarraFija } from "@/components/web-negocio/barra-fija";
@@ -76,7 +77,7 @@ const EJEMPLO_RECORDATORIO: Record<GiroWeb, Omit<DatosMaqueta, "negocio">> = {
 function NotaPeluDesk({ children }: { children: React.ReactNode }) {
   return (
     <p data-nota-peludesk className="flex items-start gap-2.5 rounded-[14px] border border-morado/15 bg-white/80 p-3.5 text-[15px] leading-snug text-n-800" style={{ fontFamily: "var(--font-outfit), system-ui, sans-serif" }}>
-      <Sparkle size={18} weight="fill" className="mt-0.5 shrink-0 text-morado" aria-hidden />
+      <Sparkle size={18} className="mt-0.5 shrink-0 text-morado" aria-hidden />
       <span>{children}</span>
     </p>
   );
@@ -152,11 +153,11 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
               {ANTES_DESPUES[datos.giro].map(([antes, despues]) => (
                 <li key={antes} className="flex flex-col gap-2.5 rounded-[18px] bg-white/[0.06] p-4 ring-1 ring-white/10">
                   <p className="flex items-start gap-2 text-[15px] text-white/65">
-                    <X size={18} weight="bold" className="mt-0.5 shrink-0 text-[#ff8a7a]" aria-hidden />
+                    <X size={18} className="mt-0.5 shrink-0 text-[#ff8a7a]" aria-hidden />
                     <span className="line-through decoration-white/25">{antes}</span>
                   </p>
                   <p className="flex items-start gap-2 text-[16px] font-semibold">
-                    <Check size={18} weight="bold" className="mt-0.5 shrink-0 text-[#7fe0b8]" aria-hidden />
+                    <Check size={18} className="mt-0.5 shrink-0 text-[#7fe0b8]" aria-hidden />
                     {despues}
                   </p>
                 </li>
@@ -171,9 +172,9 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
             <MaquetaRecordatorio {...EJEMPLO_RECORDATORIO[datos.giro]} negocio={p.nombre} className="mt-6" />
             <ul className="mt-6 grid gap-3 md:grid-cols-3">
               {BENEFICIOS_RECORDATORIOS.map((b) => (
-                <li key={b.titulo} className="rounded-[14px] border border-n-200 bg-white p-4">
+                <li key={b.titulo} className="rounded-[14px] border border-border bg-white p-4">
                   <p className="flex items-center gap-2 font-bold">
-                    <Check size={18} weight="bold" className="shrink-0 text-menta-oscuro" aria-hidden />
+                    <Check size={18} className="shrink-0 text-menta-oscuro" aria-hidden />
                     {b.titulo}
                   </p>
                   <p className="mt-1 text-[15px] leading-snug text-n-700">{b.texto}</p>
@@ -191,7 +192,7 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
               <p className="mt-2 text-n-700">{demo.texto} Es un negocio de ejemplo y de solo lectura: puedes recorrerlo todo.</p>
             </div>
             <a href={`/para/${slug}/ir/demo${interno}`} data-boton-demo className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-morado px-6 font-semibold text-white">
-              <PlayCircle size={22} weight="fill" aria-hidden /> Ver cómo lo manejarías tú
+              <PlayCircle size={22} aria-hidden /> Ver cómo lo manejarías tú
             </a>
           </div>
 
@@ -203,10 +204,10 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
             </p>
             <div className="flex flex-col gap-3 min-[460px]:flex-row">
               <a href={`/para/${slug}/ir/prueba${interno}`} data-boton-prueba className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#7fe0b8] px-6 text-base font-bold text-[#1d1830]">
-                <Rocket size={20} weight="bold" aria-hidden /> Activar mi página gratis
+                <Rocket size={20} aria-hidden /> Activar mi página gratis
               </a>
               <a href={`/para/${slug}/ir/whatsapp${interno}`} data-boton-whatsapp className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md border border-white/30 px-6 text-base font-semibold text-white">
-                <WhatsappLogo size={20} weight="fill" aria-hidden /> Hablar por WhatsApp
+                <WhatsappLogo size={20} aria-hidden /> Hablar por WhatsApp
               </a>
             </div>
           </div>
@@ -240,10 +241,10 @@ export default async function PaginaProspecto({ params, searchParams }: Params) 
             <b className="text-n-900">Así se vería tu página en PeluDesk.</b> Tus clientes {esReserva ? "reservan" : "agendan"} solos; tú ves la agenda llena.
           </p>
           <a href={`/para/${slug}/ir/prueba${interno}`} className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-md bg-morado px-5 font-semibold text-white sm:flex-none">
-            Activar mi página gratis <ArrowRight size={18} weight="bold" aria-hidden />
+            Activar mi página gratis <ArrowRight size={18} aria-hidden />
           </a>
           <a href={`/para/${slug}/ir/whatsapp${interno}`} aria-label="Hablar por WhatsApp" className="inline-flex min-h-12 min-w-12 items-center justify-center rounded-md text-white" style={{ background: "#117a43" }}>
-            <WhatsappLogo size={22} weight="fill" aria-hidden />
+            <WhatsappLogo size={22} aria-hidden />
           </a>
         </div>
       </BarraFija>

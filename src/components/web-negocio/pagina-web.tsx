@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
-import { Star, MapPin, Clock, WhatsappLogo, Phone, ArrowRight, NavigationArrow, Quotes, UserCircle } from "@phosphor-icons/react/dist/ssr";
+import { StarIcon as Star, MapPinIcon as MapPin, ClockIcon as Clock, PhoneIcon as Phone, ArrowRightIcon as ArrowRight, NavigationIcon as NavigationArrow, QuoteIcon as Quotes, CircleUserIcon as UserCircle } from "lucide-react";
+import { IconoWhatsApp as WhatsappLogo } from "@/components/iconos/whatsapp";
 import { dmSerif, fraunces, fredoka, jakarta } from "@/fuentes";
 import { HechoConPeluDesk } from "@/components/marca/peludesk";
 import { FotoNegocio } from "@/components/foto-negocio";
@@ -75,7 +76,7 @@ function Estrellas({ valor, tamano = 16 }: { valor: number; tamano?: number }) {
   return (
     <span className="inline-flex" aria-label={`${valor} de 5 estrellas`}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <Star key={i} size={tamano} weight={valor >= i - 0.25 ? "fill" : valor >= i - 0.75 ? "duotone" : "regular"} className="text-[#f5a623]" aria-hidden />
+        <Star key={i} size={tamano} className="text-[#f5a623]" aria-hidden />
       ))}
     </span>
   );
@@ -99,7 +100,7 @@ function Botones({ tema, modo, centrado, claro, pedir }: { tema: TemaWeb; modo: 
         className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[var(--w-radio-boton)] px-6 text-base font-semibold text-white shadow-sm transition-transform active:scale-[.98]"
         style={{ background: claro ? "#fff" : "var(--w-acento)", color: claro ? "var(--w-profundo)" : "#fff" }}
       >
-        {tema.textos.pedir} <ArrowRight size={18} weight="bold" aria-hidden />
+        {tema.textos.pedir} <ArrowRight size={18} aria-hidden />
       </BotonPedir>}
       <a
         href={modo === "demo" ? "#portal" : "/login"}
@@ -108,7 +109,7 @@ function Botones({ tema, modo, centrado, claro, pedir }: { tema: TemaWeb; modo: 
           claro ? "border-white/60 text-white" : "border-[var(--w-acento)] bg-white/70 text-[var(--w-acento)]"
         }`}
       >
-        <UserCircle size={20} weight="bold" aria-hidden /> {tema.textos.portal}
+        <UserCircle size={20} aria-hidden /> {tema.textos.portal}
       </a>
     </div>
   );
@@ -342,7 +343,7 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
             <CarruselResenas>
               {datos.resenas.map((r, i) => (
                 <li key={i} className={`${tarjeta} flex w-[82%] shrink-0 snap-start flex-col gap-3 p-5 sm:w-auto`} data-resena>
-                  <Quotes size={26} weight="fill" className="text-[var(--w-acento)] opacity-80" aria-hidden />
+                  <Quotes size={26} className="text-[var(--w-acento)] opacity-80" aria-hidden />
                   <p className="line-clamp-6 text-[15px] leading-relaxed text-black/80">{r.texto}</p>
                   <div className="mt-auto flex items-center justify-between gap-2 pt-1 text-sm">
                     <span className="min-w-0">
@@ -381,7 +382,7 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
                   </div>
                   {puedePedir && (
                     <BotonPedir clave={s.clave} className="inline-flex min-h-11 w-fit items-center gap-1.5 text-sm font-semibold text-[var(--w-acento)] underline-offset-4 hover:underline">
-                      {s.modo === "cita" ? "Agendar" : "Reservar"} <ArrowRight size={16} weight="bold" aria-hidden />
+                      {s.modo === "cita" ? "Agendar" : "Reservar"} <ArrowRight size={16} aria-hidden />
                     </BotonPedir>
                   )}
                 </li>
@@ -402,7 +403,7 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
                   {s.descripcion && <p className="text-black/65">{s.descripcion}</p>}
                   {puedePedir && (
                     <BotonPedir clave={s.clave} className="mt-auto inline-flex min-h-11 w-fit items-center gap-1.5 rounded-[var(--w-radio-boton)] bg-[var(--w-suave)] px-4 text-sm font-semibold text-[var(--w-acento)]">
-                      {s.modo === "cita" ? "Agendar" : "Reservar"} <ArrowRight size={16} weight="bold" aria-hidden />
+                      {s.modo === "cita" ? "Agendar" : "Reservar"} <ArrowRight size={16} aria-hidden />
                     </BotonPedir>
                   )}
                 </li>
@@ -446,7 +447,7 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
               </p>
               {modo === "real" && (
                 <a href="/login" className="inline-flex min-h-12 w-fit items-center gap-2 rounded-[var(--w-radio-boton)] px-6 font-semibold text-white" style={{ background: "var(--w-acento)" }}>
-                  <UserCircle size={20} weight="bold" aria-hidden /> Entrar a mi portal
+                  <UserCircle size={20} aria-hidden /> Entrar a mi portal
                 </a>
               )}
               {notas?.portal}
@@ -498,17 +499,17 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
               <div className="flex flex-wrap gap-2.5">
                 {comoLlegar && (
                   <a href={comoLlegar} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--w-radio-boton)] border-[1.5px] border-[var(--w-acento)] px-4 text-sm font-semibold text-[var(--w-acento)]">
-                    <NavigationArrow size={16} weight="bold" aria-hidden /> Cómo llegar
+                    <NavigationArrow size={16} aria-hidden /> Cómo llegar
                   </a>
                 )}
                 {whatsapp && (
                   <a href={whatsapp} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--w-radio-boton)] px-4 text-sm font-semibold text-white" style={{ background: "#117a43" }}>
-                    <WhatsappLogo size={18} weight="fill" aria-hidden /> WhatsApp
+                    <WhatsappLogo size={18} aria-hidden /> WhatsApp
                   </a>
                 )}
                 {modo === "real" && datos.telefono && (
                   <a href={`tel:+52${datos.telefono}`} className="inline-flex min-h-11 items-center gap-1.5 rounded-[var(--w-radio-boton)] border-[1.5px] border-black/15 px-4 text-sm font-semibold">
-                    <Phone size={16} weight="bold" aria-hidden /> Llamar
+                    <Phone size={16} aria-hidden /> Llamar
                   </a>
                 )}
               </div>

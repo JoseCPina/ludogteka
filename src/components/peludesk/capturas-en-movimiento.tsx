@@ -44,7 +44,7 @@ export function CapturasEnMovimiento({ capturas }: { capturas: CapturaMovimiento
 
   return (
     <div ref={caja}>
-      <div className="pd-captura pd-marco relative aspect-[16/10] overflow-hidden rounded-[18px] border border-n-200 bg-white">
+      <div className="pd-captura pd-marco relative aspect-[16/10] overflow-hidden rounded-[18px] border border-border bg-white">
         {capturas.map((c, i) => (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -74,7 +74,7 @@ export function CapturasEnMovimiento({ capturas }: { capturas: CapturaMovimiento
               setDetenido(true);
               setActual(i);
             }}
-            className="pd-pestana relative min-h-10 overflow-hidden rounded-full border border-n-200 bg-white px-4 text-sm font-semibold text-n-700 hover:border-morado/40 hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave aria-pressed:border-morado aria-pressed:bg-morado aria-pressed:text-white"
+            className="pd-pestana relative min-h-10 overflow-hidden rounded-full border border-border bg-white px-4 text-sm font-semibold text-n-700 hover:border-morado/40 hover:text-morado focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave aria-pressed:border-morado aria-pressed:bg-morado aria-pressed:text-white"
           >
             {c.etiqueta}
             {i === actual && !detenido && <span aria-hidden className="pd-progreso" key={`p-${actual}`} />}

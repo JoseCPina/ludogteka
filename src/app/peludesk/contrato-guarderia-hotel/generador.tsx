@@ -75,7 +75,7 @@ export function GeneradorContrato({ tipoInicial }: { tipoInicial: TipoContrato }
 
         <div className="flex flex-col gap-4 md:sticky md:top-20 md:self-start">
           <p className="hta-etiqueta">Vista previa</p>
-          <article className={`rounded-xl border border-n-200 bg-white p-5 text-[13px] leading-relaxed text-n-800 sm:p-6 ${verTodo ? "" : "max-h-[32rem] overflow-hidden"} relative`} data-vista-contrato>
+          <article className={`rounded-xl border border-border bg-white p-5 text-[13px] leading-relaxed text-n-800 sm:p-6 ${verTodo ? "" : "max-h-[32rem] overflow-hidden"} relative`} data-vista-contrato>
             <h2 className="text-base font-bold text-n-900">{titulo}</h2>
             <pre className="mt-3 whitespace-pre-wrap font-sans">{cuerpoParaPdf(cuerpo)}</pre>
             {!verTodo && <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-white" aria-hidden />}

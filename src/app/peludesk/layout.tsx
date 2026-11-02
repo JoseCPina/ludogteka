@@ -24,11 +24,12 @@ export default async function PeluDeskLayout({ children }: { children: React.Rea
   // GOOGLE_ADS_ID (AW-…): vacía hasta que exista la cuenta; el hueco del tag ya está listo (gads-cliente.ts).
   const googleAdsId = process.env.GOOGLE_ADS_ID?.trim() || null;
   return (
-    <>
+    // Lo público de PeluDesk habla el lenguaje cálido (docs/diseno/DESIGN.md → «Dos lenguajes»).
+    <div data-lenguaje="calido" className="contents">
       {/* Antes que el resto, para que el teclado llegue primero al aviso. */}
       <ConsentimientoCookies inicial={inicial} pixelId={pixelId} googleAdsId={googleAdsId} />
       {children}
       {whatsapp && <BotonWhatsApp href={whatsapp} />}
-    </>
+    </div>
   );
 }

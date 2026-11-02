@@ -29,7 +29,7 @@ function Tabla({ alts, precioPeluDesk, recordatoriosPeluDesk }: { alts: Alternat
     <div className="mt-6 overflow-x-auto">
       <TablaResponsiva className="w-full min-w-[720px] border-collapse text-left text-sm">
         <thead>
-          <tr className="border-b border-n-200">
+          <tr className="border-b border-border">
             <th scope="col" className="p-3"><span className="sr-only">Criterio</span></th>
             {alts.map((a) => <th key={a.slug} scope="col" className="p-3 text-base font-bold text-n-900"><Link href={`/alternativas/${a.slug}`} className="text-morado underline underline-offset-2">{a.nombre}</Link></th>)}
             <th scope="col" className="p-3 text-base font-bold text-n-900">PeluDesk</th>
@@ -37,7 +37,7 @@ function Tabla({ alts, precioPeluDesk, recordatoriosPeluDesk }: { alts: Alternat
         </thead>
         <tbody>
           {CAMPOS_ALTERNATIVA.map(([campo, etiqueta]) => (
-            <tr key={campo} className={`border-b border-n-200 align-top ${campo === "recordatorios" ? "bg-menta-suave" : ""}`}>
+            <tr key={campo} className={`border-b border-border align-top ${campo === "recordatorios" ? "bg-menta-suave" : ""}`}>
               <th scope="row" className="p-3 font-semibold text-n-900">{etiqueta}</th>
               {alts.map((a) => <td key={a.slug} className="p-3 text-n-700">{a[campo]}<Fuentes fuentes={a.fuentes[campo]} /></td>)}
               <td className={`p-3 ${campo === "recordatorios" ? "font-semibold text-n-900" : "text-n-700"}`}>{campo === "precio" ? precioPeluDesk : campo === "recordatorios" ? recordatoriosPeluDesk : FILA_PELUDESK[campo]}</td>
@@ -89,8 +89,8 @@ export default async function Alternativas() {
         <h2 className="mt-12 text-2xl font-bold text-n-900">Preguntas frecuentes</h2>
         <dl className="mt-4 flex flex-col gap-3">
           {preguntas.map(([q, r]) => (
-            <div key={q} className="rounded-2xl border border-n-200 bg-white p-5">
-              <dt className="text-lg font-bold text-n-900">{q}</dt>
+            <div key={q} className="rounded-2xl border border-border bg-white p-5">
+              <dt className="text-lg font-semibold text-foreground">{q}</dt>
               <dd className="mt-2 text-n-700">{r}</dd>
             </div>
           ))}

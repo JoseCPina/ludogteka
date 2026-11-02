@@ -49,8 +49,8 @@ export function SeccionRecordatorios({
 
         <ul className="mt-10 grid gap-4 sm:grid-cols-3">
           {BENEFICIOS_RECORDATORIOS.map((b) => (
-            <li key={b.titulo} className="rounded-[18px] border border-n-200 bg-white p-5">
-              <p className="flex items-center gap-2 text-lg font-bold text-n-900">
+            <li key={b.titulo} className="rounded-[18px] border border-border bg-white p-5">
+              <p className="flex items-center gap-2 text-lg font-semibold text-foreground">
                 <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true" className="shrink-0 text-menta-oscuro" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4.5 10.5l3.5 3.5 7.5-8" />
                 </svg>

@@ -1,4 +1,4 @@
-import { ArrowSquareOut, Clock, MapPin, NavigationArrow } from "@phosphor-icons/react/dist/ssr";
+import { ExternalLinkIcon as ArrowSquareOut, ClockIcon as Clock, MapPinIcon as MapPin, NavigationIcon as NavigationArrow } from "lucide-react";
 import { BotonWhatsApp, Cinta } from "./comunes";
 import { datosLanding } from "@/lib/landing/negocio";
 
@@ -36,7 +36,7 @@ export async function Ubicacion() {
             <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:justify-between">
               <address className="flex items-start gap-3 not-italic">
                 <span className="grid size-12 shrink-0 place-items-center rounded-full bg-[var(--lp-naranja)] text-white">
-                  <MapPin size={26} weight="fill" aria-hidden />
+                  <MapPin size={26} aria-hidden />
                 </span>
                 <span className="text-base leading-snug">
                   <span className="lp-display block text-xl font-bold text-[var(--lp-indigo)]">{DIRECCION.calle}</span>
@@ -48,7 +48,7 @@ export async function Ubicacion() {
               </address>
               <div className="flex flex-wrap gap-2">
                 <a href={COMO_LLEGAR_GOOGLE} target="_blank" rel="noopener noreferrer" className={botonSecundario}>
-                  <NavigationArrow size={20} weight="fill" aria-hidden />
+                  <NavigationArrow size={20} aria-hidden />
                   Cómo llegar
                 </a>
                 <a href={COMO_LLEGAR_WAZE} target="_blank" rel="noopener noreferrer" className={botonSecundario}>
@@ -64,7 +64,7 @@ export async function Ubicacion() {
             style={{ "--i": 1 } as React.CSSProperties}
           >
             <p className="lp-display inline-flex items-center gap-2 text-2xl font-bold">
-              <Clock size={28} weight="bold" aria-hidden />
+              <Clock size={28} aria-hidden />
               Horarios
             </p>
             <dl className="mt-5 space-y-4">

@@ -9,7 +9,7 @@ import { DOCUMENTOS_LEGALES, EMPRESA } from "@/lib/peludesk/legal";
  */
 export function AvisoSimplificado({ className = "", compacto = false }: { className?: string; compacto?: boolean }) {
   return (
-    <section aria-label="Aviso de privacidad simplificado" className={`rounded-2xl border border-n-200 bg-white p-5 text-sm leading-relaxed text-n-700 ${className}`}>
+    <section aria-label="Aviso de privacidad simplificado" className={`rounded-2xl border border-border bg-white p-5 text-sm leading-relaxed text-n-700 ${className}`}>
       <p className="text-base font-bold text-n-900">Aviso de privacidad simplificado</p>
       <p className="mt-2">
         <strong className="font-semibold text-n-900">{EMPRESA.razonSocial}</strong> (PeluDesk), con domicilio en {EMPRESA.domicilio}, es responsable de tus datos.

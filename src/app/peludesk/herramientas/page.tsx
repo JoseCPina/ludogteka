@@ -41,7 +41,7 @@ export default function Herramientas() {
             {lista.map((h) => {
               const numero = String(HERRAMIENTAS.findIndex((x) => x.clave === h.clave) + 1).padStart(2, "0");
               return (
-                <li key={h.clave} className="grid gap-x-10 gap-y-3 border-b border-n-200 py-8 md:grid-cols-[6rem_minmax(0,1.2fr)_minmax(0,1fr)]">
+                <li key={h.clave} className="grid gap-x-10 gap-y-3 border-b border-border py-8 md:grid-cols-[6rem_minmax(0,1.2fr)_minmax(0,1fr)]">
                   <span className="text-sm font-bold tracking-[0.14em] text-morado">{numero}</span>
                   <div>
                     <h2 className="text-2xl font-bold tracking-tight text-n-900"><Link href={h.ruta} className="hover:underline">{h.nombre}</Link></h2>

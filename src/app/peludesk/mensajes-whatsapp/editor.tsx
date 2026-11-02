@@ -52,7 +52,7 @@ export function EditorMensajes({ giroInicial, solo }: { giroInicial: GiroMercado
           </div>
           <p className="text-sm text-n-600">Lo que dejes vacío sale con un ejemplo. Nada se guarda: los mensajes se arman en tu navegador.</p>
         </div>
-        <ol className="flex flex-col divide-y divide-n-200" data-mensajes>
+        <ol className="flex flex-col divide-y divide-border" data-mensajes>
           {lista.map((p) => {
             const texto = llenar(p.texto, v);
             return (

@@ -37,7 +37,7 @@ export default async function VideoPage({ params }: { params: Promise<{ slug: st
         </section>
       )}
       {siguiente && (
-        <Enlace href={`/ayuda/videos/${siguiente.slug}`} className="rounded-lg border border-n-200 bg-n-50 p-4 hover:border-morado" data-siguiente-video forma="bloque">
+        <Enlace href={`/ayuda/videos/${siguiente.slug}`} className="rounded-lg border border-border bg-card shadow-tarjeta p-4 hover:border-morado" data-siguiente-video forma="bloque">
           <span className="text-sm text-n-600">Siguiente video</span>
           <span className="block font-semibold text-n-900">{siguiente.titulo} →</span>
         </Enlace>

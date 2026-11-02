@@ -51,7 +51,7 @@ export function PaginaLegal({
           </div>
           {indice.length > 3 && (
             <aside className="hidden lg:block">
-              <nav aria-label="Contenido" className="sticky top-24 rounded-2xl border border-n-200 bg-white p-5">
+              <nav aria-label="Contenido" className="sticky top-24 rounded-2xl border border-border bg-white p-5">
                 <p className="text-sm font-bold uppercase tracking-[0.1em] text-n-600">Contenido</p>
                 <ol className="mt-3 flex flex-col gap-2 text-sm">
                   {indice.map((h) => (

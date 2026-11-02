@@ -62,7 +62,7 @@ function Interruptor({
   alCambiar?: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-xl border border-n-200 bg-white p-4">
+    <div className="flex items-start justify-between gap-4 rounded-xl border border-border bg-white p-4">
       <div>
         <label htmlFor={id} className="text-base font-bold text-n-900">{titulo}</label>
         <p id={`${id}-d`} className="mt-1 text-sm leading-relaxed text-n-700">{texto}</p>
@@ -131,7 +131,7 @@ export function ConsentimientoCookies({ inicial, pixelId, googleAdsId = null }: 
 
       {/* Una sola línea: lo que se pide y los dos botones iguales; «Configurar» abre el detalle. */}
       {!estado.decidido && !configurando && (
-        <section aria-label="Aviso de cookies" data-fijo-inferior className="fixed inset-x-0 bottom-0 z-[60] border-t border-n-200 bg-white/95 shadow-[0_-8px_32px_rgb(75_63_114/0.14)] backdrop-blur">
+        <section aria-label="Aviso de cookies" data-fijo-inferior className="fixed inset-x-0 bottom-0 z-[60] border-t border-border bg-white/95 shadow-[0_-8px_32px_rgb(75_63_114/0.14)] backdrop-blur">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:gap-5 sm:px-6">
             <p className="flex-1 text-sm leading-snug text-n-800">
               Usamos una cookie necesaria y, solo si aceptas, analítica y publicidad.{" "}
@@ -155,7 +155,7 @@ export function ConsentimientoCookies({ inicial, pixelId, googleAdsId = null }: 
         ref={dialogo}
         aria-labelledby="pd-cookies-titulo"
         onClose={() => setConfigurando(false)}
-        className="m-auto max-h-[92dvh] w-[min(40rem,calc(100vw-1.5rem))] overflow-y-auto rounded-2xl border border-n-200 bg-crema p-0 text-n-900 shadow-[0_20px_60px_rgb(43_42_51/0.35)] backdrop:bg-grafito/50"
+        className="m-auto max-h-[92dvh] w-[min(40rem,calc(100vw-1.5rem))] overflow-y-auto rounded-2xl border border-border bg-crema p-0 text-n-900 shadow-[0_20px_60px_rgb(43_42_51/0.35)] backdrop:bg-grafito/50"
       >
         <div className="p-5 sm:p-7">
           <div className="flex items-start justify-between gap-3">

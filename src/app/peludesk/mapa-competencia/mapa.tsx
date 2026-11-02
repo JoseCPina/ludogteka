@@ -66,7 +66,7 @@ export function MapaCompetencia({ giroInicial }: { giroInicial: GiroMercado }) {
               <Resultado etiqueta={`${g.plural} a 2 km de ${a.punto.texto}`} valor={a.anillos[1].n} nota={a.resumen} />
               <dl className="grid grid-cols-3 gap-3">
                 {a.anillos.map((r) => (
-                  <div key={r.km} className="border-t border-n-200 pt-2">
+                  <div key={r.km} className="border-t border-border pt-2">
                     <dt className="hta-etiqueta mb-0">A {r.km} km</dt>
                     <dd className="text-2xl font-bold tabular-nums text-n-900">{r.n}</dd>
                     <dd className="text-xs text-n-600">{r.promedio ? `calificación ${r.promedio}` : "sin calificación"}</dd>
@@ -92,11 +92,11 @@ export function MapaCompetencia({ giroInicial }: { giroInicial: GiroMercado }) {
             </div>
             <div>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={urlImagenMapa(a)} alt={`Mapa con ${g.plural} a 5 km alrededor del punto; el círculo marca 2 km`} width={640} height={480} className="w-full rounded-xl border border-n-200 bg-n-100" loading="lazy" />
+              <img src={urlImagenMapa(a)} alt={`Mapa con ${g.plural} a 5 km alrededor del punto; el círculo marca 2 km`} width={640} height={480} className="w-full rounded-xl border border-border bg-n-100" loading="lazy" />
               <p className="mt-1 text-xs text-n-600">Mapa de Google. T = tu punto; el círculo son 2 km; los puntos verdes, {g.plural}.</p>
               <ol className="mt-4 max-h-80 overflow-y-auto text-sm" data-cercanos>
                 {a.cercanos.slice(0, 30).map((c) => (
-                  <li key={c.id} className="flex items-baseline justify-between gap-3 border-t border-n-200 py-1.5">
+                  <li key={c.id} className="flex items-baseline justify-between gap-3 border-t border-border py-1.5">
                     <span><Link href={`/directorio/${giro}/${c.ciudad.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}/${c.slug}`} className="hta-enlace">{c.nombre}</Link>{c.colonia ? <span className="text-n-600"> · {c.colonia}</span> : null}</span>
                     <span className="shrink-0 tabular-nums text-n-700">{c.distancia_m < 1000 ? `${c.distancia_m} m` : `${(c.distancia_m / 1000).toFixed(1)} km`}{c.calificacion ? ` · ★ ${c.calificacion.toFixed(1)}` : ""}</span>
                   </li>
