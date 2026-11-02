@@ -131,3 +131,23 @@ Medido con `tiempo-panel-prod.mjs --muestras 6` justo después de desplegar (med
 | /estetica (los dos) | 553–614 ms | 508–636 ms |
 
 **Lectura:** /admin completo bajó 200–270 ms en los dos negocios (el tablero ya no espera a la página). Sin la red (~100 ms) /admin queda en ≈ 790–880 ms y /recepcion en ≈ 510–730 ms: **la meta de 600 ms todavía no se cumple en /admin ni en /recepcion**. El encabezado de /admin en Ludogteka no bajó (626 → 702 ms, dentro de la variación entre corridas en frío y caliente); lo que manda ahí es lo que espera el layout antes de pintar. Lo siguiente sigue siendo lo de arriba (`cuentas_abiertas`) y medir qué espera el layout del personal antes del primer byte.
+
+## Tercera vuelta (1 de noviembre de 2026, rama fix/recepcion-admin-segunda-vuelta): solo capa de datos
+
+**Estado al empezar (producción, `tiempo-panel-prod.mjs --muestras 5`, TTFB desde la PC con ~100 ms de red):** Ludogteka /recepcion 662–763 ms, /admin 795 ms (885 completo), /hotel 528–660, /estetica 443–515; demo /recepcion 673–691, /admin 708 (886 completo), /hotel 553–788, /estetica 563–581. Sigue arriba de la meta en /recepcion y /admin.
+
+**El piso.** Una ruta ligera del mismo dominio (`/manifest.webmanifest`, un route handler) responde en ≈ 220 ms desde la PC y `/sin-acceso` (página con sesión) en ≈ 270 ms: Vercel + red ≈ 120–170 ms de servidor antes de cualquier consulta. Lo que una pantalla del personal agrega encima: /estetica ≈ 250–350 ms, /recepcion ≈ 450–550 ms, /admin ≈ 550–650 ms (completo).
+
+**Dónde está ese tiempo (medido consulta por consulta con 5 rondas alternadas, calientes):** ninguna consulta cuesta más de 85 ms (`cuentas_abiertas`, 20 ms de planeación + 60 de ejecución repartidos en 15 CTE; sus índices están completos; `veterinaria_atencion` 90 ms solo en la demo); el resto, 0–20 ms. El tiempo es de TANDAS en serie y de armado: middleware (Auth ∥ `acceso_de_sesion`) → layout: `obtenerSesionConRol` (Auth → tres funciones) → su grupo (`negocio_publico`, `mis_negocios`, videos, bloqueo) → página: tanda principal → dependientes → render del HTML (100–155 KB).
+
+**Qué cambió en esta vuelta (migración `20261203001600`, solo funciones)**
+- `sesion_actual()`: `acceso_de_sesion` + `mi_cliente_id` + `nombre_de_persona` en UN viaje, y `obtenerSesionConRol` la pide A LA VEZ que Auth (las dos dependen solo del JWT; si Auth dice que no hay usuario, lo de la base se tira). Una tanda menos en TODAS las pantallas del personal y del portal (−20–40 ms cada una). Comprobado en desarrollo con admin, recepción y cliente de Huellitas y admin de Ludogteka: mismos valores que las tres funciones.
+- `cuentas_abiertas`: la segunda rama de `candidatas` (cuentas creadas en la ventana sin estancia ni cita) exige primero alguna línea suelta (cargo, venta de mostrador, pase o corrección de precio: los mismos orígenes de `lineas`) antes de los dos anti-joins. Una cuenta sin líneas tiene saldo ≤ 0 y `con_saldo` la descartaba igual: resultado idéntico cuenta por cuenta (30 y 120 días, Huellitas y Ludogteka de desarrollo). En desarrollo no cambia el tiempo (la pasada la dominan `lineas` y `candidatas` sobre miles de cuentas de prueba); en producción (12–40 cuentas) el ahorro es el barrido de las reservas creadas en la ventana.
+- `tiempo-panel-dev.mjs`: topes de consultas −2 en todas (`/recepcion` 49, `/hotel` 18, `/estetica` 17, `/admin` 65) y una tanda menos por pantalla al descontar la latencia de desarrollo.
+
+**Esperado:** −30–60 ms por pantalla (una tanda menos). No alcanza para los 600 ms de /admin ni, con holgura, de /recepcion: lo que falta ya no está en la capa de datos.
+
+**Lo que queda, y es de pantalla (para la laptop, con el diseño nuevo):**
+1. `src/app/(staff)/layout.tsx`: arrancar `cargarNegocioLanding()`, `mis_negocios`, `tutorialesDeSesion()` y `bloqueoDeEscritura()` A LA VEZ que `obtenerSesionConRol()` (hoy esperan a la sesión; solo `tutorialesDeSesion` la necesita y ya la espera por dentro). Una tanda menos (−30–50 ms) en cada pantalla.
+2. `tablero-dia.tsx`: arrancar `previas` y la tanda principal antes de esperar `obtenerSesionConRol()` cuando lo que piden no depende del rol (la mayoría; las condicionadas por permiso pueden esperar), y pintar el tablero dentro de `Suspense` para que el encabezado y el menú salgan sin esperar las dos tandas del tablero (el TTFB de /recepcion caería al piso; el tablero llega 150–250 ms después, en la misma respuesta).
+3. Si después de eso /recepcion sigue cerca de 600 ms: una función `tablero_atencion()` que junte en un viaje las ~15 piezas de «Necesita atención» (cada una cuesta 0–20 ms; lo que se ahorra son conexiones y cola, no base), replicando en SQL las mismas condiciones de rol y permiso que hoy decide la pantalla.
