@@ -49,8 +49,8 @@ export function PanelTeleconsulta({
 
   if (!hayDetalle) {
     return (
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">Esta cita todavía no tiene sala</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">Esta cita todavía no tiene sala</h2>
         <BotonAccion texto="Preparar la sala" accion={() => prepararSalaTeleconsulta(citaId)} textoExito="Sala lista" />
       </section>
     );
@@ -58,8 +58,8 @@ export function PanelTeleconsulta({
 
   return (
     <div className="flex flex-col gap-5">
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">1. Mandarle la liga al dueño</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">1. Mandarle la liga al dueño</h2>
         <p className="text-n-700">La liga abre su pantalla de la teleconsulta: ahí firma el consentimiento{requierePago ? ", paga" : ""} y entra a la sala cuando abre. Una liga nueva deja sin efecto la anterior.</p>
         {liga ? (
           <div className="flex flex-col gap-2">
@@ -86,8 +86,8 @@ export function PanelTeleconsulta({
       </section>
 
       {requierePago && (
-        <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="text-lg font-bold text-n-900">Cobro anticipado{monto ? ` · $${Number(monto).toFixed(2)}` : ""}</h2>
+        <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="text-lg font-semibold text-foreground">Cobro anticipado{monto ? ` · $${Number(monto).toFixed(2)}` : ""}</h2>
           {pagado ? (
             <Alert variante="exito" titulo="Pagada">La sala puede abrirse.</Alert>
           ) : (
@@ -110,8 +110,8 @@ export function PanelTeleconsulta({
         </section>
       )}
 
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">2. La sala</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">2. La sala</h2>
         {!firmada && <Alert variante="advertencia" titulo="Falta el consentimiento">El dueño todavía no firma el consentimiento de teleconsulta. La sala no abre hasta que lo firme.</Alert>}
         {sala ? (
           <VideoSala url={sala.url} simulada={sala.simulada} titulo="Teleconsulta" />
@@ -125,8 +125,8 @@ export function PanelTeleconsulta({
         )}
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">3. La consulta</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">3. La consulta</h2>
         <p className="text-n-700">Se documenta en el mismo expediente (marcada «telemedicina») y puedes dictarla. Nada se firma solo.</p>
         {consultaId ? (
           <Enlace href={`/veterinaria/consulta/${consultaId}`} className="w-fit text-sm">Abrir la consulta</Enlace>

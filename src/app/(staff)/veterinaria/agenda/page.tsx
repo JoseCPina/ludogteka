@@ -100,8 +100,8 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
           {columnas.map((m) => {
             const delMedico = citas.filter((c) => c.medico_id === m.id);
             return (
-              <section key={m.id} className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4" aria-label={`Citas de ${m.nombre}`}>
-                <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">{m.nombre}</h2>
+              <section key={m.id} className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4" aria-label={`Citas de ${m.nombre}`}>
+                <h2 className="text-[0.9375rem] font-semibold text-foreground">{m.nombre}</h2>
                 {delMedico.length === 0 ? (
                   <p className="text-sm text-n-500">Sin citas.</p>
                 ) : (
@@ -115,7 +115,7 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
                           const e = ESTADOS_CITA[c.estado] ?? { etiqueta: c.estado, estilo: "bg-n-100" };
                           const gris = c.estado === "cancelada" || c.estado === "no_llego";
                           return (
-                            <article key={c.id} className={`rounded-md border px-3 py-2 text-sm ${c.urgencia ? "border-coral bg-coral-suave" : "border-n-200 bg-n-50"} ${gris ? "opacity-60" : ""}`}>
+                            <article key={c.id} className={`rounded-md border px-3 py-2 text-sm ${c.urgencia ? "border-coral bg-coral-suave" : "border-border bg-muted"} ${gris ? "opacity-60" : ""}`}>
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-semibold text-n-900">
                                   {horaLocalDeInstante(c.inicia_at, zona)}–{horaLocalDeInstante(c.termina_at, zona)} · {c.mascota}

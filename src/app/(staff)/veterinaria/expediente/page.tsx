@@ -34,12 +34,12 @@ export default async function BuscarExpediente({ searchParams }: { searchParams:
         </Enlace>
       </SiPuedeAbrir>
       {filas.length === 0 ? (
-        <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">{q ? "No encontramos a nadie con eso." : "Todavía no hay mascotas registradas."}</p>
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">{q ? "No encontramos a nadie con eso." : "Todavía no hay mascotas registradas."}</p>
       ) : (
-        <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+        <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
           {filas.map((f) => (
             <li key={f.id}>
-              <Enlace href={`/veterinaria/expediente/${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
+              <Enlace href={`/veterinaria/expediente/${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted" forma="bloque">
                 <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
                 <span className="text-sm text-n-600">{f.dueno}{f.telefono ? ` · ${f.telefono}` : ""}</span>
               </Enlace>

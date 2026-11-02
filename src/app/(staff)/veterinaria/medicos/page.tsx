@@ -62,15 +62,15 @@ export default async function MedicosPage() {
       )}
 
       <section className="flex flex-col gap-4">
-        <h2 className="text-lg font-bold text-n-900">Médicos designados ({(medicos ?? []).length})</h2>
-        {(medicos ?? []).length === 0 && <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">Todavía no hay médicos designados.</p>}
+        <h2 className="text-lg font-semibold text-foreground">Médicos designados ({(medicos ?? []).length})</h2>
+        {(medicos ?? []).length === 0 && <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">Todavía no hay médicos designados.</p>}
         <ul className="flex flex-col gap-4">
           {(medicos ?? []).map((m) => {
             const suyos = bloques.filter((b) => b.medico_id === m.id);
             return (
-              <li key={m.id as string} className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+              <li key={m.id as string} className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <div>
-                  <p className="text-lg font-bold text-n-900">{nombreDe(m.profiles)}</p>
+                  <p className="text-lg font-semibold text-foreground">{nombreDe(m.profiles)}</p>
                   <p className="text-sm text-n-600">
                     Cédula profesional {m.cedula_profesional as string}
                     {m.cpa_sitpv ? ` · CPA del SITPV ${m.cpa_sitpv as string}` : " · sin CPA del SITPV capturado"}
@@ -84,7 +84,7 @@ export default async function MedicosPage() {
                   ) : (
                     <ul className="mt-1 flex flex-col gap-1.5">
                       {suyos.map((b) => (
-                        <li key={b.bloque_id} className="rounded-md border border-n-200 px-3 py-2 text-sm">
+                        <li key={b.bloque_id} className="rounded-md border border-border px-3 py-2 text-sm">
                           <p className="font-semibold text-n-900">
                             {b.prefijo}
                             {b.folio_desde} a {b.prefijo}
@@ -132,8 +132,8 @@ export default async function MedicosPage() {
         </ul>
       </section>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">Designar a un médico</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">Designar a un médico</h2>
         <p className="text-sm text-n-600">Solo se designa a personal que ya tiene cuenta en este negocio. Si falta alguien, invítalo primero en Inicio, en la sección «Invitar personal» del panel de admin.</p>
         {candidatos.length === 0 ? (
           <p className="text-sm text-n-700">Todo el personal ya está designado.</p>

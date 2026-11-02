@@ -213,7 +213,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
     <div className="flex flex-col gap-6">
       {/* Respaldo en el servidor de lo escrito, por si se pierde la conexión o se cierra la pestaña a medias. */}
       <BorradorFormulario formulario="consulta" clave={consulta.id} />
-      <div role="status" aria-live="polite" className={`sticky top-0 z-10 -mx-1 rounded-md px-3 py-2 text-sm font-semibold ${estado === "error" ? "bg-coral-suave text-coral-oscuro" : "bg-n-50 text-n-600"}`}>
+      <div role="status" aria-live="polite" className={`sticky top-0 z-10 -mx-1 rounded-md px-3 py-2 text-sm font-semibold ${estado === "error" ? "bg-coral-suave text-coral-oscuro" : "bg-muted text-n-600"}`}>
         {ETIQUETA_ESTADO[estado] || "Borrador: se guarda solo mientras escribes."}
         {errorGuardado && <span> · {errorGuardado}</span>}
       </div>
@@ -251,10 +251,10 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
       <DictadoPanel consultaId={consulta.id} valores={v} diagnosticos={dx} onAplicar={aplicarDictado} />
 
       {grupos.map((g) => (
-        <section key={g} className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="text-lg font-bold text-n-900">{g}</h2>
+        <section key={g} className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="text-lg font-semibold text-foreground">{g}</h2>
           {g.startsWith("O") && (
-            <fieldset className="rounded-md border border-n-200 bg-n-50 p-4">
+            <fieldset className="rounded-md border border-border bg-muted p-4">
               <legend className="px-1 text-sm font-semibold text-n-700">Signos vitales</legend>
               <div className="grid gap-3 sm:grid-cols-3">
                 <Field label="Peso (kg)" name="peso_kg" inputMode="decimal" value={v.peso_kg} onChange={(e) => cambiar("peso_kg", e.target.value)} ayuda="Al firmar entra al historial de pesos." />
@@ -282,7 +282,7 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
             <Textarea label="Notas internas (nunca las ve el dueño)" name="notas_internas" rows={2} value={v.notas_internas} onChange={(e) => cambiar("notas_internas", e.target.value)} />
           )}
           {g.startsWith("O") && (
-            <div className="rounded-md border border-n-200 bg-n-50 p-4">
+            <div className="rounded-md border border-border bg-muted p-4">
               <h3 className="mb-2 text-sm font-bold text-n-800">
                 A · Diagnóstico (mín. 1) <span className="text-coral-oscuro" aria-hidden="true">*</span>
                 <span className="sr-only">obligatorio para firmar</span>
@@ -298,8 +298,8 @@ export function EditorConsulta({ consulta, especie, soyElMedico, nombreMedico, c
 
       {cargos && <CargosConsulta consultaId={consulta.id} inicial={cargos} puedeAgregar onResumen={setCargos} puedeCatalogo={puedeCatalogo} aplicarVacuna={aplicarVacuna} aplicarDesparasitacion={aplicarDesparasitacion} />}
 
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-        <h2 className="text-lg font-bold text-n-900">Firmar</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+        <h2 className="text-lg font-semibold text-foreground">Firmar</h2>
         {soyElMedico ? (
           <p className="text-n-700">Firmas como <strong>{nombreMedico}</strong>, con tu cédula. Después de firmar la consulta no se edita: solo admite una adenda firmada.</p>
         ) : (
@@ -425,7 +425,7 @@ function SelectorDiagnosticos({ valor, onCambio, especie }: { valor: Diagnostico
       ) : (
         <ul className="flex flex-col gap-2">
           {valor.map((d, i) => (
-            <li key={`${d.nombre}-${i}`} className="flex flex-wrap items-center gap-2 rounded-md border border-n-200 bg-white px-3 py-2">
+            <li key={`${d.nombre}-${i}`} className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
               <span className="font-semibold text-n-900">{d.nombre}</span>
               <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${d.tipo === "definitivo" ? "bg-menta-suave text-menta-oscuro" : "bg-ambar-suave text-ambar-oscuro"}`}>{d.tipo === "definitivo" ? "Definitivo" : "Presuntivo"}</span>
               {d.origen === "libre" && <span className="text-xs text-n-500">texto libre</span>}
@@ -455,10 +455,10 @@ function SelectorDiagnosticos({ valor, onCambio, especie }: { valor: Diagnostico
       </div>
       {busqueda.cargando && <p className="text-sm text-n-500">Buscando…</p>}
       {resultados.length > 0 && (
-        <ul className="divide-y divide-n-200 overflow-hidden rounded-md border border-n-200 bg-white">
+        <ul className="divide-y divide-border overflow-hidden rounded-md border border-border bg-card">
           {resultados.map((r) => (
             <li key={`${r.origen}-${r.id}`}>
-              <Alternar type="button" className="flex w-full flex-wrap items-center justify-between gap-2 px-3 text-left hover:bg-n-50" onClick={() => agregar({ ref_id: r.id, origen: r.origen, nombre: r.nombre, tipo, nota: "" })}>
+              <Alternar type="button" className="flex w-full flex-wrap items-center justify-between gap-2 px-3 text-left hover:bg-muted" onClick={() => agregar({ ref_id: r.id, origen: r.origen, nombre: r.nombre, tipo, nota: "" })}>
                 <span className="font-semibold text-n-900">{r.nombre}</span>
                 <span className="text-xs text-n-500">{r.categoria}{r.origen === "negocio" ? " · de tu negocio" : ""}</span>
               </Alternar>

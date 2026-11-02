@@ -341,7 +341,7 @@ export function CitaDetalle({
       <p className="-mt-2 text-sm text-n-600">El costo puede aumentar según el tipo de pelo y el cuidado previo.</p>
 
       {tarifa && (tarifa.aplicada || (tarifa.aplicable && tarifa.puedeCambiar)) && (estado === "reservada" || estado === "confirmada" || estado === "en_curso") && (
-        <div data-tarifa-guarderia className={`flex flex-col gap-2 rounded-md border p-3 ${tarifa.aplicada ? "border-menta bg-menta-suave" : "border-n-200 bg-n-50"}`}>
+        <div data-tarifa-guarderia className={`flex flex-col gap-2 rounded-md border p-3 ${tarifa.aplicada ? "border-menta bg-menta-suave" : "border-border bg-muted"}`}>
           {tarifa.aplicada ? (
             <p className="text-sm font-semibold text-menta-oscuro">
               Tarifa de cliente de guardería{tarifa.servicioNombre ? ` (precio de «${tarifa.servicioNombre}»)` : ""}
@@ -380,7 +380,7 @@ export function CitaDetalle({
 
       {puedeRecargo && (estado === "reservada" || estado === "confirmada" || estado === "en_curso") && (
         editandoRecargo ? (
-          <div className="flex flex-col gap-2 rounded-md border border-n-200 p-3">
+          <div className="flex flex-col gap-2 rounded-md border border-border p-3">
             <Field label="Recargo manual ($)" inputMode="decimal" value={recargoTexto} onChange={(e) => setRecargoTexto(e.target.value)} ayuda="Cero lo quita. Queda registrado con tu nombre." />
             <Field label="Motivo" value={recargoMotivoTexto} onChange={(e) => setRecargoMotivoTexto(e.target.value)} />
             <div className="flex gap-2">
@@ -431,9 +431,9 @@ export function CitaDetalle({
       )}
 
       {editable && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-3">
+        <div className="flex flex-col gap-3 border-t border-border pt-3">
           {reagendando ? (
-            <div data-reprogramar className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3">
+            <div data-reprogramar className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3">
               <p className="text-sm text-n-700">
                 La cita se mueve con su precio. Se revisa que la estilista no tenga otra cita a esa hora; queda en el historial y puedes avisarle al cliente por WhatsApp.
               </p>
@@ -486,7 +486,7 @@ export function CitaDetalle({
               </div>
             </div>
           ) : iniciando ? (
-            <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3">
+            <div className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3">
               {esStandalone ? (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Field
@@ -545,7 +545,7 @@ export function CitaDetalle({
       )}
 
       {puedeEliminar && ["reservada", "confirmada", "cancelada", "no_llego"].includes(estado) && (
-        <div data-eliminar-cita className="flex flex-col gap-2 border-t border-n-200 pt-3">
+        <div data-eliminar-cita className="flex flex-col gap-2 border-t border-border pt-3">
           {eliminando ? (
             <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
               <p className="text-sm font-semibold text-coral-oscuro">
@@ -570,9 +570,9 @@ export function CitaDetalle({
       )}
 
       {estado === "en_curso" && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-3">
+        <div className="flex flex-col gap-3 border-t border-border pt-3">
           {finalizando ? (
-            <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3">
+            <div className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3">
               {esStandalone ? (
                 <>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -631,7 +631,7 @@ export function CitaDetalle({
               )}
 
               {recetaItems.length > 0 && (
-                <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white p-3">
+                <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-border bg-white p-3">
                   <p className="text-sm font-semibold text-n-800">
                     Consumo de inventario — ajusta si se usó más o menos
                   </p>
@@ -667,7 +667,7 @@ export function CitaDetalle({
               </div>
             </div>
           ) : deshaciendo ? (
-            <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-n-50 p-3" data-deshacer-inicio={deshaciendo}>
+            <div className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3" data-deshacer-inicio={deshaciendo}>
               <p className="text-sm text-n-700">
                 {deshaciendo === "reservada"
                   ? "La cita vuelve a «Reservada», como si no se hubiera iniciado. Solo si no tiene cobros ni insumos descontados."

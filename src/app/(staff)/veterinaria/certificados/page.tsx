@@ -36,16 +36,16 @@ export default async function Certificados() {
         </div>
       </div>
       {(data ?? []).length === 0 ? (
-        <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">Todavía no se ha emitido ningún certificado. Para emitir uno, abre el carnet de la mascota.</p>
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">Todavía no se ha emitido ningún certificado. Para emitir uno, abre el carnet de la mascota.</p>
       ) : (
-        <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+        <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
           {(data ?? []).map((c) => {
             const mascota = un(c.perros as { nombre: string } | { nombre: string }[] | null);
             const dueno = un(c.clientes as { nombre: string } | { nombre: string }[] | null);
             const vencido = c.estado === "vigente" && (c.vigente_hasta as string) < hoy;
             return (
               <li key={c.id as string}>
-                <Enlace href={`/veterinaria/certificados/${c.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
+                <Enlace href={`/veterinaria/certificados/${c.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted" forma="bloque">
                   <span>
                     <span className="font-semibold text-n-900">N.º {c.numero as number} · {mascota?.nombre ?? "—"}</span>
                     <span className="block text-sm text-n-600">{dueno?.nombre ?? "—"} · {ETIQUETA_MOTIVO_CERTIFICADO[c.motivo as string] ?? c.motivo}{c.folio_medico ? ` · folio ${c.folio_medico}` : ""}</span>

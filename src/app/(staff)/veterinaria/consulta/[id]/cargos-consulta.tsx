@@ -147,10 +147,10 @@ export function CargosConsulta({
   const pendientesSinPrecio = d.sin_precio;
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5" aria-labelledby="cargos-titulo">
+    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5" aria-labelledby="cargos-titulo">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="cargos-titulo" className="text-lg font-bold text-n-900">{borrador ? "Cargos de esta consulta" : "Cobro de esta consulta"}</h2>
-        <p className="text-lg font-bold text-n-900">Total {formatearMoneda(d.total)}</p>
+        <h2 id="cargos-titulo" className="text-lg font-semibold text-foreground">{borrador ? "Cargos de esta consulta" : "Cobro de esta consulta"}</h2>
+        <p className="text-lg font-semibold text-foreground">Total {formatearMoneda(d.total)}</p>
       </div>
       <p className="text-sm text-n-600">
         {borrador
@@ -163,7 +163,7 @@ export function CargosConsulta({
       {visibles.length === 0 ? (
         <p className="text-n-700">Todavía no hay cargos. Agrega un procedimiento o un medicamento, o captura el precio de la consulta en Servicios y precios.</p>
       ) : (
-        <ul className="divide-y divide-n-200 rounded-md border border-n-200">
+        <ul className="divide-y divide-border rounded-md border border-border">
           {visibles.map((l) => (
             <li key={l.id} className="flex flex-col gap-2 px-3 py-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -250,7 +250,7 @@ export function CargosConsulta({
                 </div>
               )}
               {abierta === l.id && (
-                <div className="grid gap-3 rounded-md bg-n-50 p-3 sm:grid-cols-3">
+                <div className="grid gap-3 rounded-md bg-muted p-3 sm:grid-cols-3">
                   {modo === "ajustar" && (
                     <>
                       <Field label="Cantidad" name="cantidad_ajuste" inputMode="decimal" value={cantidad} onChange={(e) => setCantidad(e.target.value)} />

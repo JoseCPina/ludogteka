@@ -42,16 +42,16 @@ export default async function RecetarioEspecial({ searchParams }: { searchParams
       const candidatas = await buscarMascotas(supabase, q ?? "");
       formulario = (
         <section className="flex max-w-3xl flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">Registrar un folio del recetario: elige a la mascota</h2>
+          <h2 className="text-lg font-semibold text-foreground">Registrar un folio del recetario: elige a la mascota</h2>
           <form method="get" className="flex items-end gap-3">
             <input type="hidden" name="nuevo" value="1" />
             <div className="flex-1"><Field label="Buscar mascota o dueño" name="q" defaultValue={q ?? ""} /></div>
             <Button type="submit">Buscar</Button>
           </form>
-          <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
             {candidatas.map((f) => (
               <li key={f.id}>
-                <Enlace href={`/veterinaria/recetas/especial?nuevo=1&perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
+                <Enlace href={`/veterinaria/recetas/especial?nuevo=1&perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted" forma="bloque">
                   <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
                   <span className="text-sm text-n-600">{f.dueno}</span>
                 </Enlace>
@@ -65,8 +65,8 @@ export default async function RecetarioEspecial({ searchParams }: { searchParams
     } else {
       formulario = (
         <section className="flex max-w-3xl flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">Registrar un folio del recetario especial</h2>
-          <FormularioAccion accion={registrarRecetario} textoBoton="Registrar" className="rounded-lg border border-n-200 bg-white p-5">
+          <h2 className="text-lg font-semibold text-foreground">Registrar un folio del recetario especial</h2>
+          <FormularioAccion accion={registrarRecetario} textoBoton="Registrar" className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
             <input type="hidden" name="perro_id" value={perro} />
             <div className="grid gap-3 sm:grid-cols-2">
               <Select label="Producto" name="insumo_id" required>
@@ -102,13 +102,13 @@ export default async function RecetarioEspecial({ searchParams }: { searchParams
       {error ? (
         <AvisoErrorClinico error={error} titulo="No pudimos cargar los folios" />
       ) : filas.length === 0 ? (
-        <p className="rounded-lg border border-n-200 bg-white p-5 text-n-700">Todavía no hay folios del recetario especial.</p>
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-5 text-n-700">Todavía no hay folios del recetario especial.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {filas.map((r) => {
             const lotes = productosLotes.find((p) => p.id === r.insumo_id)?.lotes ?? [];
             return (
-              <li key={r.id} className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
+              <li key={r.id} className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold text-n-900">Folio {r.folio} · {r.producto}</span>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.estado === "cancelada" ? "bg-coral-suave text-coral-oscuro" : "bg-menta-suave text-menta-oscuro"}`}>{r.estado === "cancelada" ? "Cancelado" : "Vigente"}</span>

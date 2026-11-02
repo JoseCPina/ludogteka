@@ -51,12 +51,12 @@ export default async function Recetas({ searchParams }: { searchParams: Promise<
             </EnlacePestana>
           </div>
           {filas.length === 0 ? (
-            <p className="rounded-lg border border-n-200 bg-white p-5 text-n-700">Todavía no hay recetas{puede ? ". Emite la primera con «Nueva receta»." : "."}</p>
+            <p className="rounded-lg border border-border bg-card shadow-tarjeta p-5 text-n-700">Todavía no hay recetas{puede ? ". Emite la primera con «Nueva receta»." : "."}</p>
           ) : (
-            <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+            <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
               {filas.map((r) => (
                 <li key={r.id}>
-                  <Enlace href={`/veterinaria/recetas/${r.id}`} className="flex flex-col gap-1 px-4 py-3 hover:bg-n-50" forma="bloque">
+                  <Enlace href={`/veterinaria/recetas/${r.id}`} className="flex flex-col gap-1 px-4 py-3 hover:bg-muted" forma="bloque">
                     <span className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold text-n-900">Receta {r.numero} · {r.mascota}</span>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${r.estado === "anulada" ? "bg-coral-suave text-coral-oscuro" : "bg-menta-suave text-menta-oscuro"}`}>{r.estado === "anulada" ? "Anulada" : "Emitida"}</span>

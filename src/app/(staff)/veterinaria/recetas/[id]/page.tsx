@@ -16,7 +16,7 @@ const ETIQUETAS_COPIA = ["ORIGINAL", "COPIA 1", "COPIA 2", "COPIA 3", "COPIA 4"]
 function Cuerpo({ d, etiqueta, pie }: { d: RecetaDetalle; etiqueta: string; pie: string }) {
   const s = d.snapshot;
   return (
-    <article className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-6 print:break-after-page print:border-0 print:p-0">
+    <article className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-6 print:break-after-page print:border-0 print:p-0">
       <div className="flex items-start justify-between gap-3">
         <EncabezadoNegocio />
         <div className="text-right">
@@ -28,7 +28,7 @@ function Cuerpo({ d, etiqueta, pie }: { d: RecetaDetalle; etiqueta: string; pie:
         <h1 className="text-2xl font-bold uppercase tracking-wide text-n-900">Receta veterinaria</h1>
         <p className="text-sm text-n-600">N.º {d.numero} · {formatearFechaCalendario(d.fecha)}{d.estado === "anulada" ? " · ANULADA" : ""}</p>
       </header>
-      <section className="grid gap-x-6 gap-y-1 rounded-md border border-n-200 p-3 text-sm sm:grid-cols-2">
+      <section className="grid gap-x-6 gap-y-1 rounded-md border border-border p-3 text-sm sm:grid-cols-2">
         <p className="sm:col-span-2"><span className="text-n-500">Médico veterinario:</span> <strong>{s.medico.nombre}</strong> · cédula profesional <strong>{s.medico.cedula}</strong></p>
         <p className="sm:col-span-2"><span className="text-n-500">Establecimiento:</span> {s.establecimiento.nombre}{s.establecimiento.ciudad ? `, ${s.establecimiento.ciudad}` : ""}{s.establecimiento.aviso_funcionamiento ? ` · Aviso de funcionamiento SENASICA ${s.establecimiento.aviso_funcionamiento}` : ""}</p>
         <p><span className="text-n-500">Propietario:</span> <strong>{s.propietario.nombre}</strong></p>
@@ -41,7 +41,7 @@ function Cuerpo({ d, etiqueta, pie }: { d: RecetaDetalle; etiqueta: string; pie:
       </section>
       <section className="flex flex-col gap-3">
         {d.lineas.map((l, i) => (
-          <div key={l.id} className="rounded-md border border-n-200 p-3 text-sm">
+          <div key={l.id} className="rounded-md border border-border p-3 text-sm">
             <p className="font-bold text-n-900">{i + 1}. {l.producto}{l.presentacion ? ` — ${l.presentacion}` : ""}</p>
             {l.principio_activo && <p className="text-n-600">Principio activo: {l.principio_activo}</p>}
             <p className="mt-1 text-n-800">
@@ -100,12 +100,12 @@ export default async function Receta({ params }: { params: Promise<{ id: string 
       ))}
       {surtibles.length > 0 && !anulada && puede && (
         <section className="flex flex-col gap-3 print:hidden">
-          <h2 className="text-lg font-bold text-n-900">Surtir del inventario</h2>
+          <h2 className="text-lg font-semibold text-foreground">Surtir del inventario</h2>
           <p className="text-sm text-n-600">Estos productos solo salen del inventario contra su receta. Cada salida queda en el lote y en el libro de control.</p>
           {surtibles.map((l) => {
             const prod = productos.find((p) => p.id === l.insumo_id);
             return (
-              <div key={l.id} className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
+              <div key={l.id} className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <p className="font-semibold text-n-900">{l.producto} <span className="font-normal text-n-600">· {DOCUMENTOS[l.documento].corta}</span></p>
                 <p className="text-sm text-n-600">
                   Surtida {l.surtidos} {l.surtidos === 1 ? "vez" : "veces"}{l.surtidos_max ? ` de ${l.surtidos_max}` : ""} · {l.surtido_cantidad} de {l.cantidad_surtir}{l.cantidad_unidad ? ` ${unidadSegunCantidad(l.cantidad_surtir, l.cantidad_unidad)}` : ""}

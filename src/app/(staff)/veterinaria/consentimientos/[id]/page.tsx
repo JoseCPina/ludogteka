@@ -37,7 +37,7 @@ export default async function Consentimiento({ params }: { params: Promise<{ id:
         </Alert>
       )}
       {c.estado === "cancelado" && <Alert variante="error" titulo="Cancelado">{c.cancelado_motivo as string}</Alert>}
-      <article className="flex flex-col gap-4 rounded-lg border border-n-200 bg-white p-6">
+      <article className="flex flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-6">
         <header>
           <p className="text-xs font-bold uppercase tracking-wide text-n-500">{ETIQUETA_CONSENTIMIENTO[c.tipo as string]} · {mascota?.nombre} · {dueno?.nombre}</p>
           <h1 className="mt-1 text-xl font-bold text-n-900">{llenarConsentimiento(c.titulo as string, mapa)}</h1>

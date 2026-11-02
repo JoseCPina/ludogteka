@@ -43,7 +43,7 @@ export default async function Certificado({ params }: { params: Promise<{ id: st
           {c.anulado_motivo as string}. Ya no tiene validez.
         </Alert>
       )}
-      <article className={`flex flex-col gap-5 rounded-lg border border-n-200 bg-white p-6 print:border-0 print:p-0 ${anulado ? "opacity-70" : ""}`}>
+      <article className={`flex flex-col gap-5 rounded-lg border border-border bg-card shadow-tarjeta p-6 print:border-0 print:p-0 ${anulado ? "opacity-70" : ""}`}>
         <EncabezadoNegocio />
         <header className="text-center">
           <h1 className="text-2xl font-bold uppercase tracking-wide text-n-900">Certificado de salud</h1>
@@ -54,7 +54,7 @@ export default async function Certificado({ params }: { params: Promise<{ id: st
           El(la) suscrito(a) <strong>{s.medico.nombre}</strong>, médico(a) veterinario(a) con cédula profesional <strong>{s.medico.cedula}</strong>
           {s.medico.cpa ? <> (CPA {s.medico.cpa})</> : null}, hace constar que examinó a la mascota descrita abajo, propiedad de <strong>{s.propietario.nombre}</strong>, y encontró lo siguiente.
         </p>
-        <section className="grid gap-x-6 gap-y-1 rounded-md border border-n-200 p-3 text-sm sm:grid-cols-2">
+        <section className="grid gap-x-6 gap-y-1 rounded-md border border-border p-3 text-sm sm:grid-cols-2">
           <p><span className="text-n-500">Nombre:</span> <strong>{s.mascota.nombre}</strong></p>
           <p><span className="text-n-500">Especie:</span> {s.mascota.especie === "gato" ? "Gato" : s.mascota.especie === "otro" ? "Otra" : "Perro"}</p>
           <p><span className="text-n-500">Raza:</span> {s.mascota.raza ?? "—"}</p>

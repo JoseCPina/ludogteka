@@ -47,13 +47,13 @@ export default async function ReporteMensual({ searchParams }: { searchParams: P
           </header>
 
           <section>
-            <h2 className="mb-2 text-lg font-bold text-n-900">Folios usados ({r.usados.length})</h2>
+            <h2 className="mb-2 text-lg font-semibold text-foreground">Folios usados ({r.usados.length})</h2>
             {r.usados.length === 0 ? <p className="text-n-600">Ninguno este mes.</p> : (
               <TablaResponsiva className="w-full text-sm">
                 <thead><tr className="text-left text-n-500"><th>Folio</th><th>Fecha</th><th>Producto</th><th>Registro SENASICA</th><th>Paciente</th><th className="text-right">Cantidad</th></tr></thead>
                 <tbody>
                   {r.usados.map((u) => (
-                    <tr key={u.id} className="border-t border-n-200"><td className="font-semibold">{u.folio}</td><td>{formatearFechaCalendario(u.fecha)}</td><td>{u.producto}</td><td>{u.registro_senasica}</td><td>{u.paciente}</td><td className="text-right">{u.cantidad_total}{u.unidad ? ` ${unidadSegunCantidad(u.cantidad_total, u.unidad)}` : ""}{u.parcialidades ? " (parc.)" : ""}</td></tr>
+                    <tr key={u.id} className="border-t border-border"><td className="font-semibold">{u.folio}</td><td>{formatearFechaCalendario(u.fecha)}</td><td>{u.producto}</td><td>{u.registro_senasica}</td><td>{u.paciente}</td><td className="text-right">{u.cantidad_total}{u.unidad ? ` ${unidadSegunCantidad(u.cantidad_total, u.unidad)}` : ""}{u.parcialidades ? " (parc.)" : ""}</td></tr>
                   ))}
                 </tbody>
               </TablaResponsiva>
@@ -61,13 +61,13 @@ export default async function ReporteMensual({ searchParams }: { searchParams: P
           </section>
 
           <section>
-            <h2 className="mb-2 text-lg font-bold text-n-900">Folios cancelados, en ceros ({r.cancelados.length})</h2>
+            <h2 className="mb-2 text-lg font-semibold text-foreground">Folios cancelados, en ceros ({r.cancelados.length})</h2>
             {r.cancelados.length === 0 ? <p className="text-n-600">Ninguno este mes.</p> : (
               <TablaResponsiva className="w-full text-sm">
                 <thead><tr className="text-left text-n-500"><th>Folio</th><th>Fecha</th><th className="text-right">Cantidad</th><th>Observación</th></tr></thead>
                 <tbody>
                   {r.cancelados.map((c) => (
-                    <tr key={c.id} className="border-t border-n-200"><td className="font-semibold">{c.folio}</td><td>{formatearFechaCalendario(c.fecha)}</td><td className="text-right">0</td><td>{c.observacion}</td></tr>
+                    <tr key={c.id} className="border-t border-border"><td className="font-semibold">{c.folio}</td><td>{formatearFechaCalendario(c.fecha)}</td><td className="text-right">0</td><td>{c.observacion}</td></tr>
                   ))}
                 </tbody>
               </TablaResponsiva>
@@ -75,13 +75,13 @@ export default async function ReporteMensual({ searchParams }: { searchParams: P
           </section>
 
           <section>
-            <h2 className="mb-2 text-lg font-bold text-n-900">Parcialidades ({r.parcialidades.length})</h2>
+            <h2 className="mb-2 text-lg font-semibold text-foreground">Parcialidades ({r.parcialidades.length})</h2>
             {r.parcialidades.length === 0 ? <p className="text-n-600">Ninguna este mes.</p> : (
               <TablaResponsiva className="w-full text-sm">
                 <thead><tr className="text-left text-n-500"><th>Folio</th><th>Fecha</th><th>Producto</th><th>Paciente</th><th className="text-right">Cantidad</th></tr></thead>
                 <tbody>
                   {r.parcialidades.map((p, i) => (
-                    <tr key={i} className="border-t border-n-200"><td className="font-semibold">{p.folio}</td><td>{formatearFechaCalendario(p.fecha)}</td><td>{p.producto}</td><td>{p.paciente}</td><td className="text-right">{p.cantidad}</td></tr>
+                    <tr key={i} className="border-t border-border"><td className="font-semibold">{p.folio}</td><td>{formatearFechaCalendario(p.fecha)}</td><td>{p.producto}</td><td>{p.paciente}</td><td className="text-right">{p.cantidad}</td></tr>
                   ))}
                 </tbody>
               </TablaResponsiva>
@@ -89,14 +89,14 @@ export default async function ReporteMensual({ searchParams }: { searchParams: P
           </section>
 
           <section>
-            <h2 className="mb-1 text-lg font-bold text-n-900">Pacientes ({r.pacientes.length})</h2>
+            <h2 className="mb-1 text-lg font-semibold text-foreground">Pacientes ({r.pacientes.length})</h2>
             <p className="text-n-700">{r.pacientes.length ? r.pacientes.join(", ") : "Ninguno este mes."}</p>
           </section>
 
           <div className="flex flex-col gap-3 print:hidden">
             <BotonImprimirPagina texto="Imprimir o guardar PDF" />
             {!r.reportado && r.periodo < mesActual && (
-              <FormularioAccion accion={marcarReporte.bind(null, medico as string, r.periodo)} textoBoton="Ya lo reporté en el SITPV" textoExito="Marcado como reportado" className="max-w-xl rounded-lg border border-n-200 bg-white p-4">
+              <FormularioAccion accion={marcarReporte.bind(null, medico as string, r.periodo)} textoBoton="Ya lo reporté en el SITPV" textoExito="Marcado como reportado" className="max-w-xl rounded-lg border border-border bg-card shadow-tarjeta p-4">
                 <p className="text-sm text-n-600">Captura estos datos en el SITPV y luego marca el mes. Queda guardado quién lo marcó y cuándo.</p>
                 <Field label="Nota (opcional)" name="nota" placeholder="Folio de acuse, si te lo dieron" />
               </FormularioAccion>

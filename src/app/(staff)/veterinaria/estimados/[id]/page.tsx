@@ -62,8 +62,8 @@ export default async function DetalleEstimadoPagina({ params }: { params: Promis
           insumos={await opcionesDeEstimado()}
           hoy={hoyNegocio(zona)}
         />
-        <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="text-lg font-bold text-n-900">Listo para el dueño</h2>
+        <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="text-lg font-semibold text-foreground">Listo para el dueño</h2>
           <p className="text-n-700">Guarda tus cambios y entonces envíalo: al enviarlo, el contenido queda congelado (cambiarlo es hacer una versión nueva).</p>
           <div className="flex flex-wrap items-start gap-3">
             <EnviarEstimado id={e.id} telefono={d.dueno.telefono} mascota={d.mascota.nombre} titulo={e.titulo} yaEnviado={false} />
@@ -88,7 +88,7 @@ export default async function DetalleEstimadoPagina({ params }: { params: Promis
       {e.estado === "cancelado" && <Alert variante="info" titulo="Estimado cancelado">Motivo: {e.cancelado_motivo}</Alert>}
       {e.estado === "reemplazado" && <Alert variante="info" titulo="Reemplazado por una versión más nueva">Su liga ya no sirve.</Alert>}
 
-      <section className="rounded-lg border border-n-200 bg-white p-5">
+      <section className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
         <TablaResponsiva className="w-full text-sm">
           <thead>
             <tr className="text-left text-n-500"><th className="py-1">Concepto</th><th>Cant.</th><th className="text-right">Mínimo</th><th className="text-right">Máximo</th></tr>
@@ -114,13 +114,13 @@ export default async function DetalleEstimadoPagina({ params }: { params: Promis
         <p className="mt-3 text-sm text-n-600">Vigente hasta {formatearFechaCalendario(e.vigente_hasta)}{d.medico ? ` · ${d.medico.nombre}, cédula ${d.medico.cedula}` : ""}</p>
         {d.tiene_firma && d.firma_png && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={d.firma_png} alt={`Firma de ${e.aceptado_nombre}`} className="mt-3 h-24 rounded border border-n-200 bg-white" />
+          <img src={d.firma_png} alt={`Firma de ${e.aceptado_nombre}`} className="mt-3 h-24 rounded border border-border bg-white" />
         )}
       </section>
 
       {d.versiones.length > 1 && (
-        <section className="rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="text-lg font-bold text-n-900">Versiones</h2>
+        <section className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="text-lg font-semibold text-foreground">Versiones</h2>
           <ul className="mt-2 flex flex-col gap-1 text-sm">
             {d.versiones.map((v) => (
               <li key={v.id}>

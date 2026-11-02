@@ -40,12 +40,12 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
           <Button type="submit">Buscar</Button>
         </form>
         {filas.length === 0 ? (
-          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No encontramos a nadie con eso.</p>
+          <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">No encontramos a nadie con eso.</p>
         ) : (
-          <ul className="divide-y divide-n-200 overflow-hidden rounded-lg border border-n-200 bg-white">
+          <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
             {filas.map((f) => (
               <li key={f.id}>
-                <Enlace href={`/veterinaria/recetas/nueva?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-n-50" forma="bloque">
+                <Enlace href={`/veterinaria/recetas/nueva?perro=${f.id}`} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-muted" forma="bloque">
                   <span className="font-semibold text-n-900">{f.nombre} <span className="font-normal text-n-500">· {etiquetaEspecie(f.especie)}</span></span>
                   <span className="text-sm text-n-600">{f.dueno}{f.telefono ? ` · ${f.telefono}` : ""}</span>
                 </Enlace>
@@ -86,7 +86,7 @@ export default async function NuevaReceta({ searchParams }: { searchParams: Prom
       ) : (
         <>
           {consultas.length > 0 && (
-            <div className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4 text-sm">
+            <div className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4 text-sm">
               <p className="font-semibold text-n-900">¿Desde una consulta?</p>
               <div className="flex flex-wrap gap-2">
                 <EnlacePestana href={`/veterinaria/recetas/nueva?perro=${perro}`} activo={!consultaElegida}>Desde la ficha</EnlacePestana>

@@ -133,7 +133,7 @@ export function FormularioVacuna({
   const { duplicado, setDuplicado, envolver } = useDuplicadoCarnet();
   if (duplicado) return <AvisoDuplicado mensaje={duplicado} perroId={perroId} alCancelar={() => setDuplicado(null)} />;
   return (
-    <FormularioAccion accion={envolver((fd) => registrarVacuna(perroId, fd, consultaId))} textoBoton="Registrar vacuna" textoExito="Vacuna registrada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+    <FormularioAccion accion={envolver((fd) => registrarVacuna(perroId, fd, consultaId))} textoBoton="Registrar vacuna" textoExito="Vacuna registrada" reiniciar className="rounded-lg border-[1.5px] border-border bg-muted p-4">
       <ProductoYLote productos={productos} etiquetaProducto="Vacuna" nombreTexto="biologico" sugeridas={vacunasSugeridas(especie)} />
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Laboratorio (opcional)" name="laboratorio" />
@@ -170,7 +170,7 @@ export function FormularioDesparasitacion({
   const { duplicado, setDuplicado, envolver } = useDuplicadoCarnet();
   if (duplicado) return <AvisoDuplicado mensaje={duplicado} perroId={perroId} alCancelar={() => setDuplicado(null)} />;
   return (
-    <FormularioAccion accion={envolver((fd) => registrarDesparasitacion(perroId, fd, consultaId))} textoBoton="Registrar desparasitación" textoExito="Desparasitación registrada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+    <FormularioAccion accion={envolver((fd) => registrarDesparasitacion(perroId, fd, consultaId))} textoBoton="Registrar desparasitación" textoExito="Desparasitación registrada" reiniciar className="rounded-lg border-[1.5px] border-border bg-muted p-4">
       <ProductoYLote productos={productos} etiquetaProducto="Producto" nombreTexto="producto" />
       <div className="grid gap-3 sm:grid-cols-2">
         <Select label="Tipo" name="tipo" defaultValue="interna">
@@ -210,7 +210,7 @@ export function AnularRegistro({ perroId, tipo, id }: { perroId: string; tipo: "
       accion={(fd) => anularRegistroCarnet(perroId, tipo, id, fd)}
       textoBoton="Anular registro"
       variante="peligro"
-      className="mt-2 rounded-md border border-n-200 bg-white p-3"
+      className="mt-2 rounded-md border border-border bg-card p-3"
       otrosBotones={
         <Button type="button" variante="secundario" onClick={() => setAbierto(false)}>
           Cancelar
@@ -250,11 +250,11 @@ export function EnlaceCarnet({ perroId, vigente }: { perroId: string; vigente: b
         Un enlace público que muestra solo el nombre de la mascota, el de su dueño, las vacunas vigentes y este negocio. Sin dinero ni datos clínicos. Generar uno nuevo desactiva el anterior.
       </p>
       {url && (
-        <div className="flex flex-col gap-3 rounded-md border border-n-200 bg-white p-3">
+        <div className="flex flex-col gap-3 rounded-md border border-border bg-card p-3">
           <CampoCopiable valor={url} etiqueta="Enlace del carnet" />
           {qr && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={qr} alt="Código QR del carnet verificable" width={240} height={240} className="h-60 w-60 rounded-md border border-n-200" />
+            <img src={qr} alt="Código QR del carnet verificable" width={240} height={240} className="h-60 w-60 rounded-md border border-border" />
           )}
           <p className="text-sm text-n-600">Guárdalo ahora: por seguridad este enlace no se vuelve a mostrar completo. Si lo pierdes, genera otro.</p>
         </div>

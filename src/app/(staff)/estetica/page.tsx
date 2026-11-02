@@ -178,66 +178,72 @@ export default async function AgendaPage({
       ) : (!empleados || empleados.length === 0) && sinAsignar.length === 0 ? (
         <p className="text-n-600">No hay personal de estética registrado todavía.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
           {columnas.map((emp) => {
             const citasEmpleado = citas.filter((c) => (c.empleado_id ?? null) === (emp.id || null));
             const esPropia = sesion?.user.id === emp.id;
+            const nombre = emp.nombre_completo ?? "—";
+            const iniciales = nombre.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "·";
             return (
-              <section key={emp.id} className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
-                <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">
-                  {emp.nombre_completo ?? "—"}
-                </h2>
+              // Rediseño (Mobbin: Fresha, una columna por persona con su avatar arriba; bloque user-schedule):
+              <section key={emp.id} className="flex flex-col rounded-lg border border-border bg-card shadow-tarjeta">
+                <header className="flex items-center gap-2.5 border-b border-border px-4 py-3">
+                  <span aria-hidden="true" className={`grid size-9 flex-none place-items-center rounded-full text-sm font-bold ${emp.id ? "bg-morado-suave text-morado" : "bg-muted text-n-600"}`}>{iniciales}</span>
+                  <h2 className="min-w-0 flex-1 truncate text-[0.9375rem] font-semibold text-foreground">{nombre}</h2>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-n-700" title="Citas en esta vista">{citasEmpleado.length}</span>
+                </header>
                 {citasEmpleado.length === 0 ? (
-                  <p className="text-sm text-n-500">Sin citas.</p>
+                  <p className="px-4 py-4 text-sm text-muted-foreground">Sin citas.</p>
                 ) : (
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-3 p-3">
                     {diasVista.map((dia) => {
                       const citasDelDia = citasEmpleado.filter((c) => c.fecha_local === dia);
                       if (citasDelDia.length === 0) return null;
                       return (
                         <div key={dia} className="flex flex-col gap-1.5">
                           {vista === "semana" && (
-                            <p className="text-xs font-bold uppercase text-n-500">
+                            <p className="px-1 text-xs font-semibold capitalize text-muted-foreground">
                               {formatearDiaSemana(dia)} {formatearFechaCalendario(dia)}
                             </p>
                           )}
-                          {citasDelDia.map((c) => (
-                            <div key={c.id} className="flex flex-col gap-1.5 sm:flex-row sm:items-stretch">
-                              <Enlace href={
-                                  puedeEditarTodos || esPropia ? `/estetica/${c.id}` : "#"
-                                } data-cita-en-ausencia={enAusencia.has(c.id) ? "" : undefined} className={`flex flex-1 flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm ${
-                                  enAusencia.has(c.id)
-                                    ? "border-coral bg-coral-suave"
-                                    : c.fuera_de_horario
-                                      ? "border-ambar bg-ambar-suave"
-                                      : "border-n-200 bg-n-50"
-                                } ${puedeEditarTodos || esPropia ? "hover:opacity-80" : "cursor-default"}`} forma="bloque">
-                                <span className="font-semibold text-n-900">
-                                  {horaLocalDeInstante(c.inicio, zona)} · {c.perro_nombre}
-                                </span>
-                                <span
-                                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ESTILO_ESTADO[c.estado] ?? "bg-n-100"}`}
+                          {citasDelDia.map((c) => {
+                            const barra = enAusencia.has(c.id) ? "before:bg-coral-oscuro" : c.fuera_de_horario ? "before:bg-ambar" : c.estado === "en_curso" ? "before:bg-ambar" : c.estado === "finalizada" ? "before:bg-menta-oscuro" : c.estado === "cancelada" || c.estado === "no_llego" ? "before:bg-n-400" : "before:bg-morado";
+                            return (
+                              <div key={c.id} className="flex flex-col gap-1.5 sm:flex-row sm:items-stretch">
+                                <Enlace
+                                  href={puedeEditarTodos || esPropia ? `/estetica/${c.id}` : "#"}
+                                  data-cita-en-ausencia={enAusencia.has(c.id) ? "" : undefined}
+                                  className={`relative flex flex-1 flex-col gap-1 overflow-hidden rounded-md border py-2 pr-3 pl-4 text-sm before:absolute before:inset-y-0 before:left-0 before:w-1 ${barra} ${
+                                    enAusencia.has(c.id) ? "border-coral/50 bg-coral-suave" : c.fuera_de_horario ? "border-ambar/60 bg-ambar-suave" : "border-border bg-card"
+                                  } ${puedeEditarTodos || esPropia ? "hover:bg-muted" : "cursor-default"}`}
+                                  forma="bloque"
                                 >
-                                  {ETIQUETA_ESTADO[c.estado] ?? c.estado}
-                                </span>
-                                {recordatorios.has(c.id) && (() => {
-                                  const r = recordatorios.get(c.id)!;
-                                  const e = estadoDeRecordatorio(r.estado, r.respuesta);
-                                  return <span data-recordatorio-cita={r.respuesta ?? r.estado}><Chip tono={e.tono}>{e.texto}</Chip></span>;
-                                })()}
-                                {enAusencia.has(c.id) && (
-                                  <span className="basis-full text-xs font-semibold text-coral-oscuro">
-                                    Estilista ausente ({enAusencia.get(c.id)}): reasigna esta cita
+                                  <span className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="font-semibold text-foreground">
+                                      <span className="tabular-nums">{horaLocalDeInstante(c.inicio, zona)}</span> · {c.perro_nombre}
+                                    </span>
+                                    <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${ESTILO_ESTADO[c.estado] ?? "bg-n-100"}`}>{ETIQUETA_ESTADO[c.estado] ?? c.estado}</span>
                                   </span>
-                                )}
-                              </Enlace>
-                              {(puedeEditarTodos || esPropia) && (c.estado === "reservada" || c.estado === "confirmada") && (
-                                <Enlace href={`/estetica/${c.id}?reprogramar=1`} data-reprogramar-agenda className="inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-md border border-n-200 bg-white px-3 text-xs font-semibold text-morado hover:bg-morado-suave" title="Cambiar la fecha o la hora de esta cita" forma="bloque">
-                                  Reprogramar
+                                  <span className="truncate text-xs text-muted-foreground">{c.servicio_nombre}</span>
+                                  {recordatorios.has(c.id) && (() => {
+                                    const r = recordatorios.get(c.id)!;
+                                    const e = estadoDeRecordatorio(r.estado, r.respuesta);
+                                    return <span data-recordatorio-cita={r.respuesta ?? r.estado}><Chip tono={e.tono}>{e.texto}</Chip></span>;
+                                  })()}
+                                  {enAusencia.has(c.id) && (
+                                    <span className="text-xs font-semibold text-coral-oscuro">
+                                      Estilista ausente ({enAusencia.get(c.id)}): reasigna esta cita
+                                    </span>
+                                  )}
                                 </Enlace>
-                              )}
-                            </div>
-                          ))}
+                                {(puedeEditarTodos || esPropia) && (c.estado === "reservada" || c.estado === "confirmada") && (
+                                  <Enlace href={`/estetica/${c.id}?reprogramar=1`} data-reprogramar-agenda className="inline-flex min-h-9 items-center justify-center whitespace-nowrap rounded-md border border-border bg-card px-3 text-xs font-semibold text-morado hover:bg-morado-suave" title="Cambiar la fecha o la hora de esta cita" forma="bloque">
+                                    Reprogramar
+                                  </Enlace>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })}

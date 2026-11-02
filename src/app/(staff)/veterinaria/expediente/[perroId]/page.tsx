@@ -91,9 +91,9 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
       {errorLinea && <Alert variante="error" titulo="No pudimos cargar la línea de tiempo">Recarga la página. Si sigue, avísale al equipo técnico.</Alert>}
 
       {estimados.length > 0 && (
-        <section className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="text-lg font-bold text-n-900">Estimados</h2>
-          <ul className="divide-y divide-n-200">
+        <section className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="text-lg font-semibold text-foreground">Estimados</h2>
+          <ul className="divide-y divide-border">
             {estimados.map((e) => {
               const est = ESTADOS_ESTIMADO[e.estado] ?? { etiqueta: e.estado, estilo: "bg-n-100" };
               return (
@@ -111,11 +111,13 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
       )}
 
       <section className="flex flex-col gap-3" aria-label="Línea de tiempo">
-        <h2 className="text-lg font-bold text-n-900">Línea de tiempo</h2>
+        <h2 className="text-lg font-semibold text-foreground">Línea de tiempo</h2>
         {linea.length === 0 ? (
-          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">Esta mascota todavía no tiene nada en su expediente.</p>
+          <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">Esta mascota todavía no tiene nada en su expediente.</p>
         ) : (
-          <ol className="flex flex-col gap-2">
+          // Rediseño (bloque timeline-component; Mobbin: Heidi, la historia del paciente en orden con su tipo y fecha):
+          // una línea vertical con un punto por evento.
+          <ol className="relative ml-2 flex flex-col gap-3 border-l-2 border-border pl-5">
             {linea.map((e) => {
               const t = TIPOS_EVENTO[e.tipo] ?? { etiqueta: e.tipo, estilo: "bg-n-100" };
               const anulada = e.estado === "anulada";
@@ -131,7 +133,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
                 : e.tipo === "vacuna" || e.tipo === "desparasitacion" ? `/veterinaria/carnet/${perroId}`
                 : e.tipo === "laboratorio" && e.consulta_id ? `/veterinaria/consulta/${e.consulta_id}` : null;
               return (
-                <li key={`${e.tipo}-${e.ref_id}`} className={`rounded-lg border border-n-200 bg-white px-4 py-3 ${anulada ? "opacity-60" : ""}`}>
+                <li key={`${e.tipo}-${e.ref_id}`} className={`relative rounded-lg border border-border bg-card px-4 py-3 shadow-tarjeta before:absolute before:top-4 before:-left-[1.72rem] before:size-3 before:rounded-full before:border-2 before:border-card before:bg-primary ${anulada ? "opacity-60 before:bg-n-400" : ""}`}>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${t.estilo}`}>{t.etiqueta}</span>
                     <span className="text-sm text-n-600">{fecha}</span>
@@ -153,13 +155,13 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
       </section>
 
       {sesion?.rol === "admin" && (
-        <section className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-5">
-          <h2 className="text-lg font-bold text-n-900">Quién abrió este expediente</h2>
+        <section className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-5">
+          <h2 className="text-lg font-semibold text-foreground">Quién abrió este expediente</h2>
           <p className="text-sm text-n-600">Las últimas lecturas, para que todo acceso quede a la vista.</p>
           {lecturasLista.length === 0 ? (
             <p className="text-n-700">Todavía no hay lecturas.</p>
           ) : (
-            <ul className="divide-y divide-n-200 text-sm">
+            <ul className="divide-y divide-border text-sm">
               {lecturasLista.map((l, i) => (
                 <li key={i} className="flex flex-wrap justify-between gap-2 py-1.5">
                   <span><strong>{l.persona}</strong> abrió {ETIQUETA_LECTURA[l.recurso] ?? l.recurso}</span>

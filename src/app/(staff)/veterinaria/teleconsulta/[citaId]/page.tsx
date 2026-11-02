@@ -55,7 +55,7 @@ export default async function TeleconsultaPagina({ params, searchParams }: { par
       {nueva === "1" && <Alert variante="exito" titulo="Teleconsulta agendada">La sala ya está creada. Genera la liga y mándasela al dueño.</Alert>}
       {aviso === "sala" && <Alert variante="advertencia" titulo="La cita quedó agendada, pero no pudimos crear la sala">Usa «Preparar la sala» abajo cuando el servicio de video esté disponible.</Alert>}
       {d && (
-        <ul className="grid gap-1 rounded-lg border border-n-200 bg-white p-4 text-sm text-n-700">
+        <ul className="grid gap-1 rounded-lg border border-border bg-card shadow-tarjeta p-4 text-sm text-n-700">
           <li>Consentimiento: <strong>{d.consentimiento_firmado ? `firmado por ${d.consentimiento_firmante ?? "el dueño"}` : "pendiente"}</strong></li>
           {d.pago_requerido && <li>Cobro anticipado: <strong>{d.pagado ? "pagado" : "pendiente"}</strong></li>}
           <li>El dueño ya entró: <strong>{d.entro_dueno_at ? "sí" : "no"}</strong></li>

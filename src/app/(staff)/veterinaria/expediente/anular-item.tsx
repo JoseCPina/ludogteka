@@ -21,7 +21,7 @@ export function AccionesFirmada({ id, puedeAdenda, puedeAnular }: { id: string; 
   return (
     <div className="flex flex-col gap-3">
       {puedeAdenda && (
-        <FormularioAccion accion={(fd) => agregarAdenda(id, fd)} textoBoton="Firmar adenda" textoExito="Adenda agregada" reiniciar className="rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+        <FormularioAccion accion={(fd) => agregarAdenda(id, fd)} textoBoton="Firmar adenda" textoExito="Adenda agregada" reiniciar className="rounded-lg border-[1.5px] border-border bg-muted p-4">
           <Textarea label="Adenda" name="texto" rows={3} required ayuda="Corrige o completa lo firmado sin tocarlo: queda a continuación, con tu firma y la fecha." />
         </FormularioAccion>
       )}

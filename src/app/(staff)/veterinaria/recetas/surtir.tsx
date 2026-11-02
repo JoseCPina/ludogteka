@@ -23,7 +23,7 @@ export function SurtirDocumento({
     return <p className="rounded-md bg-ambar-suave px-3 py-2 text-sm text-ambar-oscuro">Este producto no tiene lotes con existencia vigente. Registra la entrada en Inventario clínico.</p>;
   }
   return (
-    <FormularioAccion accion={surtirControlado.bind(null, tipo, docId)} textoBoton="Registrar salida" textoExito="Salida registrada" reiniciar className="rounded-md border border-n-200 bg-n-50 p-3">
+    <FormularioAccion accion={surtirControlado.bind(null, tipo, docId)} textoBoton="Registrar salida" textoExito="Salida registrada" reiniciar className="rounded-md border border-border bg-muted p-3">
       <div className="grid gap-3 sm:grid-cols-3">
         <Select label="Lote" name="lote_id" required>
           {lotes.map((l) => (

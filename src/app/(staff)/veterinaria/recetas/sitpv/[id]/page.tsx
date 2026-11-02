@@ -57,8 +57,8 @@ export default async function EspejoSitpv({ params }: { params: Promise<{ id: st
         )}
       </div>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4 print:hidden">
-        <h2 className="text-lg font-bold text-n-900">Datos para copiar al SITPV</h2>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4 print:hidden">
+        <h2 className="text-lg font-semibold text-foreground">Datos para copiar al SITPV</h2>
         <p className="text-sm text-n-600">Cópialos uno por uno al capturar la receta en el SITPV. Si ya la emitiste, verifica que el folio sea este.</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {campos.filter(([, v]) => v).map(([etiqueta, valor]) => (
@@ -97,7 +97,7 @@ export default async function EspejoSitpv({ params }: { params: Promise<{ id: st
               <thead><tr className="text-left text-n-500"><th>Fecha</th><th>Paciente</th><th>Lote</th><th className="text-right">Cantidad</th></tr></thead>
               <tbody>
                 {d.aplicaciones.map((a, i) => (
-                  <tr key={i} className="border-t border-n-200"><td>{formatearFechaCalendario(a.fecha)}</td><td>{a.hospitalario && !a.paciente ? "USO HOSPITALARIO" : (a.paciente ?? "—")}{a.hospitalario && a.paciente ? " (uso hospitalario)" : ""}</td><td>{a.lote ?? "—"}</td><td className="text-right">{a.cantidad}</td></tr>
+                  <tr key={i} className="border-t border-border"><td>{formatearFechaCalendario(a.fecha)}</td><td>{a.hospitalario && !a.paciente ? "USO HOSPITALARIO" : (a.paciente ?? "—")}{a.hospitalario && a.paciente ? " (uso hospitalario)" : ""}</td><td>{a.lote ?? "—"}</td><td className="text-right">{a.cantidad}</td></tr>
                 ))}
               </tbody>
             </TablaResponsiva>
@@ -111,7 +111,7 @@ export default async function EspejoSitpv({ params }: { params: Promise<{ id: st
         <section className="flex flex-col gap-3 print:hidden">
           {pendiente > 0 && (d.parcialidades || d.surtido === 0) ? (
             <>
-              <h2 className="text-lg font-bold text-n-900">{d.parcialidades ? "Registrar una aplicación (parcialidad)" : "Surtir"}</h2>
+              <h2 className="text-lg font-semibold text-foreground">{d.parcialidades ? "Registrar una aplicación (parcialidad)" : "Surtir"}</h2>
               <p className="text-sm text-n-600">Queda por surtir {pendiente}{d.unidad ? ` ${unidadSegunCantidad(pendiente, d.unidad)}` : ""}. La salida baja el lote y entra al libro de control con este folio{d.uso_hospitalario ? " y el paciente que elijas" : ` y ${d.mascota}`}.</p>
               <SurtirDocumento
                 tipo="espejo" docId={d.id} lotes={lotes} unidad={d.unidad}

@@ -44,7 +44,7 @@ export function AccionesReceta({
       </div>
       {error && <AccionesFormulario error={error} exito={null}>{null}</AccionesFormulario>}
       {url && (
-        <div className="flex max-w-xl flex-col gap-2 rounded-lg border border-n-200 bg-n-50 p-3">
+        <div className="flex max-w-xl flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-3">
           <p className="text-sm text-n-700">Esta liga muestra la receta al dueño. Solo se puede ver con ella; si la generas otra vez, la anterior deja de servir.</p>
           <CampoCopiable valor={url} etiqueta="Liga de la receta" />
           {digitos.length === 10 ? (

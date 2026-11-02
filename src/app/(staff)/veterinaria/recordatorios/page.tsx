@@ -50,9 +50,9 @@ export default async function Recordatorios() {
       {error && <Alert variante="error" titulo="No pudimos cargar los recordatorios">{error.message}</Alert>}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Por mandar ({pendientes.length})</h2>
+        <h2 className="text-lg font-semibold text-foreground">Por mandar ({pendientes.length})</h2>
         {pendientes.length === 0 ? (
-          <p className="rounded-lg border border-n-200 bg-white p-4 text-n-700">No hay nada pendiente. Las dosis que se acerquen aparecerán aquí.</p>
+          <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-n-700">No hay nada pendiente. Las dosis que se acerquen aparecerán aquí.</p>
         ) : (
           <ul className="flex flex-col gap-3">
             {pendientes.map((f) => {
@@ -60,7 +60,7 @@ export default async function Recordatorios() {
                 ? enlaceWhatsApp(f.cliente_telefono, mensajeRecordatorio({ dueno: f.cliente_nombre, mascota: f.perro_nombre, negocio: negocio.nombre, detalle: f.detalle, cuando: cuandoEs(f.dias) === "hoy" ? "hoy" : cuandoEs(f.dias).startsWith("desde") ? `desde ${formatearFechaCalendario(f.proxima_dosis)}` : `el ${formatearFechaCalendario(f.proxima_dosis)}`, tipo: f.origen_tipo }))
                 : null;
               return (
-                <li key={f.id} className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
+                <li key={f.id} className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-bold text-n-900">
                       <Enlace href={`/veterinaria/carnet/${f.perro_id}`}>{f.perro_nombre}</Enlace>
@@ -81,7 +81,7 @@ export default async function Recordatorios() {
       </section>
 
       {resueltos.length > 0 && (
-        <details className="rounded-lg border border-n-200 bg-white p-4">
+        <details className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <summary className="cursor-pointer font-semibold text-n-800">Resueltos hace poco ({resueltos.length})</summary>
           <ul className="mt-3 flex flex-col gap-1.5 text-sm text-n-700">
             {resueltos.map((f) => (

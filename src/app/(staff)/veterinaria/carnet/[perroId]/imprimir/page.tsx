@@ -30,7 +30,7 @@ export default async function ImprimirCarnet({ params }: { params: Promise<{ per
         <Enlace href={`/veterinaria/carnet/${perroId}`} className="text-sm">← Carnet</Enlace>
         <BotonImprimirPagina />
       </div>
-      <article className="flex flex-col gap-5 rounded-lg border border-n-200 bg-white p-6 print:border-0 print:p-0">
+      <article className="flex flex-col gap-5 rounded-lg border border-border bg-card shadow-tarjeta p-6 print:border-0 print:p-0">
         <EncabezadoNegocio />
         <header>
           <p className="text-xs font-bold uppercase tracking-wide text-n-500">Carnet de vacunación y desparasitación</p>
@@ -46,7 +46,7 @@ export default async function ImprimirCarnet({ params }: { params: Promise<{ per
         </header>
 
         <section>
-          <h2 className="mb-2 text-lg font-bold text-n-900">Vacunas</h2>
+          <h2 className="mb-2 text-lg font-semibold text-foreground">Vacunas</h2>
           {vacunas.length === 0 ? (
             <p className="text-n-600">Sin vacunas registradas.</p>
           ) : (
@@ -85,7 +85,7 @@ export default async function ImprimirCarnet({ params }: { params: Promise<{ per
         </section>
 
         <section>
-          <h2 className="mb-2 text-lg font-bold text-n-900">Desparasitaciones</h2>
+          <h2 className="mb-2 text-lg font-semibold text-foreground">Desparasitaciones</h2>
           {desparasitaciones.length === 0 ? (
             <p className="text-n-600">Sin desparasitaciones registradas.</p>
           ) : (
