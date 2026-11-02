@@ -35,7 +35,7 @@ export function DesvincularFila({ cuenta }: { cuenta: CuentaVinculada }) {
       : "Vinculado";
 
   return (
-    <div className="flex flex-col gap-3 border-b border-n-200 px-4 py-3 last:border-b-0">
+    <div className="flex flex-col gap-3 border-b border-border px-4 py-3 last:border-b-0">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="font-semibold text-n-900">

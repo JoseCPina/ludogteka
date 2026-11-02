@@ -61,7 +61,7 @@ export function AbrirTurnoForm() {
   }
 
   return (
-    <div className="flex max-w-md flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
+    <div className="flex max-w-md flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
       <p className="text-n-700">No hay turno de caja abierto. Ábrelo con el fondo con el que arrancas.</p>
 
       {error && (

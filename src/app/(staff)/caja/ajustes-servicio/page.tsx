@@ -52,7 +52,7 @@ export default async function AjustesServicioPage() {
       ) : (
         <ul className="flex flex-col gap-3">
           {filas.map((f) => (
-            <li key={f.correccion_id} data-ajuste-servicio className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
+            <li key={f.correccion_id} data-ajuste-servicio className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
               <p className="font-semibold text-n-900">
                 {f.perro} · {f.cliente_nombre}
                 <Antiguedad dias={diasDesde(f.desde, hoy, zona)} />

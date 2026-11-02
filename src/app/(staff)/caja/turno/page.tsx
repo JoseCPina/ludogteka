@@ -214,8 +214,8 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
             abiertoPorMi={turnoAbierto.abierto_por === sesion?.user.id}
             hayTarjetaManual={hayTarjetaManual}
           />
-          <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-            <h2 className="text-lg font-bold text-n-900">Movimientos de este turno</h2>
+          <div className="flex flex-col gap-3 border-t border-border pt-6">
+            <h2 className="text-lg font-semibold text-foreground">Movimientos de este turno</h2>
             <MovimientosTurno
               zona={zona}
               movimientos={movimientos}
@@ -228,8 +228,8 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
         </>
       )}
 
-      <div className="border-t border-n-200 pt-6">
-        <h2 className="mb-3 text-lg font-bold text-n-900">
+      <div className="border-t border-border pt-6">
+        <h2 className="mb-3 text-lg font-semibold text-foreground">
           {sesion?.rol === "admin" ? "Turnos cerrados" : "Tus turnos cerrados"}
         </h2>
         <HistorialTurnos zona={zona} turnos={turnosCerrados} />

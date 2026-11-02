@@ -6,7 +6,7 @@ export function NotaSoloEstetica({ tamano = "grande" }: { tamano?: "grande" | "c
   const compacto = tamano === "compacto";
   return (
     <p
-      className={`inline-flex items-center gap-1.5 rounded-full border border-n-200 bg-n-50 text-n-600 ${
+      className={`inline-flex items-center gap-1.5 rounded-full border border-border bg-muted text-n-600 ${
         compacto ? "px-2 py-0.5 text-xs" : "px-3 py-1.5 text-sm"
       }`}
     >

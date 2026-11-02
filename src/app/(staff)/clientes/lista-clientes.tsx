@@ -33,7 +33,7 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
   if (clientes.length === 0) {
     return (
       <div className="rounded-lg border-[1.5px] border-dashed border-n-300 bg-white p-10 text-center">
-        <h3 className="text-lg font-bold text-n-900">Aún no hay dueños registrados</h3>
+        <h3 className="text-lg font-semibold text-foreground">Aún no hay dueños registrados</h3>
         <p className="mt-1 text-n-600">En cuanto des de alta al primero, va a aparecer aquí.</p>
       </div>
     );
@@ -51,31 +51,35 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
         />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
         <TablaResponsiva className="w-full min-w-[720px] border-collapse">
           <thead>
             <tr>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Nombre
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 {vocabularioMascota({ conVet }).Plural}
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Teléfono
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Correo
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Alta
               </th>
             </tr>
           </thead>
           <tbody>
             {filtrados.map((cliente) => (
-              <tr key={cliente.id} className="hover:bg-n-50">
-                <td className="border-b border-n-200 px-4 py-3">
+              <tr key={cliente.id} className="hover:bg-muted">
+                <td className="border-b border-border px-4 py-2.5">
+                  {/* Rediseño (Mobbin: Attio y Stripe, la lista densa con la inicial del contacto): */}
+                  <span aria-hidden="true" className="mr-2.5 hidden size-8 place-items-center rounded-full bg-morado-suave align-middle text-sm font-bold text-morado sm:inline-grid">
+                    {cliente.nombre.trim().charAt(0).toUpperCase() || "·"}
+                  </span>
                   <Enlace href={`/clientes/${cliente.id}`}>
                     {cliente.nombre}
                   </Enlace>
@@ -88,7 +92,7 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
                     </span>
                   )}
                 </td>
-                <td className="border-b border-n-200 px-4 py-3 text-n-700">
+                <td className="max-w-[16rem] border-b border-border px-4 py-2.5 text-n-700">
                   {cliente.perros.length === 0
                     ? <span className="text-n-400">—</span>
                     : cliente.perros.map((p, i) => (
@@ -102,13 +106,13 @@ export function ListaClientes({ clientes }: { clientes: ClienteFila[] }) {
                         </span>
                       ))}
                 </td>
-                <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-900">
+                <td className="whitespace-nowrap border-b border-border px-4 py-2.5 tabular-nums text-n-900">
                   {formatearTelefono(cliente.telefono)}
                 </td>
-                <td className="border-b border-n-200 px-4 py-3 text-n-600">
+                <td className="border-b border-border px-4 py-2.5 text-n-600">
                   {cliente.email ?? "—"}
                 </td>
-                <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-600">
+                <td className="whitespace-nowrap border-b border-border px-4 py-2.5 tabular-nums text-n-600">
                   {formatearFecha(cliente.created_at, zona)}
                 </td>
               </tr>

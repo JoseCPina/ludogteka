@@ -108,7 +108,7 @@ export function MostradorCaja({
         <div className="flex items-stretch gap-2">
         {marcable && (
           <label
-            className={`flex w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-n-200 bg-white ${bloqueada ? "cursor-not-allowed opacity-40" : "hover:border-morado"}`}
+            className={`flex w-11 shrink-0 cursor-pointer items-center justify-center rounded-md border border-border bg-card ${bloqueada ? "cursor-not-allowed opacity-40" : "hover:border-morado"}`}
             title={bloqueada ? "Solo se cobran juntas las cuentas de la misma persona" : "Marcar para cobrar junto con otras cuentas de esta persona"}
           >
             <input
@@ -122,7 +122,7 @@ export function MostradorCaja({
             />
           </label>
         )}
-        <Enlace href={`/caja/cobrar/${c.reservaId}`} className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 rounded-md border border-n-200 bg-white px-4 py-3 hover:border-morado hover:bg-n-50" forma="bloque">
+        <Enlace href={`/caja/cobrar/${c.reservaId}`} className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-card px-4 py-3 hover:border-morado hover:bg-muted" forma="bloque">
           <span className="flex min-w-0 flex-col">
             <span className="font-semibold text-n-900">
               {c.clienteNombre}
@@ -162,7 +162,7 @@ export function MostradorCaja({
           }
           const total = g.cuentas.reduce((s, c) => s + c.saldo, 0);
           return (
-            <li key={g.clienteId} data-grupo-cliente={g.clienteId} className="flex flex-col gap-2 rounded-lg border-[1.5px] border-morado bg-n-50 p-3">
+            <li key={g.clienteId} data-grupo-cliente={g.clienteId} className="flex flex-col gap-2 rounded-lg border-[1.5px] border-morado bg-muted p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="font-bold text-n-900">
                   {g.cuentas[0].clienteNombre}
@@ -239,9 +239,9 @@ export function MostradorCaja({
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">¿A quién le cobras?</h2>
+        <h2 className="text-lg font-semibold text-foreground">¿A quién le cobras?</h2>
         {cliente ? (
-          <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+          <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-n-600">Cliente</p>
@@ -293,14 +293,14 @@ export function MostradorCaja({
       </section>
 
       <section className="flex flex-col gap-4" data-seccion-por-cobrar>
-        <h2 className="text-lg font-bold text-n-900">Por cobrar</h2>
+        <h2 className="text-lg font-semibold text-foreground">Por cobrar</h2>
         <div className="flex flex-col gap-3">
           <h3 className="text-base font-bold text-n-900">Cuentas abiertas de hoy</h3>
           {deHoy.length === 0 ? <p className="text-sm text-n-600">Nada pendiente de cobrar hoy.</p> : listaCuentas(deHoy)}
         </div>
         {vencidas.length > 0 && (
           <div className="flex flex-col gap-3" data-seccion-vencidas>
-            <h3 className="text-sm font-bold uppercase tracking-wide text-n-600">Días anteriores (hasta 30 días)</h3>
+            <h3 className="text-[0.9375rem] font-semibold text-foreground">Días anteriores (hasta 30 días)</h3>
             {listaCuentas(vencidas)}
           </div>
         )}
@@ -308,7 +308,7 @@ export function MostradorCaja({
 
       {proximas.length > 0 && (
         <section className="flex flex-col gap-3" data-seccion-proximas>
-          <h2 className="text-lg font-bold text-n-900">Próximas</h2>
+          <h2 className="text-lg font-semibold text-foreground">Próximas</h2>
           <p className="text-sm text-n-600">
             Citas y estancias con fecha futura. Todavía no se deben: no suman en «Pendiente de cobrar hoy». Si el cliente quiere pagar por adelantado, abre la
             cuenta y cobra.

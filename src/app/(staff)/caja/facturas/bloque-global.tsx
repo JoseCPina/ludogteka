@@ -26,9 +26,9 @@ export type PeriodoGlobal = {
 export function BloqueGlobal({ periodos, periodicidad }: { periodos: PeriodoGlobal[]; periodicidad: string }) {
   const nombre = periodicidad === "dia" ? "diaria" : periodicidad === "semana" ? "semanal" : "mensual";
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+    <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <div>
-        <h2 className="text-lg font-bold text-n-900">Factura global al público en general</h2>
+        <h2 className="text-lg font-semibold text-foreground">Factura global al público en general</h2>
         <p className="text-sm text-n-600">
           Periodicidad {nombre}. Junta los cobros que no se facturaron a nombre de nadie, con el IVA separado. Hay que emitirla dentro de las 24 horas siguientes al cierre del periodo.
         </p>
@@ -61,7 +61,7 @@ function Periodo({ p }: { p: PeriodoGlobal }) {
     router.refresh();
   }
   return (
-    <li className={`flex flex-col gap-2 rounded-md border-l-4 px-3 py-2 ${p.vencida ? "border-coral bg-coral-suave/40" : "border-ambar bg-n-50"}`}>
+    <li className={`flex flex-col gap-2 rounded-md border-l-4 px-3 py-2 ${p.vencida ? "border-coral bg-coral-suave/40" : "border-ambar bg-muted"}`}>
       <p className="font-semibold text-n-900">
         Del {formatearFechaCalendario(p.desde)} al {formatearFechaCalendario(p.hasta)} · {p.n_cobros} {p.n_cobros === 1 ? "cobro" : "cobros"} · {dinero(p.total)}
       </p>

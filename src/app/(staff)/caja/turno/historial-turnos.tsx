@@ -32,7 +32,7 @@ export function HistorialTurnos({ turnos, zona }: { turnos: TurnoCerrado[]; zona
       {turnos.map((t) => {
         const hayDiferencia = t.metodos.some((m) => m.diferencia !== 0);
         return (
-          <li key={t.id} className="rounded-lg border border-n-200 bg-white p-4">
+          <li key={t.id} className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="font-semibold text-n-900">
                 {formatearFecha(t.abiertoEn, zona)} – {formatearFecha(t.cerradoEn, zona)}
@@ -55,16 +55,16 @@ export function HistorialTurnos({ turnos, zona }: { turnos: TurnoCerrado[]; zona
               <TablaResponsiva className="tabla-tarjetas w-full min-w-[420px] border-collapse text-sm">
                 <thead>
                   <tr>
-                    <th className="border-b border-n-200 py-1 text-left text-xs font-bold uppercase tracking-wide text-n-500">
+                    <th className="border-b border-border py-1 text-left text-xs font-bold uppercase tracking-wide text-n-500">
                       Método
                     </th>
-                    <th className="border-b border-n-200 py-1 text-right text-xs font-bold uppercase tracking-wide text-n-500">
+                    <th className="border-b border-border py-1 text-right text-xs font-bold uppercase tracking-wide text-n-500">
                       Contado
                     </th>
-                    <th className="border-b border-n-200 py-1 text-right text-xs font-bold uppercase tracking-wide text-n-500">
+                    <th className="border-b border-border py-1 text-right text-xs font-bold uppercase tracking-wide text-n-500">
                       Esperado
                     </th>
-                    <th className="border-b border-n-200 py-1 text-right text-xs font-bold uppercase tracking-wide text-n-500">
+                    <th className="border-b border-border py-1 text-right text-xs font-bold uppercase tracking-wide text-n-500">
                       Diferencia
                     </th>
                   </tr>

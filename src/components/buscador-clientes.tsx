@@ -133,7 +133,7 @@ export function BuscadorClientes({
       </div>
 
       {(hayBusqueda || listarSinBusqueda) && (
-        <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
+        <div className="overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
           {visibles.length === 0 ? (
             <p className="p-6 text-center text-n-600">
               {vacio}
@@ -141,7 +141,7 @@ export function BuscadorClientes({
             </p>
           ) : (
             <ul
-              className="divide-y divide-n-200"
+              className="divide-y divide-border"
               onPointerDownCapture={(e) => {
                 presionado.current = idDeFila(e.target);
               }}
@@ -159,7 +159,7 @@ export function BuscadorClientes({
                 const c = coincidencia.cliente;
                 const contenido = <FilaCliente coincidencia={coincidencia} />;
                 const clases =
-                  "flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-n-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave";
+                  "flex w-full items-center justify-between gap-3 px-4 py-3 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-morado-suave";
                 return (
                   <li key={c.id} data-cliente-id={c.id}>
                     {hrefDe ? (
@@ -177,7 +177,7 @@ export function BuscadorClientes({
             </ul>
           )}
           {coincidencias.length > maximo && (
-            <p className="border-t border-n-200 px-4 py-2 text-xs text-n-500">
+            <p className="border-t border-border px-4 py-2 text-xs text-n-500">
               Se muestran {maximo} de {coincidencias.length}. Escribe más para acotar.
             </p>
           )}

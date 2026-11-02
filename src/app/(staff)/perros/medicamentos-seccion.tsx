@@ -107,7 +107,7 @@ export function MedicamentosSeccion({
       ) : (
         <ul className="flex flex-col gap-3">
           {ordenados.map((m) => (
-            <li key={m.id} className={`rounded-lg border-[1.5px] p-4 ${m.activo ? "border-n-200 bg-white" : "border-n-200 bg-n-50 opacity-70"}`}>
+            <li key={m.id} className={`rounded-lg border-[1.5px] p-4 ${m.activo ? "border-border bg-white" : "border-border bg-muted opacity-70"}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <span className="font-bold text-n-900">{m.medicamento}</span>
@@ -142,7 +142,7 @@ export function MedicamentosSeccion({
               )}
 
               {registrandoDosisPara === m.id && (
-                <div className="mt-3 flex flex-col gap-2 rounded-md border border-n-200 bg-n-50 p-3">
+                <div className="mt-3 flex flex-col gap-2 rounded-md border border-border bg-muted p-3">
                   <label className="flex items-center gap-2 text-n-900">
                     <input
                       type="checkbox"
@@ -179,7 +179,7 @@ export function MedicamentosSeccion({
               )}
 
               {m.dosisRegistradas.length > 0 && (
-                <ul className="mt-3 flex flex-col gap-1 border-t border-n-200 pt-2">
+                <ul className="mt-3 flex flex-col gap-1 border-t border-border pt-2">
                   {m.dosisRegistradas.map((d) => (
                     <li key={d.id} className="flex flex-wrap items-center gap-2 text-sm">
                       <span className="text-n-600">{formatearFecha(d.administrado_at, zona)}</span>
@@ -200,7 +200,7 @@ export function MedicamentosSeccion({
 
       {puedeEscribir &&
         (agregando ? (
-          <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-n-200 bg-n-50 p-4">
+          <div className="flex flex-col gap-3 rounded-lg border-[1.5px] border-border bg-muted p-4">
             <Field label="Medicamento" value={medicamento} onChange={(e) => setMedicamento(e.target.value)} disabled={enviando.cargando} />
             <Field label="Dosis" value={dosis} onChange={(e) => setDosis(e.target.value)} disabled={enviando.cargando} />
             <Field

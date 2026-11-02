@@ -66,7 +66,7 @@ export function AlergiasSeccion({
         <p className="text-n-600">{mascota.este.charAt(0).toUpperCase() + mascota.este.slice(1)} no tiene alergias registradas.</p>
       )}
 
-      <form action={formAction} className="flex max-w-md flex-col gap-3 border-t border-n-200 pt-4">
+      <form action={formAction} className="flex max-w-md flex-col gap-3 border-t border-border pt-4">
         {estado.error && (
           <Alert variante="error" titulo="No se pudo guardar">
             {estado.error}

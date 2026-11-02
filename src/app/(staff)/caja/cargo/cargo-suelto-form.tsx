@@ -87,7 +87,7 @@ export function CargoSueltoForm({
   }
 
   return (
-    <div className="flex max-w-lg flex-col gap-4 rounded-lg border border-n-200 bg-white p-5">
+    <div className="flex max-w-lg flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
       {error && (
         <Alert variante="error" titulo="No se pudo aplicar">
           {error}

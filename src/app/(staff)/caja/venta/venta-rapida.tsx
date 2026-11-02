@@ -86,7 +86,7 @@ export function VentaRapida({
       )}
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">¿A quién?</h2>
+        <h2 className="text-lg font-semibold text-foreground">¿A quién?</h2>
         {buscando ? (
           <div className="flex flex-col gap-2">
             <BuscadorClientes
@@ -103,7 +103,7 @@ export function VentaRapida({
             </Button>
           </div>
         ) : (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
             <div>
               <p className="text-sm text-n-600">Cliente</p>
               <p className="font-bold text-n-900">{cliente ? cliente.nombre : "Público en general"}</p>
@@ -126,7 +126,7 @@ export function VentaRapida({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">¿Qué se vende?</h2>
+        <h2 className="text-lg font-semibold text-foreground">¿Qué se vende?</h2>
 
         {conInventario && productos.length > 0 ? (
           <div className="flex flex-wrap items-end gap-3">
@@ -169,7 +169,7 @@ export function VentaRapida({
             {renglones.map((r) => {
               const p = r.insumoId ? porId.get(r.insumoId) : null;
               return (
-                <li key={r.clave} className="flex flex-wrap items-end gap-3 rounded-lg border border-n-200 bg-white p-3" data-renglon-venta>
+                <li key={r.clave} className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-3" data-renglon-venta>
                   {p ? (
                     <div className="min-w-48 flex-1">
                       <p className="text-sm text-n-600">Producto</p>

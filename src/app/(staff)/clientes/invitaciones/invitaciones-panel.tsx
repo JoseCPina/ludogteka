@@ -171,7 +171,7 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
       </div>
 
       {confirmando && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-n-200 pt-2">
+        <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
           <p className="text-sm text-n-700">
             Cancelar deja el link inservible. El historial se queda para saber qué se mandó.
           </p>
@@ -185,7 +185,7 @@ function FilaInvitacion({ invitacion }: { invitacion: InvitacionFila }) {
       )}
 
       {reenvio && (
-        <div className="flex flex-col gap-1 rounded-md bg-n-50 p-3">
+        <div className="flex flex-col gap-1 rounded-md bg-muted p-3">
           <p className="text-xs text-n-600">Es el mismo link de siempre, no uno nuevo:</p>
           <AbrirWhatsApp href={reenvio.urlWhatsApp} enlace={reenvio.url} bloqueado={wa.enlace?.bloqueado} variante="secundario" />
         </div>
@@ -239,9 +239,9 @@ export function InvitacionesPanel({
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex max-w-lg flex-col gap-4 rounded-lg border border-n-200 bg-n-50 p-5">
+      <section className="flex max-w-lg flex-col gap-4 rounded-lg border border-border bg-card shadow-tarjeta p-5">
         <div>
-          <h2 className="text-lg font-bold text-n-900">Mandar un link de alta</h2>
+          <h2 className="text-lg font-semibold text-foreground">Mandar un link de alta</h2>
           <p className="mt-1 text-sm text-n-600">
             El cliente captura sus datos y los de sus perros desde su celular, firma el contrato
             que le toca, y el expediente aparece aquí ya ligado a su cuenta — sin pasar por
@@ -304,12 +304,12 @@ export function InvitacionesPanel({
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold text-n-900">Links pendientes</h2>
+        <h2 className="text-lg font-semibold text-foreground">Links pendientes</h2>
         {pendientes.length === 0 ? (
           <p className="text-n-600">No hay links esperando respuesta.</p>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
-            <ul className="divide-y divide-n-200">
+          <div className="overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
+            <ul className="divide-y divide-border">
               {pendientes.map((i) => (
                 <FilaInvitacion key={i.id} invitacion={i} />
               ))}
@@ -320,9 +320,9 @@ export function InvitacionesPanel({
 
       {resto.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">Historial</h2>
-          <div className="overflow-hidden rounded-lg border border-n-200 bg-white">
-            <ul className="divide-y divide-n-200">
+          <h2 className="text-lg font-semibold text-foreground">Historial</h2>
+          <div className="overflow-hidden rounded-lg border border-border bg-card shadow-tarjeta">
+            <ul className="divide-y divide-border">
               {resto.map((i) => (
                 <FilaInvitacion key={i.id} invitacion={i} />
               ))}

@@ -125,7 +125,7 @@ export default async function RecordatoriosPage() {
               : hrefDeRecordatorio(m.recordatorios_wa.tipo, m.recordatorios_wa.ref_id, m.recordatorios_wa.para_at, zona)
             : null;
           return (
-            <article key={m.id} className="flex flex-col gap-2 rounded-xl border border-n-200 bg-white p-4 sm:flex-row sm:items-start sm:justify-between" data-mensaje-recordatorio={m.tipo}>
+            <article key={m.id} className="flex flex-col gap-2 rounded-xl border border-border bg-white p-4 sm:flex-row sm:items-start sm:justify-between" data-mensaje-recordatorio={m.tipo}>
               <div className="flex flex-col gap-1">
                 <Chip tono={TONO_MENSAJE[m.tipo]}>{TITULO_MENSAJE[m.tipo]}</Chip>
                 <p className="font-medium text-n-900">
@@ -138,7 +138,7 @@ export default async function RecordatoriosPage() {
                     {m.recordatorios_wa.tipo !== "llegada" ? ` a las ${horaLocalDeInstante(m.recordatorios_wa.para_at, zona)}` : ""}
                   </p>
                 )}
-                {m.tipo === "mensaje" && m.texto && <p className="whitespace-pre-line rounded-lg bg-n-50 p-2 text-sm text-n-800">«{m.texto}»</p>}
+                {m.tipo === "mensaje" && m.texto && <p className="whitespace-pre-line rounded-lg bg-muted p-2 text-sm text-n-800">«{m.texto}»</p>}
                 {m.tipo === "solicitud_cita" && m.texto && <p className="text-sm text-n-700">{m.texto}</p>}
                 <p className="text-xs text-n-500">
                   {formatearFecha(m.created_at, zona)}, {horaLocalDeInstante(m.created_at, zona)}
@@ -166,7 +166,7 @@ export default async function RecordatoriosPage() {
         <h2 className="text-lg font-semibold text-n-900">Últimos recordatorios</h2>
         {lista.length === 0 && <p className="text-sm text-n-600">Todavía no sale ninguno.</p>}
         {lista.length > 0 && (
-          <ul className="divide-y divide-n-100 rounded-xl border border-n-200 bg-white">
+          <ul className="divide-y divide-n-100 rounded-xl border border-border bg-white">
             {lista.map((r) => {
               const e = estadoDeRecordatorio(r.estado, r.respuesta);
               const href = hrefDeRecordatorio(r.tipo, r.ref_id, r.para_at, zona);

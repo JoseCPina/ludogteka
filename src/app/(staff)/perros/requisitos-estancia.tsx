@@ -116,7 +116,7 @@ export function RequisitosEstancia({
   return (
     <div className="flex flex-col gap-4">
       {!aplica ? (
-        <p className="rounded-md border border-n-200 bg-n-50 px-3 py-2 text-sm text-n-600">
+        <p className="rounded-md border border-border bg-muted px-3 py-2 text-sm text-n-600">
           Viene solo a estética: estos requisitos no le aplican hoy.
           {bloqueos.length > 0
             ? " Si algún día reserva guardería u hotel, ese día se le van a pedir (" + bloqueos.join("; ") + ")."
@@ -137,7 +137,7 @@ export function RequisitosEstancia({
         </div>
       )}
 
-      <div className="rounded-lg border border-n-200 bg-white p-4">
+      <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <p className="font-semibold text-n-900">Evaluación previa de comportamiento</p>
         {evaluada ? (
           <>
@@ -198,7 +198,7 @@ export function RequisitosEstancia({
       </div>
 
       {esHembra && (
-        <div className="rounded-lg border border-n-200 bg-white p-4">
+        <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <p className="font-semibold text-n-900">Estado reproductivo</p>
           <p className="mt-1 text-sm text-n-600">
             Una perra en celo o gestante no se queda en guardería ni hotel mientras dure. Quita la marca

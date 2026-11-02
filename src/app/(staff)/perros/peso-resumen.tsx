@@ -54,7 +54,7 @@ export function PesoResumen({ historial, mascota = vocabularioMascota({ conVet: 
   const dias = historial[1] ? diasEntre(historial[1].fecha, historial[0].fecha) : null;
   const esUrgente = esNotable && esBaja && dias !== null && dias < DIAS_URGENTE;
 
-  let estiloCaja = "border-n-200 bg-white";
+  let estiloCaja = "border-border bg-white";
   let estiloTexto = "text-n-700";
   if (esNotable) {
     if (esBaja) {
@@ -101,17 +101,17 @@ export function PesoResumen({ historial, mascota = vocabularioMascota({ conVet: 
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+      <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
         <TablaResponsiva className="w-full min-w-[420px] border-collapse">
           <thead>
             <tr>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Fecha
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Peso
               </th>
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Notas
               </th>
             </tr>
@@ -119,13 +119,13 @@ export function PesoResumen({ historial, mascota = vocabularioMascota({ conVet: 
           <tbody>
             {historial.map((fila) => (
               <tr key={fila.id}>
-                <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-900">
+                <td className="border-b border-border px-4 py-3 tabular-nums text-n-900">
                   {formatearFechaCalendario(fila.fecha)}
                 </td>
-                <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-900">
+                <td className="border-b border-border px-4 py-3 tabular-nums text-n-900">
                   {Number(fila.peso_kg).toFixed(1)} kg
                 </td>
-                <td className="border-b border-n-200 px-4 py-3 text-n-600">{fila.notas ?? "—"}</td>
+                <td className="border-b border-border px-4 py-3 text-n-600">{fila.notas ?? "—"}</td>
               </tr>
             ))}
           </tbody>

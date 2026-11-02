@@ -65,7 +65,7 @@ export function ListaFacturas({
     <div className="flex flex-col gap-3">
       {hayPendientes && <ActualizarCancelaciones />}
       {facturas.length === 0 ? (
-        <p className="rounded-lg border border-n-200 bg-n-50 p-4 text-sm text-n-700">Todavía no hay facturas. Se emiten desde el cobro de una cuenta.</p>
+        <p className="rounded-lg border border-border bg-card shadow-tarjeta p-4 text-sm text-n-700">Todavía no hay facturas. Se emiten desde el cobro de una cuenta.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {facturas.map((f) => (
@@ -130,7 +130,7 @@ function Fila({ f, catalogos, puedeFacturar, puedeCancelar }: { f: FilaFactura; 
   const motivos = catalogos.filter((c) => c.tipo === "motivo_cancelacion" && c.clave !== "01");
 
   return (
-    <li className="flex flex-col gap-2 rounded-lg border border-n-200 bg-white p-4">
+    <li className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="font-semibold text-n-900">
@@ -216,7 +216,7 @@ function Fila({ f, catalogos, puedeFacturar, puedeCancelar }: { f: FilaFactura; 
       </div>
 
       {wa && (
-        <div className="flex flex-col gap-2 rounded-md border border-n-200 bg-n-50 p-3">
+        <div className="flex flex-col gap-2 rounded-md border border-border bg-muted p-3">
           {wa.url && (
             <Enlace href={wa.url} target="_blank" rel="noopener noreferrer" className="w-fit text-sm">
               Abrir WhatsApp con el mensaje →
@@ -227,7 +227,7 @@ function Fila({ f, catalogos, puedeFacturar, puedeCancelar }: { f: FilaFactura; 
       )}
 
       {panel === "correo" && (
-        <div className="flex flex-col gap-2 rounded-md border border-n-200 bg-n-50 p-3">
+        <div className="flex flex-col gap-2 rounded-md border border-border bg-muted p-3">
           <Field label="Correo del cliente" type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} />
           <AccionesFormulario error={error}>
             <Button type="button" cargando={envio.cargando} onClick={() => correr(() => correoDeFactura(f.id, correo))}>
@@ -238,7 +238,7 @@ function Fila({ f, catalogos, puedeFacturar, puedeCancelar }: { f: FilaFactura; 
       )}
 
       {panel === "sustituir" && (
-        <div className="flex flex-col gap-2 rounded-md border border-n-200 bg-n-50 p-3">
+        <div className="flex flex-col gap-2 rounded-md border border-border bg-muted p-3">
           <p className="text-sm text-n-700">
             Se emite otra factura de los mismos cobros con los datos de abajo y, si sale bien, esta se cancela con el motivo 01 (con errores, con relación). Corrige aquí el RFC, el nombre, el régimen o el uso.
           </p>

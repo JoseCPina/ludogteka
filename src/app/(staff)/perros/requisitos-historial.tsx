@@ -62,7 +62,7 @@ function AccionesRegistro({ perroId, fila }: { perroId: string; fila: RequisitoA
     );
   }
   return (
-    <div className="mt-2 flex max-w-sm flex-col gap-2 rounded-md border border-n-200 bg-white p-3">
+    <div className="mt-2 flex max-w-sm flex-col gap-2 rounded-md border border-border bg-card p-3">
       {modo === "corregir" && (
         <>
           <Field label="Fecha de aplicación" name="fecha" type="date" max={hoyNegocio(zona)} value={fecha} onChange={(e) => setFecha(e.target.value)} />
@@ -97,27 +97,27 @@ export function RequisitosHistorial({ filas, perroId, puedeGestionar = false }: 
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-n-200 bg-white">
+    <div className="overflow-x-auto rounded-lg border border-border bg-card shadow-tarjeta">
       <TablaResponsiva className="w-full min-w-[640px] border-collapse">
         <thead>
           <tr>
-            <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+            <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
               Tipo
             </th>
-            <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+            <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
               Aplicación
             </th>
-            <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+            <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
               Vence
             </th>
-            <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+            <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
               Detalle / notas
             </th>
-            <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+            <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
               Comprobante
             </th>
             {puedeGestionar && (
-              <th className="border-b border-n-200 bg-n-100 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-n-600">
+              <th className="border-b border-border bg-muted px-4 py-3 text-left text-xs font-semibold text-muted-foreground">
                 Registro
               </th>
             )}
@@ -125,8 +125,8 @@ export function RequisitosHistorial({ filas, perroId, puedeGestionar = false }: 
         </thead>
         <tbody>
           {filas.map((fila) => (
-            <tr key={fila.id} data-requisito-id={fila.id} data-anulado={fila.anulado ? "si" : "no"} className={fila.anulado ? "bg-n-50 text-n-500" : undefined}>
-              <td className="border-b border-n-200 px-4 py-3 font-semibold text-n-900">
+            <tr key={fila.id} data-requisito-id={fila.id} data-anulado={fila.anulado ? "si" : "no"} className={fila.anulado ? "bg-muted text-n-500" : undefined}>
+              <td className="border-b border-border px-4 py-3 font-semibold text-n-900">
                 <span className={fila.anulado ? "line-through" : undefined}>{fila.tipo_etiqueta}</span>
                 {fila.anulado && (
                   <span className="mt-1 block text-xs font-semibold text-coral-oscuro no-underline">Anulado: {fila.anulado_motivo}</span>
@@ -135,17 +135,17 @@ export function RequisitosHistorial({ filas, perroId, puedeGestionar = false }: 
                   <span className="mt-1 block text-xs font-normal text-n-500">Corregido {fila.correcciones === 1 ? "una vez" : `${fila.correcciones} veces`}</span>
                 )}
               </td>
-              <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-900">
+              <td className="border-b border-border px-4 py-3 tabular-nums text-n-900">
                 {formatearFechaCalendario(fila.fecha_aplicacion)}
               </td>
-              <td className="border-b border-n-200 px-4 py-3 tabular-nums text-n-900">
+              <td className="border-b border-border px-4 py-3 tabular-nums text-n-900">
                 {formatearFechaCalendario(fila.fecha_vencimiento)}
               </td>
-              <td className="border-b border-n-200 px-4 py-3 text-n-600">
+              <td className="border-b border-border px-4 py-3 text-n-600">
                 {fila.detalle ?? "—"}
                 {fila.notas && <span className="block text-xs italic">{fila.notas}</span>}
               </td>
-              <td className="border-b border-n-200 px-4 py-3">
+              <td className="border-b border-border px-4 py-3">
                 {fila.comprobante_url ? (
                   <Enlace href={fila.comprobante_url} target="_blank" rel="noreferrer">
                     Ver foto
@@ -155,7 +155,7 @@ export function RequisitosHistorial({ filas, perroId, puedeGestionar = false }: 
                 )}
               </td>
               {puedeGestionar && (
-                <td className="border-b border-n-200 px-4 py-3">
+                <td className="border-b border-border px-4 py-3">
                   {fila.anulado ? <span className="text-xs text-n-400">—</span> : <AccionesRegistro perroId={perroId} fila={fila} />}
                 </td>
               )}

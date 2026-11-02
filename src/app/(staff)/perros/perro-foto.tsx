@@ -139,7 +139,7 @@ export function PerroFoto({
   return (
     <div className={`flex ${esGrande ? "flex-col" : "flex-row items-center"} gap-3`}>
       <div
-        className={`${dimensiones} overflow-hidden rounded-md border-[1.5px] border-n-200 bg-n-50`}
+        className={`${dimensiones} overflow-hidden rounded-md border-[1.5px] border-border bg-muted`}
       >
         {hayFoto && url ? (
           // eslint-disable-next-line @next/next/no-img-element

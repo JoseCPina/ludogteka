@@ -221,17 +221,17 @@ export function CobroJunto({
 
   return (
     <div className="flex flex-col gap-4" data-cobro-junto>
-      <div className="rounded-lg border border-n-200 bg-n-50 p-4">
+      <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <p className="text-sm text-n-600">Cobrando juntas las cuentas de</p>
-        <p className="text-lg font-bold text-n-900">{cliente.nombre}</p>
+        <p className="text-lg font-semibold text-foreground">{cliente.nombre}</p>
         {cliente.telefono && <p className="text-sm text-n-600">{formatearTelefono(cliente.telefono)}</p>}
       </div>
 
       <section className="flex flex-col gap-2" aria-label="Cuentas incluidas">
-        <h2 className="text-sm font-bold uppercase tracking-wide text-n-600">Cuentas incluidas ({cuentas.length})</h2>
+        <h2 className="text-[0.9375rem] font-semibold text-foreground">Cuentas incluidas ({cuentas.length})</h2>
         <ul className="flex flex-col gap-2">
           {cuentas.map((c, i) => (
-            <li key={c.reservaId} data-cuenta-junto={c.reservaId} className="flex flex-col gap-2 rounded-md border border-n-200 bg-white p-3">
+            <li key={c.reservaId} data-cuenta-junto={c.reservaId} className="flex flex-col gap-2 rounded-md border border-border bg-card p-3">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="font-semibold text-n-900">{c.descripcion}</p>
@@ -305,7 +305,7 @@ export function CobroJunto({
           <Enlace href="/caja/turno">Abrir turno</Enlace>
         </div>
       ) : (
-        <div className="flex flex-col gap-3 rounded-lg border border-n-200 bg-white p-4">
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <p className="font-semibold text-n-900">Registrar el pago (un solo cobro)</p>
           {terminalManualBloqueada && (
             <p data-terminal-bloqueada className="text-sm text-n-600">
@@ -363,7 +363,7 @@ export function CobroJunto({
 
           <Textarea label="Notas (opcional)" value={notas} onChange={(e) => setNotas(e.target.value)} />
 
-          <div className="flex flex-col gap-1 rounded-md bg-n-50 p-3 text-sm text-n-700">
+          <div className="flex flex-col gap-1 rounded-md bg-muted p-3 text-sm text-n-700">
             <p>
               Total de las cuentas: <span className="font-semibold text-n-900">{dinero(totalCuentas)}</span>
               {propinaTotal > 0 ? ` + ${dinero(propinaTotal)} de propina` : ""}

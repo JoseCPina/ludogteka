@@ -161,7 +161,7 @@ export function NormalizarRazas({
       )}
       {resultado && <Alert variante="exito" titulo={resultado} />}
 
-      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-n-200 bg-n-50 p-4">
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
         <Button
           type="button"
           variante="secundario"
@@ -189,7 +189,7 @@ export function NormalizarRazas({
             <div
               key={perro.id}
               className={`flex flex-col gap-3 rounded-lg border-[1.5px] bg-white p-4 ${
-                eleccion.raza_id ? "border-menta" : "border-n-200"
+                eleccion.raza_id ? "border-menta" : "border-border"
               }`}
             >
               <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -265,7 +265,7 @@ export function NormalizarRazas({
         })}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 border-t border-n-200 pt-4">
+      <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
         <AccionesFormulario error={error} exito={resultado}>
         <Button
           type="button"

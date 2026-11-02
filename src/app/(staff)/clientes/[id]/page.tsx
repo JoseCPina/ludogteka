@@ -289,9 +289,9 @@ export default async function EditarClientePage({
         </Alert>
       )}
 
-      <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
+      <div className="flex flex-col gap-3 border-t border-border pt-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-n-900">{v.Plural}</h2>
+          <h2 className="text-lg font-semibold text-foreground">{v.Plural}</h2>
           <Enlace href={`/clientes/${id}/perros/nuevo`}>
               Agregar {v.nombre}
             </Enlace>
@@ -305,7 +305,7 @@ export default async function EditarClientePage({
               const tamano = perro.tamanos_categoria as unknown as { etiqueta: string } | null;
               return (
                 <li key={perro.id}>
-                  <Enlace href={`/perros/${perro.id}`} className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-white px-4 py-3 hover:border-morado" forma="bloque">
+                  <Enlace href={`/perros/${perro.id}`} className="flex flex-col gap-2 rounded-md border-[1.5px] border-border bg-white px-4 py-3 hover:border-morado" forma="bloque">
                     <span className="flex items-center justify-between">
                       <span className="flex items-center gap-3">
                         <PerroFoto
@@ -353,12 +353,12 @@ export default async function EditarClientePage({
       </div>
 
       {(perrosBaja ?? []).length > 0 && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-6" data-mascotas-de-baja>
-          <h2 className="text-lg font-bold text-n-900">{v.Plural} dad{v.o}s de baja</h2>
+        <div className="flex flex-col gap-3 border-t border-border pt-6" data-mascotas-de-baja>
+          <h2 className="text-lg font-semibold text-foreground">{v.Plural} dad{v.o}s de baja</h2>
           <p className="-mt-1 text-sm text-n-600">No salen en buscadores, agenda, reservas, cupos, pases ni recordatorios; su expediente, cobros y contratos se conservan aquí.</p>
           <ul className="flex flex-col gap-2">
             {(perrosBaja ?? []).map((p) => (
-              <li key={p.id} className="flex flex-col gap-2 rounded-md border-[1.5px] border-n-200 bg-n-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" data-mascota-baja={p.id}>
+              <li key={p.id} className="flex flex-col gap-2 rounded-md border-[1.5px] border-border bg-muted px-4 py-3 sm:flex-row sm:items-center sm:justify-between" data-mascota-baja={p.id}>
                 <span className="flex flex-col">
                   <Enlace href={`/perros/${p.id}`}>{p.nombre}</Enlace>
                   <span className="text-sm text-n-600">
@@ -373,8 +373,8 @@ export default async function EditarClientePage({
       )}
 
       {perrosVivos.length > 0 && conEstancias && (
-        <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-          <h2 className="text-lg font-bold text-n-900">Para guardería y hotel</h2>
+        <div className="flex flex-col gap-3 border-t border-border pt-6">
+          <h2 className="text-lg font-semibold text-foreground">Para guardería y hotel</h2>
           <p className="text-sm text-n-600">
             Lo que impide reservar (vacunas obligatorias y evaluación) se dice por separado de lo que solo se
             recomienda tener en el expediente. Si el dueño está enfrente, captúralo aquí; si no, mándale el link de abajo.
@@ -398,7 +398,7 @@ export default async function EditarClientePage({
             return aplicanRequisitosDe({ modulos: mods, usaGuarderiaHotel: usanGuarderiaHotel.has(p.id as string), tieneCitasEstetica: conCitasEstetica.has(p.id as string) }) ? (
               panel
             ) : (
-              <details key={p.id} data-pendientes-solo-estetica className="rounded-md border border-n-200 bg-white px-4 py-3">
+              <details key={p.id} data-pendientes-solo-estetica className="rounded-md border border-border bg-card px-4 py-3">
                 <summary className="cursor-pointer text-sm font-semibold text-n-700">
                   {p.nombre as string}: solo viene a estética. Si algún día va a guardería u hotel, esto es lo que le faltaría
                 </summary>
@@ -438,8 +438,8 @@ export default async function EditarClientePage({
       )}
 
       {mods.includes("bonos") && (
-      <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Paquetes (day pass y mensualidad)</h2>
+      <div className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Paquetes (day pass y mensualidad)</h2>
         <p className="-mt-1 text-sm text-n-600">Cada paquete es de un perro: solo ese perro lo usa.</p>{/* perro-ok: pases de guardería */}
         <BonosCliente
           catalogo={(catalogoBonos as BonoCatalogo[]) ?? []}
@@ -456,8 +456,8 @@ export default async function EditarClientePage({
 
       <CuentasCanceladasCliente clienteId={id} />
 
-      <div className="flex flex-col gap-3 border-t border-n-200 pt-6">
-        <h2 className="text-lg font-bold text-n-900">Dar de baja</h2>
+      <div className="flex flex-col gap-3 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold text-foreground">Dar de baja</h2>
         <p className="text-n-600">
           El cliente deja de aparecer en el listado, pero su historial no se borra.
         </p>

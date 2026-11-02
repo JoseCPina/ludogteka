@@ -105,7 +105,7 @@ export default async function NormalizarRazasPage() {
 
       {grupos.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-bold text-n-900">Textos de raza fuera del catálogo</h2>
+          <h2 className="text-lg font-semibold text-foreground">Textos de raza fuera del catálogo</h2>
           <p className="text-n-600">
             Agrupados por como se escriben, sin importar mayúsculas, acentos ni «perro»/«raza». Nada se junta solo: tú decides a qué raza pertenece cada grupo.
           </p>
