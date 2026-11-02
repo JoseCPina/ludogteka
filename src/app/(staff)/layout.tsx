@@ -22,24 +22,25 @@ import { bloqueoDeEscritura } from "@/lib/cobro/bloqueo-escritura-servidor";
 import { avisarEsteticaApagada, etiquetaDeSesion } from "@/lib/auth/rutas";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
-  const sesion = await obtenerSesionConRol();
-  if (!sesion) redirect("/login");
-  const conAyuda = sesion.rol === "admin" || sesion.rol === "recepcion";
   // QA S19 (rendimiento): el negocio, «Tus negocios» y los videos se piden a la vez (antes, uno tras otro en cada
   // pantalla y en cada acción que la repinta).
+  // Tiempo del panel, cuarta vuelta (2 de noviembre de 2026): y A LA VEZ que la sesión, no después: ninguno depende del
+  // rol salvo los videos, que ya esperan la sesión por dentro (y devuelven vacío fuera de admin y recepción). Una tanda
+  // menos en cada pantalla del personal.
   // Los videos de la serie que esta persona ve (publicados, de sus módulos).
   // Nunca rompe la pantalla: sin videos, simplemente no hay «¿Cómo se hace?».
   // «Tus negocios»: donde trabaja esta persona, con las sucursales del mismo dueño juntas.
   const supabase = await createSupabaseServerClient();
-  const [negocio, { data: suyos }, videos, bloqueo] = await Promise.all([
+  const [sesion, negocio, { data: suyos }, videos, bloqueo] = await Promise.all([
+    obtenerSesionConRol(),
     cargarNegocioLanding(),
     supabase.rpc("mis_negocios"),
-    conAyuda
-      ? tutorialesDeSesion()
-      : Promise.resolve([]),
+    tutorialesDeSesion(),
     // QA N151: prueba vencida o falta de pago → todo lo que escribe se ve deshabilitado (el mismo indicador que la franja).
     bloqueoDeEscritura(),
   ]);
+  if (!sesion) redirect("/login");
+  const conAyuda = sesion.rol === "admin" || sesion.rol === "recepcion";
   // QA S53 (N156): la zona (inicio, etiqueta, aviso de Estética apagada) sale del rol, los módulos y la designación de médico.
   const zonaSesion = { rol: sesion.rol, modulos: sesion.modulos, accesoVeterinaria: sesion.accesoVeterinaria, esMedico: sesion.esMedico };
   const negocios = ((suyos ?? []) as { id: string; nombre: string; rol: string; grupo_id: string; grupo_nombre: string; es_principal: boolean }[])
