@@ -116,6 +116,15 @@ días como tarjetas y horas grandes; Octopus: lo lleno dice «Lleno»), `app-pag
   dominio no es el del vínculo: decía «solo lectura» a la dueña de la demo). La auditoría de pantallas prueba un rechazo
   (segunda cita el mismo día) con su texto.
 
+**Una sola fuente del dinero (fix/reserva-total-una-fuente, migración `20261203001900`):** `portal_reservar` devolvía
+`precio_total` = precio × noches, una cuenta aparte de la de Caja (en producción, 10 de 477 estancias ya tenían otro total
+por una corrección de precio; 0 reservas de la app afectadas). Ahora `portal_reservar` y `portal_pedir_cita` devuelven el
+total, lo cubierto con pase y el saldo de `cuenta_totales_reserva` (sobre `cuenta_lineas_reserva`/`cuenta_lineas_estancia`),
+la misma fuente de Caja, el panel y el link de pago. «Por pagar» (`mis_pagos_pendientes`) lee `cuentas_abiertas`, que es la
+copia rápida de esas mismas líneas: `dinero-cliente.mjs` comprueba para cada cliente que su saldo es, al centavo, el de
+`cuenta_totales_reserva`, y `app-duenos-f3-dev.mjs` que el total de la reserva es el del panel y que, con una corrección de
+precio, «Por pagar» sigue al panel.
+
 ## Pruebas de pantalla
 - `node scripts/auditoria/app-duenos-f3-pantallas-dev.mjs [--capturas <carpeta>]` (desarrollo, Huellitas, app compilada en
   el 3001, 390 px): ficha → pestaña del negocio → pedir cita tocando (precio y quién atiende = base) → «Te toca» →

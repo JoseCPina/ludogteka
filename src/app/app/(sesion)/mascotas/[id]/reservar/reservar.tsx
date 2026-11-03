@@ -16,7 +16,8 @@ export type NegocioReserva = {
   servicios: { id: string; nombre: string; categoria: string; unidad: string; incluye: string[] | string | null }[];
 };
 
-type Hecha = { negocioId: string; negocio: string; servicio: string; fechas: string; total: number | null; conPase: boolean; contratos: { id: string; tipo_nombre: string }[] };
+// El total y el saldo son los de la CUENTA (cuenta_totales_reserva, la misma de Caja y del panel), nunca precio × noches.
+type Hecha = { negocioId: string; negocio: string; servicio: string; fechas: string; total: number | null; saldo: number | null; conPase: boolean; contratos: { id: string; tipo_nombre: string }[] };
 
 const fmt = (d: string, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat("es-MX", { timeZone: "UTC", ...o }).format(new Date(`${d}T12:00:00Z`));
 const corto = (d: string) => fmt(d, { weekday: "short", day: "numeric", month: "short" });
@@ -66,14 +67,15 @@ export function Reservar({ mascotaId, nombre, negocios, negocioInicial }: { masc
     setError(null);
     const r = await envio.ejecutar(() => reservarApp(negocio.id, mascotaId, servicio.id, entrada, salidaReal, porHora ? horas : null));
     if (r.error) return setError(r.error);
-    const d = (r.datos ?? {}) as { precio_total?: number | null; bono?: unknown; contratos_por_firmar?: { id: string; tipo_nombre: string }[] };
+    const d = (r.datos ?? {}) as { precio_total?: number | null; saldo?: number | null; cubierto_con_pase?: number | null; bono?: unknown; contratos_por_firmar?: { id: string; tipo_nombre: string }[] };
     setHecha({
       negocioId: negocio.id,
       negocio: negocio.nombre,
       servicio: servicio.nombre,
       fechas: porNoche ? `Del ${corto(entrada)} al ${corto(salidaReal)} · ${noches(entrada, salidaReal)} ${noches(entrada, salidaReal) === 1 ? "noche" : "noches"}` : `${corto(entrada)}${porHora ? ` · ${horas} h` : ""}`,
       total: d.precio_total == null ? null : Number(d.precio_total),
-      conPase: Boolean(d.bono),
+      saldo: d.saldo == null ? null : Number(d.saldo),
+      conPase: Boolean(d.bono) || Number(d.cubierto_con_pase ?? 0) > 0,
       contratos: d.contratos_por_firmar ?? [],
     });
   }
@@ -85,7 +87,9 @@ export function Reservar({ mascotaId, nombre, negocios, negocioInicial }: { masc
           <span style={{ fontWeight: 800, fontSize: "1.1rem" }}>¡Reservado! {nombre} tiene su lugar</span>
           <span>{hecha.servicio} en {hecha.negocio}</span>
           <span>{hecha.fechas}</span>
-          {hecha.conPase ? <span data-con-pase>Se usó su pase</span> : hecha.total != null && <span data-total>Total: ${hecha.total.toFixed(2)}</span>}
+          {hecha.conPase && <span data-con-pase>Se usó su pase</span>}
+          {hecha.total != null && !hecha.conPase && <span data-total>Total: ${hecha.total.toFixed(2)}</span>}
+          {hecha.saldo != null && hecha.saldo > 0 && <span data-saldo>Por pagar: ${hecha.saldo.toFixed(2)}</span>}
         </div>
         {hecha.contratos.length > 0 && (
           <div className="apd-tarjeta" data-contratos-reserva>

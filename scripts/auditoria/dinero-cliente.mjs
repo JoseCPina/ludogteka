@@ -376,6 +376,23 @@ for (const persona of staffSinCostos ?? []) {
 }
 console.log(`personal sin permiso de gastos revisado: ${staffSinGastos} (gastos en la base: ${gastosTotales ?? 0})`);
 
+// Una sola fuente (fix/reserva-total-una-fuente, 2 de noviembre de 2026): lo que el dueño ve en «Por pagar» de su app y
+// su portal (mis_pagos_pendientes) es, al centavo, el saldo de la cuenta del panel (cuenta_totales_reserva), nunca un
+// precio × noches calculado aparte.
+let cuentasComparadas = 0;
+for (const cli of clientes) {
+  const token = await tokenDe(cli.id);
+  const r = await fetch(`${URL}/rest/v1/rpc/mis_pagos_pendientes`, { method: "POST", headers: { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, "x-negocio-id": NEGOCIO, "content-type": "application/json" }, body: "{}" });
+  if (!r.ok) { hallazgos.push(`una fuente: mis_pagos_pendientes respondió ${r.status} a un cliente`); continue; }
+  for (const p of (await r.json()) ?? []) {
+    const { data: t } = await A.rpc("cuenta_totales_reserva", { p_reserva_id: p.reserva_id });
+    const panel = Array.isArray(t) ? t[0] : t;
+    cuentasComparadas++;
+    if (!panel || Math.round(Number(panel.saldo) * 100) !== Math.round(Number(p.saldo) * 100)) hallazgos.push(`una fuente: la cuenta ${p.reserva_id} dice ${p.saldo} en la app y ${panel?.saldo} en el panel`);
+  }
+}
+console.log(`una fuente: ${cuentasComparadas} cuentas por pagar de clientes, app = panel al centavo`);
+
 for (const rel of SOLO_STAFF) {
   if (!relaciones.includes(rel)) hallazgos.push(`${rel}: está en SOLO_STAFF pero la API ya no la expone (¿se renombró?)`);
   else if ((alcanzablesPorCliente.get(rel) ?? 0) > 0) hallazgos.push(`${rel}: solo staff, pero algún cliente lee ${alcanzablesPorCliente.get(rel)} filas`);

@@ -17,3 +17,9 @@
 - **Cuenta pagada (N129)**: una cuenta ofrece acciones de cobro (Registrar cobro, Cobrar con terminal, Mandar link de pago, Pagar con bono) y de ajuste de precio (Aplicar descuento, quitar un descuento, Corregir precio, Corregir monto) SOLO mientras `cuentaPorCobrar(saldo)` (`src/lib/caja/cuenta-por-cobrar.ts`: saldo > 0). Con saldo $0 o a favor queda «Cuenta pagada» (también sin turno abierto) con sus cobros y, para quien tiene el permiso, «Anular cobro» y «Registrar devolución»: los caminos válidos para cambiar una cuenta pagada. Al anular o devolver y volver el saldo arriba de 0, las acciones reaparecen. La usan todas las vistas de una cuenta (Caja, estancia, cita, consulta, check-out), el cobro integrado y el botón de la reserva («Cobrar» → «Ver cobros»; después del check-out «Cobrar la cuenta» o «Ver cobros»). Una pantalla nueva que muestre una cuenta decide con esa función, nunca con su propio `saldo > 0`. Prueba: `cuenta-pagada-dev.mjs`.
 - **«Registrar cobro» en un viaje (migración `20261202002100`)**: `registrar_cobro_con_totales` registra el cobro y devuelve los totales de la cuenta en la misma llamada a la base (antes eran dos).
 - **Salida anticipada**: la corrección de precio con motivo «Salida anticipada» que deja el check-out es una corrección normal de la línea (una sola vigente, se anula con motivo); detalle en docs/guarderia-hotel.md.
+
+## Una sola fuente para lo que ve el dueño (2 de noviembre de 2026)
+Lo que la app y el portal del dueño dicen de dinero (total de una reserva o cita recién hecha, «Por pagar», el monto del link)
+sale de la cuenta: `cuenta_totales_reserva` / `cuenta_lineas_estancia` (y `cuentas_abiertas`, su copia rápida, para la lista
+«Por pagar»). Ninguna función del dueño calcula precio × noches por su cuenta (`portal_reservar` lo hacía hasta la
+migración `20261203001900`). Pruebas: `dinero-cliente.mjs` (saldo de la app = panel, al centavo) y `app-duenos-f3-dev.mjs`.

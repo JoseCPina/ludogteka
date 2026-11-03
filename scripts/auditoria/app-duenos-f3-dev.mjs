@@ -57,7 +57,7 @@ const t2 = await tokenDe(C2.profile_id);
 const c1 = enNegocio(t1), c2 = enNegocio(t2), a1 = sinNegocio(t1), a2 = sinNegocio(t2);
 console.log(`Huellitas ${H.slice(0, 8)} · C1 ${C1.nombre} · C2 ${C2.nombre} · hoy ${hoyH} (${zonaH})`);
 
-const creados = { perro: null, reservas: [], citas: [], estancias: [], contratos: [], resenas: [], cupo: null };
+const creados = { perro: null, reservas: [], citas: [], estancias: [], contratos: [], resenas: [], cupo: null, ajustes: [] };
 const msg = (r) => r.error?.message ?? "";
 try {
   // ── 1. Perro nuevo de C1 (raza con precio en Huellitas: Poodle chico de pelo medio) y su vínculo ───────────────
@@ -175,6 +175,15 @@ try {
   const res = await c1.rpc("portal_reservar", { p_perro: perro.id, p_servicio: guarderia.id, p_entrada: D, p_salida: suma(D, 1) });
   comprobar(!res.error && res.data?.estancia_id, `con cupo, C1 reserva: ${res.error ? msg(res) : `${res.data.categoria} ${res.data.fecha_entrada}→${res.data.fecha_salida} · $${res.data.precio_total} · contratos por firmar ${res.data.contratos_por_firmar.length}`}`);
   if (res.data?.estancia_id) { creados.estancias.push(res.data.estancia_id); creados.reservas.push(res.data.reserva_id); for (const c of res.data.contratos_por_firmar) creados.contratos.push(c.id); }
+  // Una sola fuente (migración 20261203001900): el total que la app le dice al dueño es el de la cuenta del panel
+  // (cuenta_totales_reserva, sobre cuenta_lineas_estancia), no precio × noches. La corrección de precio va en la sección 5.
+  if (res.data?.reserva_id) {
+    const panel = (await adm.rpc("cuenta_totales_reserva", { p_reserva_id: res.data.reserva_id })).data;
+    const p0 = Array.isArray(panel) ? panel[0] : panel;
+    const { data: lineasR } = await adm.rpc("cuenta_lineas_estancia", { p_reserva_id: res.data.reserva_id });
+    const sumaLineas = (lineasR ?? []).reduce((s, l) => s + Number(l.total), 0);
+    comprobar(Number(res.data.precio_total) === Number(p0?.total_cuenta) && Number(p0?.total_cuenta) === sumaLineas && Number(res.data.saldo) === Number(p0?.saldo), `el total de la app (${res.data.precio_total}, saldo ${res.data.saldo}) es el del panel (${p0?.total_cuenta}, saldo ${p0?.saldo}) y el de cuenta_lineas_estancia (${sumaLineas})`);
+  }
   const encimada = await c1.rpc("portal_reservar", { p_perro: perro.id, p_servicio: guarderia.id, p_entrada: D, p_salida: suma(D, 1) });
   comprobar(Boolean(encimada.error), `la misma mascota encimada se rechaza («${msg(encimada).slice(0, 90)}»)`);
   const { data: tiposAlta } = await adm.rpc("tipos_contrato_de_alta", { p_tipo: "guarderia_hotel" });
@@ -195,6 +204,21 @@ try {
   comprobar(Boolean(pagoCita) && Number(pagoCita.saldo) === Number(fila?.precio), `C1 ve la cuenta de su cita con saldo ${pagoCita?.saldo} (precio ${fila?.precio}) y link ${pagoCita?.link ? "vigente" : "sin pedir"}`);
   const { data: pagos2 } = await c2.rpc("mis_pagos_pendientes");
   comprobar(!(pagos2 ?? []).some((p) => p.reserva_id === cita.data?.reserva_id), "C2 no ve esa cuenta");
+  // Una sola fuente: con una corrección de precio en la cuenta de la cita, «Por pagar» de la app sigue al panel al centavo.
+  {
+    const { data: lineasC } = await adm.rpc("cuenta_lineas_estancia", { p_reserva_id: cita.data?.reserva_id });
+    const linea = (lineasC ?? []).find((l) => l.tipo === "estetica");
+    const nuevo = Math.max(1, Math.round(Number(linea?.total ?? 0) / 2));
+    const aj = linea ? await S.from("cuenta_ajustes_precio").insert({ negocio_id: H, reserva_id: cita.data.reserva_id, linea_tipo: "estetica", linea_id: linea.origen_id, concepto: linea.descripcion, monto: nuevo - Number(linea.total), precio_antes: Number(linea.total), precio_despues: nuevo, motivo: "Prueba de una sola fuente F3" }).select("id").single() : { error: { message: "sin línea de la cita" } };
+    if (aj.error) mal(`no se pudo poner la corrección de precio (${aj.error.message})`);
+    else {
+      creados.ajustes.push(aj.data.id);
+      const t = (await adm.rpc("cuenta_totales_reserva", { p_reserva_id: cita.data.reserva_id })).data;
+      const panel = Array.isArray(t) ? t[0] : t;
+      const enApp = ((await c1.rpc("mis_pagos_pendientes")).data ?? []).find((x) => x.reserva_id === cita.data.reserva_id);
+      comprobar(Boolean(enApp) && Number(enApp.saldo) === Number(panel?.saldo) && Number(panel?.saldo) === nuevo, `con una corrección de precio (${linea.total} → ${nuevo}), «Por pagar» de la app (${enApp?.saldo}) = panel (${panel?.saldo})`);
+    }
+  }
   const pases = await c1.rpc("mis_pases");
   comprobar(!pases.error && Array.isArray(pases.data) && !JSON.stringify(pases.data).includes("precio_pagado"), `mis_pases responde (${pases.data?.length ?? 0}) sin lo que se pagó`);
   const anonPagos = await anonimo.rpc("mis_pagos_pendientes");
@@ -246,6 +270,7 @@ try {
   // Limpieza (lo que creó esta corrida; nada más).
   const ahora = new Date().toISOString();
   for (const id of creados.resenas) await S.from("resenas").delete().eq("id", id);
+  for (const id of creados.ajustes) await S.from("cuenta_ajustes_precio").delete().eq("id", id);
   for (const id of creados.contratos) await S.from("contratos").delete().eq("id", id);
   for (const id of creados.citas) await S.from("citas_estetica").delete().eq("id", id);
   for (const id of creados.estancias) await S.from("estancias").delete().eq("id", id);
