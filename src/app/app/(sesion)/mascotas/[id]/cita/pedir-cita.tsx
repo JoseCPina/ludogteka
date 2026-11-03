@@ -66,8 +66,9 @@ export function PedirCita({ mascotaId, nombre, negocios, negocioInicial }: { mas
       if (/ocup/i.test(r.error)) escogerDia(dia);
       return;
     }
-    const d = (r.datos ?? {}) as { atiende?: string | null; precio?: number | null };
-    setHecha({ servicio: servicio.nombre, dia: diaLargo(dia), hora: hora.hora, atiende: d.atiende ?? null, precio: d.precio == null ? null : Number(d.precio), negocio: negocio.nombre });
+    // El precio que se le dice es el total de la CUENTA de la cita (cuenta_totales_reserva), el mismo de Caja.
+    const d = (r.datos ?? {}) as { atiende?: string | null; precio?: number | null; total_cuenta?: number | null };
+    setHecha({ servicio: servicio.nombre, dia: diaLargo(dia), hora: hora.hora, atiende: d.atiende ?? null, precio: d.total_cuenta != null ? Number(d.total_cuenta) : d.precio == null ? null : Number(d.precio), negocio: negocio.nombre });
   }
 
   if (hecha) {
