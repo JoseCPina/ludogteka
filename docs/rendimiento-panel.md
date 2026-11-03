@@ -198,3 +198,16 @@ Medido con `tiempo-panel-prod.mjs --muestras 6` justo después de desplegar (med
 | Demo /admin (admin) | 829 ms | 718 ms |
 | Demo /recepcion (recepción) | 901 ms | 696 ms |
 | Demo /recepcion (admin) | 841 ms | 636 ms |
+
+**Producción después (PR #247, desplegado el 3 de noviembre de 2026; TTFB mediano, `tiempo-panel-prod.mjs --sin-consultas`, dos corridas desde la laptop, ~90–105 ms de red incluidos):**
+
+| Pantalla | Antes (corrida 1 / 2) | Después (corrida 1 / 2) |
+|---|---|---|
+| Ludogteka /admin (admin) | 606 / 637 ms | 501 / 649 ms |
+| Ludogteka /recepcion (recepción) | 614 / 585 ms | 486 / 444 ms |
+| Ludogteka /recepcion (admin) | 612 / 604 ms | 454 / 476 ms |
+| Demo /admin (admin) | 829 / 718 ms | 534 / 516 ms |
+| Demo /recepcion (recepción) | 901 / 696 ms | 745 / 470 ms |
+| Demo /recepcion (admin) | 841 / 636 ms | 480 / 450 ms |
+
+Recepción queda abajo de 600 ms en los dos negocios y con los dos roles (la primera corrida de la demo como recepción, 745 ms, trae el arranque en frío de la función: su mínimo fue 508 ms). Inicio (/admin) baja ~100–300 ms y queda en ~500–530 ms, salvo una corrida de Ludogteka con 649 ms de mediana (mínimo 399 ms): la meta de 600 ms se cumple en la mediana de las dos corridas, pero no con margen en Inicio. Lo siguiente a medir, si hace falta: el grupo «clinica» de `tablero_atencion` (~600 ms en desarrollo, solo con Veterinaria) y `cuentas_abiertas_json`.
