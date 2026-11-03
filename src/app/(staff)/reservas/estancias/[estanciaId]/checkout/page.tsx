@@ -209,8 +209,10 @@ export default async function CheckoutEstanciaPage({
         <div className="rounded-lg border border-border bg-card shadow-tarjeta p-4">
           {estancia.estado === "finalizada" ? (
             <>
-              <p className="font-semibold text-n-900">
-                Este perro ya salió
+              {/* fix/checkout-intermitente: al confirmar, el formulario dice «Salida registrada» y en seguida la página se repinta
+                  con la estancia ya finalizada (router.refresh). Esta vista dice lo mismo, así el aviso no desaparece gane quien gane. */}
+              <p className="font-semibold text-n-900" data-salida-registrada>
+                Salida registrada: este perro salió
                 {estancia.hora_salida_real ? ` el ${formatearFecha(estancia.hora_salida_real, zona)}` : ""}.
               </p>
               <p className="mt-1 text-sm text-n-600">
