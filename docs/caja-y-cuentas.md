@@ -31,3 +31,9 @@ migración `20261203001900`). Pruebas: `dinero-cliente.mjs` (saldo de la app = p
   - Dueño: «Por pagar» en el portal (`src/app/portal/por-pagar.tsx`) y en la app, con lo pagado y sus abonos (`mis_abonos`, definer, sin quién cobró).
   - Link de pago del dueño (`src/lib/pagos/link-de-saldo.ts`, app y portal): cobra el SALDO; un link vivo se reusa solo si cobra exactamente ese saldo. El link del personal (`crearLinkPago`) ya no deja un resto de menos de $1.
 - Migraciones `20261203002000` y `20261203002100`. Prueba de punta a punta: `cobros-parciales-dev.mjs` (abono de una noche, abono repartido, salida y Recepción con saldo, app y portal, link del saldo pagado en simulación, devolución de un abono y cuadre al centavo).
+
+## Historial de caja (3 de noviembre de 2026, ux/caja-historial)
+- `/caja/historial`: movimientos de varios turnos con filtros (fecha, turno, tipo, forma de pago), paginado de 50, y el detalle de uno en un panel lateral (`?mov=tipo:id`).
+- Base (migración `20261203002200`): `caja_movimientos(...)` y `caja_movimiento_detalle(tipo, id)`, definer de `peludesk_definer`, sobre la MISMA unión de `movimientos_turno`. Aplican en la base: solo admin y recepción; recepción ve el turno abierto y los suyos; con el turno abierto quien no es admin no recibe montos ni totales de ese turno (corte ciego); factura con permiso de facturar, gasto con el de gastos.
+- Pendiente: `movimientos_turno`, `movimientos_turno_pagina` y `resumen_turno` siguen siendo invoker y dan montos del turno abierto a quien los llame directo con su sesión (la pantalla /caja/turno no los pinta). Cerrarlo es quitarles el grant a `authenticated` y que /caja/turno lea por una función definer.
+- Prueba: `caja-historial-dev.mjs`.
