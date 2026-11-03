@@ -128,7 +128,7 @@ try {
     comprobar(!movE.error && movE.data?.length === 1, `el admin mueve las fechas de la estancia${movE.error ? ` («${msg(movE)}»)` : ""}`);
     av = await avisosDe(creados.mascota);
     const aMovE = av.find((a) => /cambió las fechas/.test(a.titulo));
-    comprobar(Boolean(aMovE) && /Ahora es el /.test(aMovE.cuerpo), `aviso «${aMovE?.titulo ?? "no llegó"}» — ${aMovE?.cuerpo ?? ""}`);
+    comprobar(Boolean(aMovE) && /Ahora es (el|del) /.test(aMovE.cuerpo), `aviso «${aMovE?.titulo ?? "no llegó"}» — ${aMovE?.cuerpo ?? ""}`);
     const canE = await adm.from("estancias").update({ estado: "cancelada", motivo_cancelacion: "Prueba de aviso" }).eq("id", res.data.estancia_id).select("id");
     comprobar(!canE.error && canE.data?.length === 1, "el admin cancela la estancia");
     av = await avisosDe(creados.mascota);
