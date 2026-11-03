@@ -175,3 +175,26 @@ Medido con `tiempo-panel-prod.mjs --muestras 6` justo después de desplegar (med
 1. `AvisoPlan` y `AvisoTickets` dentro de `<Suspense fallback={null}>` en el layout (una tanda menos en el cascarón de TODAS las pantallas del personal; la franja de prueba vencida también la pinta el bloqueo, que sí va en el layout).
 2. El middleware: `acceso_de_sesion` y Auth ya van a la vez; lo siguiente es no repetir Auth en el layout cuando el middleware ya validó (pasar el usuario firmado en un encabezado, como el negocio), con `getUserConReintento` como única puerta.
 3. `tablero_atencion()` en un viaje para «Necesita atención» (sigue pendiente; afecta el total, no el primer byte).
+## Quinta vuelta (3 de noviembre de 2026, laptop, rama fix/layout-cascaron): el cascarón
+
+**Qué se hizo**, sobre los tres puntos que dejó la cuarta vuelta:
+1. **`AvisoPlan` y `AvisoTickets` en `<Suspense fallback={null}>`** en el layout del personal: ya no detienen el cascarón de ninguna pantalla; llegan en el mismo envío cuando terminan.
+2. **Sin Auth repetido en el layout ni en la página: la sesión firmada del middleware** (`src/lib/auth/sesion-firmada.ts`). El middleware ya validaba la sesión (`getUserConReintento`) y leía la membresía; ahora lee `sesion_actual()` (lo de `acceso_de_sesion` más el expediente y el nombre) y, si la ruta pasó todas sus revisiones, pasa el resultado a la app en `x-peludesk-sesion`, firmado. `obtenerSesionConRol` lo usa y no vuelve a preguntar (−2 consultas y una tanda en TODA pantalla del personal y del portal). Seguridad:
+   - no se puede falsificar: HMAC-SHA256 con una llave derivada de `SUPABASE_SECRET_KEY` (solo existe en el servidor); el encabezado que llegue del navegador se tira en el middleware antes de poner el suyo, y nunca sale en la respuesta;
+   - no se puede reutilizar: caduca a los 15 s y va ligado a la persona, al negocio, al área (personal o portal) y a la huella de la cookie de sesión de ESA petición (ya renovada si Auth la renovó); con otra cookie no cuadra y se pregunta como siempre;
+   - un cambio de rol o la baja de un empleado cuentan en la petición siguiente: la firma no guarda nada entre peticiones y el middleware lee la membresía en cada una; la base sigue revisando rol, permiso y negocio en cada consulta.
+   - Prueba: `permisos-pantalla-dev.mjs` (sección «Sesión firmada»; `--solo-sesion` la corre sola): 7 firmas malas rechazadas (otra llave, cuerpo cambiado, vencida, otra cookie, sin cookie, otro negocio, otra área); un encabezado inyectado (basura o bien firmado como admin) no abre /admin ni cambia el menú de recepción; rol cambiado a estética → /recepcion manda a /estetica; dado de baja → /sin-acceso, con la misma cookie.
+3. **«Necesita atención» con `tablero_atencion(p_grupo)`** (migración `20261203002400`): las ~20 consultas sueltas en tres grupos que salen a la vez: «general» (bajas, evaluación, CFDI, razas, gastos, recordatorios, reembolsos, conciliación, ajustes), «dinero» (admin: tarjetas manuales y estado del cobro) y «clinica» (Veterinaria). Invoker (con la RLS de quien llama), las mismas reglas de rol, permiso y módulo que tenía la pantalla, cada pieza en su bloque (si una falla se pierde esa y se dice en `fallos`). No va en UNA sola llamada a propósito: dentro de una función las piezas corren en serie y suman (en desarrollo, como admin: clínica ~600 ms, dinero ~250 ms, general ~200 ms; juntas ~1 s contra ~600 ms en paralelo). Volátil porque `gastos_por_atender()` genera los gastos esperados al leerse. Comprobado en desarrollo con admin, recepción y estética: cada pieza es idéntica a su consulta suelta.
+
+**Desarrollo (`tiempo-panel-dev.mjs`, corrida de main con PR #246 contra esta rama):** consultas /admin 63 → 45, /recepcion (admin) 47 → 29, /recepcion (recepción) 39 → 28, /hotel 14 → 12, /estetica 14 → 12. Topes nuevos (exacto + 2): /admin 47, /recepcion 31, /hotel 14, /estetica 14.
+
+**Producción antes (TTFB mediano, `tiempo-panel-prod.mjs --sin-consultas`, 3 de noviembre de 2026, dos corridas):**
+
+| Pantalla | Corrida 1 | Corrida 2 |
+|---|---|---|
+| Ludogteka /admin (admin) | 606 ms | 637 ms |
+| Ludogteka /recepcion (recepción) | 614 ms | 585 ms |
+| Ludogteka /recepcion (admin) | 612 ms | 604 ms |
+| Demo /admin (admin) | 829 ms | 718 ms |
+| Demo /recepcion (recepción) | 901 ms | 696 ms |
+| Demo /recepcion (admin) | 841 ms | 636 ms |

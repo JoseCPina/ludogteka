@@ -49,7 +49,10 @@ const B = datos.B;
 // Tercera vuelta (1 de noviembre de 2026): la sesión en un viaje (`sesion_actual`: −2 consultas en toda pantalla).
 // Con el layout sin las consultas repetidas de AvisoPlan (PR #233, −2) y la sesión en un viaje (−2), conteo exacto en la
 // laptop (2 de noviembre de 2026): /admin 61, /recepcion 45 (admin), /hotel 14 y /estetica 14 → tope = medido + 2.
-const TOPES_CONSULTAS = { "/recepcion": 47, "/hotel": 16, "/estetica": 16, "/admin": 63 };
+// Quinta vuelta (3 de noviembre de 2026): la sesión firmada del middleware (el layout y la página ya no repiten Auth ni
+// sesion_actual: −2 en toda pantalla) y «Necesita atención» en tres viajes (tablero_atencion). Conteo exacto en la laptop:
+// /admin 45, /recepcion 29 (admin), /hotel 12 y /estetica 12 (antes 63, 47, 14 y 14) → tope = medido + 2.
+const TOPES_CONSULTAS = { "/recepcion": 31, "/hotel": 14, "/estetica": 14, "/admin": 47 };
 // Tandas de viajes a la base que quedan en cada pantalla (sesión + layout + la pantalla): para descontar la latencia
 // de desarrollo, no para premiar más tandas.
 const TANDAS = { "/recepcion": 5, "/hotel": 4, "/estetica": 5, "/admin": 7 };
