@@ -90,6 +90,16 @@ try {
     if (data?.abre && (data.horas ?? []).length > 0) { diaCita = fecha; horas = data; }
   }
   comprobar(Boolean(diaCita), `hay un día con horas libres (${diaCita}: ${horas?.horas?.length ?? 0} bloques de ${horas?.duracion_minutos} min, desde ${horas?.horas?.[0]?.hora})`);
+  // Migración 20261203001800: ninguna hora le da la vuelta a la medianoche (todas el MISMO día y dentro del horario).
+  const { data: cfgDia } = await S.rpc("resolver_cupo_configuracion", { p_fecha: diaCita });
+  const cfgH = Array.isArray(cfgDia) ? cfgDia[0] : cfgDia;
+  const min = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
+  const fueraDeDia = (horas?.horas ?? []).filter((h) => new Intl.DateTimeFormat("en-CA", { timeZone: zonaH }).format(new Date(h.inicio)) !== diaCita || min(h.hora) < min(cfgH.hora_apertura) || min(h.hora) + horas.duracion_minutos > min(cfgH.hora_cierre));
+  comprobar(fueraDeDia.length === 0, `todas las horas caen ese día, entre ${String(cfgH?.hora_apertura).slice(0, 5)} y ${String(cfgH?.hora_cierre).slice(0, 5)} (fuera: ${fueraDeDia.map((h) => h.hora).join(", ") || "ninguna"})`);
+  const tarde = new Date(new Date(horas.horas[0].inicio).getTime() + (23 * 60 + 30 - min(horas.horas[0].hora)) * 60000).toISOString();
+  const deNoche = await c1.rpc("portal_pedir_cita", { p_perro: perro.id, p_servicio: estetica.id, p_inicio: tarde });
+  if (deNoche.data?.cita_id) { creados.citas.push(deNoche.data.cita_id); creados.reservas.push(deNoche.data.reserva_id); }
+  comprobar(Boolean(deNoche.error) && /fuera del horario/i.test(msg(deNoche)), `una cita a las 23:30 (cruza la medianoche) se rechaza («${msg(deNoche) || "se creó"}»)`);
   const inicio = horas?.horas?.[0]?.inicio;
   const anonHoras = await anonimo.rpc("portal_horas_disponibles", { p_servicio: estetica.id, p_fecha: diaCita });
   comprobar(Boolean(anonHoras.error), `el anónimo no ve horas (${anonHoras.status})`);

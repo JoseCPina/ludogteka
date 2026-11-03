@@ -43,6 +43,8 @@ export type DatosWeb = {
   zona: string;
   /** Hay datos de Google en la página: lleva su atribución. */
   deGoogle: boolean;
+  /** Las reseñas son las verificadas de PeluDesk (clientes que tuvieron su cita o estancia), no las de Google. */
+  resenasVerificadas?: boolean;
   /** Fecha (AAAA-MM-DD) y minutos del día en la zona del negocio: para «Abierto · cierra a las…». */
   hoy: { fecha: string; minutos: number };
   /** El dueño reclamó su ficha del directorio y comprobó su WhatsApp: «Negocio verificado». */
@@ -357,7 +359,11 @@ export function PaginaWeb({ datos, modo, portal, notas }: Props) {
                 </li>
               ))}
             </CarruselResenas>
-            {datos.deGoogle && <p className="mt-2 text-xs text-black/50">Reseñas de Google Maps.</p>}
+            {datos.resenasVerificadas ? (
+              <p className="mt-2 text-xs text-black/50" data-resenas-verificadas>Reseñas de clientes que tuvieron su cita o estancia aquí, verificadas por PeluDesk.</p>
+            ) : (
+              datos.deGoogle && <p className="mt-2 text-xs text-black/50">Reseñas de Google Maps.</p>
+            )}
           </section>
         )}
 

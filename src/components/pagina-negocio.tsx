@@ -1,7 +1,9 @@
 import { negocioActual } from "@/lib/negocio/actual";
 import { urlPublicaArchivo } from "@/lib/negocio/publico";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { PaginaWeb, type FotoWeb } from "@/components/web-negocio/pagina-web";
+import { PaginaWeb, type FotoWeb, type ResenaWeb } from "@/components/web-negocio/pagina-web";
+import { resenasPublicasDeNegocio } from "@/lib/landing/resenas";
+import { formatearFecha } from "@/lib/formato";
 import { giroPrincipal, type GiroWeb } from "@/lib/web-negocio/tema";
 import { type ServicioWeb } from "@/lib/web-negocio/catalogo";
 import { type HorarioSemana } from "@/lib/web-negocio/horario";
@@ -93,6 +95,10 @@ export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
   const telefono = (datos.whatsapp ?? "").replace(/\D/g, "").slice(-10);
   // Reclamó su ficha del directorio de peludesk.mx y comprobó su WhatsApp: la página enseña «Negocio verificado».
   const { data: perfil } = await createSupabaseAdminClient(negocio.id).from("negocio_perfil").select("verificado_at").eq("negocio_id", negocio.id).is("deleted_at", null).maybeSingle();
+  // Fase 3 de la app para dueños: las reseñas verificadas de PeluDesk (de clientes que sí fueron) van antes que las de Google.
+  const propiasResenas = await resenasPublicasDeNegocio(negocio.id);
+  const resenasPeluDesk: ResenaWeb[] = (propiasResenas?.ultimas ?? []).filter((u) => (u.texto ?? "").trim().length >= 10).slice(0, 6).map((u) => ({ autor: u.quien, autorUri: null, calificacion: u.estrellas, texto: u.texto!, cuando: formatearFecha(u.createdAt, zona) }));
+  const usarPeluDesk = Boolean(propiasResenas && resenasPeluDesk.length > 0);
 
   return (
     <PaginaWeb
@@ -109,9 +115,10 @@ export async function PaginaNegocio({ datos }: { datos: DatosPagina }) {
         catalogo,
         preciosDeEjemplo: false,
         horario,
-        calificacion: g?.calificacion ?? null,
-        totalResenas: g?.resenas ?? null,
-        resenas: resenasDestacadas(g),
+        calificacion: usarPeluDesk ? propiasResenas!.promedio : (g?.calificacion ?? null),
+        totalResenas: usarPeluDesk ? propiasResenas!.total : (g?.resenas ?? null),
+        resenas: usarPeluDesk ? resenasPeluDesk : resenasDestacadas(g),
+        resenasVerificadas: usarPeluDesk,
         fotos,
         logoUrl: datos.logo_path ? urlPublicaArchivo(datos.logo_path) : null,
         color,

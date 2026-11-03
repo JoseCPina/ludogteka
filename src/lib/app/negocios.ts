@@ -1,6 +1,8 @@
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAppEnNegocio } from "./en-negocio";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { BUCKET_REPORTES, TTL_URL_FIRMADA_S } from "@/lib/reporte/constantes";
 
 /**
  * App para dueños · Fase 3 · capa de datos de «negocios que ya usan PeluDesk» (docs/app-duenos/FASE-3.md).
@@ -30,6 +32,22 @@ export const vinculosApp = cache(async (): Promise<VinculoNegocio[]> => {
     negocioUrl: v.negocio_url_publica ?? (v.negocio_dominio ? `https://${v.negocio_dominio}` : null),
     perroId: v.perro_id,
   }));
+});
+
+/**
+ * La zona horaria y el WhatsApp de los negocios donde la persona tiene vínculo (las fechas y horas de cada visita se
+ * dicen en la zona de SU negocio). Solo de negocios con vínculo: la lista sale de `vinculosApp()`.
+ */
+export const datosDeNegociosApp = cache(async (): Promise<Map<string, { zona: string; whatsapp: string | null }>> => {
+  const ids = [...new Set((await vinculosApp()).map((v) => v.negocioId))];
+  const salida = new Map<string, { zona: string; whatsapp: string | null }>();
+  if (ids.length === 0) return salida;
+  const { data } = await createSupabaseAdminClient().from("negocios").select("id, zona_horaria, landing").in("id", ids);
+  for (const n of (data ?? []) as { id: string; zona_horaria: string | null; landing: { telefono_wa?: string | null } | null }[]) {
+    const wa = n.landing?.telefono_wa?.replace(/\D/g, "") || null;
+    salida.set(n.id, { zona: n.zona_horaria ?? "America/Mexico_City", whatsapp: wa ? (wa.length === 10 ? `52${wa}` : wa) : null });
+  }
+  return salida;
 });
 
 /** El vínculo de una mascota de la app en un negocio, o null si no es de quien tiene sesión. */
@@ -133,12 +151,15 @@ export async function reportesDelDiaApp(mascotaId: string, negocioId: string): P
   const supabase = await supabaseAppEnNegocio(negocioId);
   const { data } = await supabase.rpc("mis_reportes_enviados", { p_perro: v.perroId });
   const filas = (data ?? []) as { id: string; fecha: string; contenido: Record<string, unknown>; tarjeta_path: string | null; enviado_at: string | null; estancia_id: string | null }[];
+  // La tarjeta vive en el bucket de reportes (BUCKET_REPORTES), que solo firma el servidor: la misma regla que el link
+  // público /r/<token>. La función ya devolvió SOLO los reportes de este dueño, así que firmar sus rutas es seguro.
+  const admin = createSupabaseAdminClient(negocioId);
   return Promise.all(
     filas.map(async (r) => ({
       id: r.id,
       fecha: r.fecha,
       contenido: r.contenido ?? {},
-      tarjetaUrl: r.tarjeta_path ? ((await supabase.storage.from("perros-archivos").createSignedUrl(r.tarjeta_path, 60 * 60)).data?.signedUrl ?? null) : null,
+      tarjetaUrl: r.tarjeta_path ? ((await admin.storage.from(BUCKET_REPORTES).createSignedUrl(r.tarjeta_path, TTL_URL_FIRMADA_S)).data?.signedUrl ?? null) : null,
       enviadoAt: r.enviado_at,
       estanciaId: r.estancia_id,
     }))
@@ -257,7 +278,7 @@ export async function carnetApp(mascotaId: string, negocioId: string): Promise<R
 }
 
 // ── Pedir cita y reservar: lo que se ofrece y la disponibilidad real ────────────────────────────────────────────
-export type ServicioApp = { id: string; nombre: string; categoria: string; unidad: string; duracionMinutos: number | null; incluye: string | null };
+export type ServicioApp = { id: string; nombre: string; categoria: string; unidad: string; duracionMinutos: number | null; incluye: string[] | string | null };
 
 /** Los servicios de estética, guardería y hotel que el negocio ofrece (sin precio: el precio sale al reservar). */
 export async function serviciosApp(negocioId: string): Promise<ServicioApp[]> {
@@ -270,7 +291,7 @@ export async function serviciosApp(negocioId: string): Promise<ServicioApp[]> {
     .is("deleted_at", null)
     .order("categoria")
     .order("orden");
-  return ((data ?? []) as { id: string; nombre: string; categoria: string; unidad: string; duracion_minutos: number | null; incluye: string | null }[]).map((s) => ({
+  return ((data ?? []) as { id: string; nombre: string; categoria: string; unidad: string; duracion_minutos: number | null; incluye: string[] | string | null }[]).map((s) => ({
     id: s.id,
     nombre: s.nombre,
     categoria: s.categoria,
@@ -301,6 +322,19 @@ export async function disponibilidadEstanciaApp(negocioId: string, servicioId: s
 
 // ── Reseñas ───────────────────────────────────────────────────────────────────────────────────────────────────────
 export type ResumenResenas = { total: number; promedio: number | null; ultimas: { estrellas: number; texto: string | null; respuesta: string | null; createdAt: string; quien: string; origenTipo: string }[] };
+
+/** Las visitas que el dueño ya calificó (para no ofrecerle «Opinar» otra vez): `origen_id` de sus reseñas. */
+export async function misResenasApp(): Promise<Set<string>> {
+  const vinculos = await vinculosApp();
+  const porNegocio = await Promise.all(
+    negociosDe(vinculos).map(async (n) => {
+      const supabase = await supabaseAppEnNegocio(n.negocioId);
+      const { data } = await supabase.from("resenas").select("origen_id").is("deleted_at", null).limit(500);
+      return ((data ?? []) as { origen_id: string }[]).map((r) => r.origen_id);
+    })
+  );
+  return new Set(porNegocio.flat());
+}
 
 export async function resenasDeNegocioApp(negocioId: string): Promise<ResumenResenas> {
   const supabase = await supabaseAppEnNegocio(negocioId);

@@ -2,7 +2,7 @@
 
 Lo construido de la Fase 3 del plan (PLAN.md), sobre las fases 0 a 2. **Solo la capa de datos** (rama
 `base/app-duenos-f3-datos`): funciones de la base, cargadores en `src/lib/app/negocios.ts`, acciones del servidor y la
-auditoría. Las pantallas las construye la laptop con el diseño nuevo (lista al final). Cuándo leerlo: al tocar lo que el
+auditoría. Las pantallas están en «Pantallas». Cuándo leerlo: al tocar lo que el
 dueño ve de un negocio donde su mascota tiene expediente (citas, reservas, fotos, reportes, contratos, pagos, pases,
 recetas, expediente), pedir cita o reservar desde la app, o las reseñas.
 
@@ -73,23 +73,50 @@ la app y que el negocio sea uno con vínculo; la base vuelve a comprobar con `mi
   anónimo. Limpia lo que crea.
 - `columnas-internas-dev.mjs` con `resenas` en el catálogo.
 
-## Pantallas que faltan (para la laptop, con el diseño nuevo; bajo PLAN.md)
-1. **Mis negocios / Mis visitas** en la app: `visitasApp()`; botón «Confirmar» (un toque) → `confirmarVisitaApp`;
-   «Opinar» en las finalizadas → `resenarApp` (estrellas + texto).
-2. **Ficha de la mascota, pestaña del negocio**: `fotosDelDiaApp`, `reportesDelDiaApp` (tarjeta), `carnetApp`,
-   `expedienteApp`, `recetasApp` (reutilizar las vistas del portal con el diseño nuevo).
-3. **Contratos por firmar**: `contratosPorFirmarApp()` + firma con el dedo → `firmarContratoApp` (el canvas de firma del
-   portal).
-4. **Pagos pendientes**: `pagosPendientesApp()`; «Pagar» abre `link.url` o pide uno con `pedirLinkPagoApp` (abrir al
-   tocar, `useAbrirEnlace`).
-5. **Pases y saldo**: `pasesApp()`.
-6. **Pedir cita**: servicio (`serviciosApp`, categoría estética) → día → `horasDisponiblesApp` → `pedirCitaApp`; enseñar
-   precio y quién atiende al confirmar. Traducir los mensajes de la base que mencionan rutas del personal
-   («Captúrala en /perros/…») a «pídele al negocio que complete la talla/el pelaje».
-7. **Reservar hotel o guardería**: servicio → fechas → `disponibilidadEstanciaApp` (cupo por noche) → `reservarApp` →
-   si vienen `contratos_por_firmar`, la firma ahí mismo.
-8. **Reseñas públicas** en la ficha pública del negocio (`/directorio`, `/para`): `resenas_de_negocio` por el servidor.
-9. Ayuda, bot (`conocimiento.ts`) y FASE-3 se actualizan cuando existan las pantallas.
+## Pantallas (2 de noviembre de 2026, laptop; rama ux/app-duenos-f3-pantallas)
+Con el diseño de la app (`app-duenos.css`, lenguaje cálido) y las referencias de Mobbin `app-reservar-fecha-cupo` (Fresha:
+días como tarjetas y horas grandes; Octopus: lo lleno dice «Lleno»), `app-pagar` (BlaBlaCar: el monto en el botón) y
+`app-registro-vet-qr` («Acción requerida»), y los bloques multi-step-form, card-nav, gift-card y testimonials.
+1. **Inicio** (`/`): «Te toca» junta contratos por firmar, visitas por confirmar y lo que hay por pagar; accesos a «Mis
+   visitas» y «Mis pases».
+2. **Mis visitas** (`/visitas`): lo que viene y lo que ya fue, por negocio, con fecha y hora en la zona de SU negocio
+   (`datosDeNegociosApp`); «Confirmar que vamos» (`confirmarVisitaApp`) y «¿Cómo te fue?» (estrellas + una línea,
+   `resenarApp`), una vez por visita (`misResenasApp`).
+3. **La mascota en un negocio** (`/mascotas/[id]/negocio/[negocio]`): fotos del día, reportes (la tarjeta o, si venció, el
+   resumen), carnet, consultas y recetas (los componentes del portal), y «Pedir cita» / «Reservar». «Dónde la conocen» de
+   la ficha lleva aquí (ya no al portal; el portal queda al final de esta pantalla).
+4. **Pedir cita** (`/mascotas/[id]/cita`): servicio → día (14 días en cuadrícula, sin scroll horizontal) → hora libre
+   (`horasApp`) → «Pedir la cita»; dice precio y quién atiende. Si la hora se ocupó mientras escogía, vuelve a leer el día.
+   Abajo, el WhatsApp de cada negocio (y de los que registraron con el QR) como alternativa.
+5. **Reservar** (`/mascotas/[id]/reservar`): servicio → fechas (noches para hotel, un día para guardería; por hora, con
+   horas) → «Ver si hay lugar» (`cupoApp`, cupo por día, «Lleno»/«Cerrado») → «Reservar» → si quedan contratos de alta, se
+   leen y se firman ahí mismo (`FirmarContratoApp`).
+6. **Contratos** (`/contratos`, `/contratos/[negocio]/[id]`): el texto resuelto (`textoContratoApp`, el mismo del PDF) y la
+   firma con el dedo (`PadFirma` → `firmarContratoApp`).
+7. **Por pagar** (`/pagos`): saldo por cuenta y «Pagar $X», que abre el link al tocar (`useAbrirEnlace`).
+8. **Pases** (`/pases`): cuántos quedan, barra y vencimiento; terminados y vencidos aparte.
+9. **Reseñas públicas**: `resenasPublicasDeNegocio()` (`src/lib/landing/resenas.ts`, por el servidor con el negocio) en las
+   tres páginas del negocio: la del módulo «Página web» (las verificadas van antes que las de Google, con «verificadas
+   por PeluDesk»), la básica y el tema de Ludogteka («Lo que dicen sus clientes»). Sin reseñas, no sale nada.
+10. Ayuda (`app-peludesk-para-duenos`, sección «Citas, reservas, contratos y pagos desde la app») y bot
+    (`conocimiento.ts`) actualizados.
+
+**Arreglos de la capa de datos encontrados al construir las pantallas:**
+- La tarjeta del reporte vive en `reportes-archivos` (`BUCKET_REPORTES`), no en `perros-archivos`: `reportesDelDiaApp` la
+  firma con el cliente del servidor del negocio (la función ya devolvió solo los reportes del dueño).
+- `servicios.incluye` es una lista: `incluyeEnLinea()` la lee en una línea (con `.split` la pantalla tronaba).
+- **Migración `20261203001800`**: `portal_horas_disponibles` y `portal_pedir_cita` comparaban `time` y le daban la vuelta a la
+  medianoche (la app ofrecía de 00:00 a 09:00 después de las 17:00, y una cita a las 23:30 pasaba). Ahora comparan
+  intervalos desde la apertura. `app-duenos-f3-dev` lo comprueba (todas las horas el mismo día y dentro del horario; 23:30
+  rechazada).
+- Los mensajes de la base que mandan a rutas del personal se traducen para el dueño (`mensajeParaDueno`, `src/lib/app/mensajes.ts`).
+
+## Pruebas de pantalla
+- `node scripts/auditoria/app-duenos-f3-pantallas-dev.mjs [--capturas <carpeta>]` (desarrollo, Huellitas, app compilada en
+  el 3001, 390 px): ficha → pestaña del negocio → pedir cita tocando (precio y quién atiende = base) → «Te toca» →
+  confirmar (pantalla y base) → reservar guardería con cupo → firmar el contrato de alta con el dedo (PDF en la base) →
+  por pagar con el saldo de la cita → pases → opinar (reseña en la base) → la reseña en la página pública. Sin desbordes
+  a 390 px; un error de JavaScript en la página es hallazgo. Limpia lo que crea.
 
 ## Pendiente
 - Los mensajes de `validar_estancia`/`validar_cita_estetica` hablan al personal; la pantalla del dueño los traduce.

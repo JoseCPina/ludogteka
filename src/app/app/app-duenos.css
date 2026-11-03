@@ -512,3 +512,179 @@ button.apd-tarjeta:active {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Fase 3: visitas, pedir cita, reservar, pagos (docs/app-duenos/FASE-3.md) ─────────────────────────────────────
+   Referencia: Mobbin app-reservar-fecha-cupo (Fresha: días como tarjetas y horas como renglones grandes; Octopus: lo
+   lleno dice «Lleno» y no desaparece; Warby Parker: horas en dos columnas). Los días van en cuadrícula, no en una tira
+   con scroll horizontal escondido (regla de celular de 390 px). */
+.apd-estrella {
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: var(--apd-filo);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #d8d3e6;
+  cursor: pointer;
+  transition: color 0.3s var(--apd-curva), transform 0.3s var(--apd-curva);
+}
+.apd-estrella[data-activa="si"] {
+  color: #e8a33c;
+}
+.apd-estrella:active {
+  transform: scale(0.94);
+}
+.apd-estrellas-fijas {
+  color: #e8a33c;
+  letter-spacing: 0.1em;
+}
+.apd-dias {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(4.4rem, 1fr));
+  gap: 0.5rem;
+}
+.apd-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  min-height: 5rem;
+  border: 0;
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: var(--apd-filo);
+  color: var(--apd-tinta);
+  cursor: pointer;
+  transition: background-color 0.4s var(--apd-curva), color 0.4s var(--apd-curva);
+}
+.apd-dia small {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--apd-tinta-2);
+}
+.apd-dia strong {
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.apd-dia[aria-pressed="true"] {
+  background: var(--apd-morado);
+  color: #fff;
+}
+.apd-dia[aria-pressed="true"] small {
+  color: rgba(255, 255, 255, 0.8);
+}
+.apd-dia:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.apd-horas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+.apd-hora {
+  min-height: 3.25rem;
+  border: 0;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: var(--apd-filo);
+  color: var(--apd-tinta);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.4s var(--apd-curva), color 0.4s var(--apd-curva);
+}
+.apd-hora[aria-pressed="true"] {
+  background: var(--apd-morado);
+  color: #fff;
+}
+.apd-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.apd-opcion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 3.5rem;
+  padding: 0.75rem 1.1rem;
+  border: 0;
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: var(--apd-filo);
+  color: var(--apd-tinta);
+  text-align: left;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.apd-opcion[aria-pressed="true"] {
+  box-shadow: inset 0 0 0 2px var(--apd-morado);
+  background: var(--apd-morado-suave);
+}
+.apd-noches {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.apd-noche {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 0.9rem;
+  background: #fff;
+  box-shadow: var(--apd-filo);
+  font-size: 0.95rem;
+}
+.apd-noche[data-lleno="si"] {
+  background: var(--apd-coral-suave);
+  color: var(--apd-coral-oscuro);
+  font-weight: 700;
+}
+.apd-resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1.25rem;
+  background: var(--apd-menta-suave);
+  color: var(--apd-menta-oscuro);
+}
+.apd-firma {
+  width: 100%;
+  height: 11rem;
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: inset 0 0 0 2px var(--apd-morado-suave);
+  touch-action: none;
+}
+.apd-contrato-texto {
+  max-height: 22rem;
+  overflow-y: auto;
+  padding: 1rem 1.1rem;
+  border-radius: 1.1rem;
+  background: #fff;
+  box-shadow: var(--apd-filo);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+.apd-galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: 0.5rem;
+}
+.apd-galeria img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 1rem;
+}

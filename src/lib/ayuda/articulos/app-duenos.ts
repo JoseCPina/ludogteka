@@ -11,7 +11,7 @@ export const ARTICULOS_APP_DUENOS: Articulo[] = [
     modulo: null,
     roles: ["admin", "recepcion"],
     rutas: ["/portal"],
-    palabras: ["app", "app para dueños", "app.peludesk.mx", "mis mascotas", "entrar con whatsapp", "código por whatsapp", "sin contraseña", "avisos", "notificaciones", "instalar", "cerca de mí", "dueño", "cliente no puede entrar"],
+    palabras: ["app", "app para dueños", "app.peludesk.mx", "mis mascotas", "entrar con whatsapp", "código por whatsapp", "sin contraseña", "avisos", "notificaciones", "instalar", "cerca de mí", "dueño", "cliente no puede entrar", "pedir cita", "reservar", "confirmar cita", "reseñas", "opiniones", "pagar desde la app", "firmar contrato", "pases"],
     cuerpo: `Además del portal de tu negocio, tus clientes tienen la **app PeluDesk**, gratuita, en **app.peludesk.mx**. Es de la persona, no de un negocio: ahí ve a **todas sus mascotas**, las de tu negocio y las de cualquier otro que use PeluDesk, con la misma cuenta.
 
 ## Cómo entra tu cliente
@@ -27,7 +27,8 @@ Si ya tiene contraseña del portal de tu negocio, también le sirve ahí («entr
 ## Qué ve
 
 - **Mis mascotas**: una tarjeta por mascota con su foto, qué es, su edad y en qué negocios la conocen («En Ludogteka»). Las mascotas que registras tú aparecen **solas** en su app, al momento, siempre que la ficha del dueño tenga su número y él haya activado su cuenta (el link de alta o la invitación al portal). Si da de baja una mascota contigo, en su app deja de verse; si falleció, queda en «Siempre con nosotros».
-- Desde cada mascota puede **abrir su expediente en tu portal** con la misma cuenta: sus citas, estancias, fotos, contratos y recibos siguen estando en el portal de tu negocio.
+- Desde cada mascota abre **su ficha en tu negocio** dentro de la app: sus fotos del día, los reportes que le mandaste, su carnet, sus consultas y recetas (sin notas internas), y desde ahí **pide cita o reserva** contigo. Su expediente completo sigue en el portal de tu negocio, con la misma cuenta.
+- **Te toca**: arriba de todo, lo que le pide algo: contratos por firmar, visitas por confirmar y lo que tiene por pagar contigo.
 - **Avisos**: lo que la app le tiene que decir, y el botón para **activar los avisos en su celular** (notificaciones). En iPhone solo funcionan con la app instalada en la pantalla de inicio.
 - **Cerca de mí**: veterinarias, estéticas, guarderías y hoteles cerca de donde está, con la calificación de Google Maps; los negocios que usan PeluDesk salen marcados.
 - **Instalar la app**: desde Avisos, para tenerla como app en su celular, con su ícono.
@@ -39,13 +40,13 @@ Tú sigues viendo solo lo tuyo: tus clientes, tus mascotas, tus citas. La app no
 ## Lo que el dueño puede hacer solo (aunque su mascota no esté contigo)
 
 - **Dar de alta a su mascota** (nombre, especie, sexo, nacimiento y foto) y **leer su cartilla de papel con una foto**: la app saca las vacunas, desparasitaciones, lotes y fechas, él revisa y confirma. También puede **anotar a mano** las fechas que recuerde. Las fotos de la cartilla que ya revisó se guardan por si hay que volver a leerlas; desde su cartilla puede **borrarlas** cuando quiera, y lo que ya está en su cartilla no cambia.
-- **Recordatorios**: una semana antes y el mismo día de cada próxima dosis, por notificación en su celular, en Avisos y por WhatsApp (si tiene avisos de WhatsApp prendidos). El recordatorio trae **Pedir cita**: si la mascota tiene expediente contigo, le abre WhatsApp con tu número de la landing y un mensaje listo; si no, las veterinarias cercanas.
+- **Recordatorios**: una semana antes y el mismo día de cada próxima dosis, por notificación en su celular, en Avisos y por WhatsApp (si tiene avisos de WhatsApp prendidos). El recordatorio trae **Pedir cita**: si la mascota tiene expediente contigo y tienes servicios de estética, la pide en línea con tus horas libres (y, si prefiere, WhatsApp con tu número de la landing y un mensaje listo); si no, las veterinarias cercanas.
 - **Cartilla en PDF** para compartirla con cualquier vet.
 - **Peso, medicinas (con recordatorio a sus horas) y gastos del mes** por mascota.
 - **QR para la placa**: quien lo escanee ve a la mascota y le escribe a la familia sin ver su teléfono (PeluDesk lleva los mensajes; si quien la encontró manda «ENCONTRE» y el código al WhatsApp de PeluDesk, las respuestas del dueño le llegan a su WhatsApp). Los mensajes los ve y los contesta en «Si se pierde» de esa mascota, esté o no marcada como perdida.
 - **Mascota perdida**: con un toque se avisa por notificación a los dueños de la app a 5 km y por WhatsApp a los negocios con PeluDesk a 15 km (si tu sucursal tiene ubicación guardada, te llega a ti el mensaje «Se perdió … cerca de …» con el link de su perfil), y se genera un cartel con QR para compartir. «¡Ya apareció!» la cierra.
 
-> Lo que el dueño captura o lee de su cartilla de papel es suyo y no sustituye el carnet que tú firmas en Veterinaria; en la Fase 3 lo que registras tú aparece en su app automáticamente.
+> Lo que el dueño captura o lee de su cartilla de papel es suyo y no sustituye el carnet que tú firmas en Veterinaria; lo que registras tú aparece en su app automáticamente.
 
 ## El QR de la placa también sirve para la vet, la estética o el hotel
 
@@ -61,9 +62,19 @@ Reglas: hasta 6 registros por mascota al día y 30 por número al día; el regis
 
 A partir de su **tercer paciente registrado**, al negocio se le ofrece abrir su cuenta gratis: comprueba su WhatsApp con un código y entra a la prueba de PeluDesk con esos pacientes y lo que les registró ([[articulo:pacientes-del-qr]]).
 
-## Lo que viene
+## Citas, reservas, contratos y pagos desde la app
 
-Citas, reservas, fotos, contratos y pagos desde la app (Fase 3): docs/app-duenos/PLAN.md.`,
+Si la mascota tiene expediente contigo, tu cliente hace esto desde su celular y te llega igual que si lo capturaras tú:
+
+- **Pedir cita de estética**: escoge el servicio, el día y una hora libre. Solo salen horas dentro de tu horario, que caben antes del cierre y donde alguien de tu equipo está libre (sin cita encimada ni ausencia aprobada). La cita queda **reservada** en tu agenda con la primera persona libre (estilistas antes que admin, la menos cargada ese día) y con su precio; al dueño le enseña el precio y quién la atiende. Una mascota no puede pedir dos citas el mismo día: eso lo decides tú.
+- **Reservar guardería u hotel**: escoge las fechas y ve el **cupo real** por noche (o por día); la reserva pasa por las mismas reglas que en recepción (cupo, requisitos sanitarios, evaluación, celo y traslapes) y queda **reservada** en tu calendario. Si tiene un pase, se usa solo. Si tu negocio pide contrato de alta de guardería u hotel y le falta, se lo deja **pendiente de firma** y lo **firma ahí mismo** con el dedo.
+- **Confirmar en un toque** una cita o estancia reservada que todavía no empieza: pasa a **confirmada** en tu agenda. Mover o cancelar sigue siendo contigo (por WhatsApp).
+- **Firmar contratos pendientes** («Contratos»): el mismo contrato y la misma firma del portal; te queda el PDF firmado en su expediente.
+- **Pagar lo pendiente** («Por pagar»): ve el saldo de sus cuentas contigo (el mismo de tu Caja) y «Pagar» abre tu link de Mercado Pago (si ya mandaste uno vigente, ese; si no, uno nuevo). Si tu negocio no cobra con link, le dice que pague en el mostrador o por WhatsApp. El pago entra a tu caja como cualquier link.
+- **Ver sus pases**: cuántos días o servicios le quedan y hasta cuándo (sin lo que pagó).
+- **Opinar** sobre una cita o estancia **finalizada**: estrellas y una línea, una vez por visita. Sus reseñas salen en tu página pública («Lo que dicen sus clientes», con su primer nombre y «verificadas por PeluDesk»), porque solo puede opinar quien sí fue. Para contestar o esconder una reseña, escríbenos a soporte.
+
+Lo que el dueño no ve nunca: notas internas, quién llenó un reporte, lotes ni folios, ni nada de otros clientes.`,
   },
   {
     slug: "pacientes-del-qr",
