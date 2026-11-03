@@ -110,7 +110,7 @@ try {
   const esperar = async (sel, que) => {
     try {
       await p.waitForSelector(sel, { timeout: 20_000 });
-    } catch (e) {
+    } catch {
       if (CAPTURAS) await p.screenshot({ path: path.join(CAPTURAS, `falla-${que}.jpg`), type: "jpeg", quality: 70, fullPage: true }).catch(() => {});
       throw new Error(`no apareció ${que} (${sel}) en ${p.url()}`);
     }
@@ -180,6 +180,21 @@ try {
   comprobar(estPantalla === "confirmada" && citaConf?.estado === "confirmada", `«Confirmar que vamos»: pantalla ${estPantalla}, base ${citaConf?.estado}`);
   await ancho("mis visitas");
   await foto("visita-confirmada");
+  // Un rechazo de la base se le dice al dueño con SU texto (no «No pudimos hablar con el proveedor de cobro»): otra cita
+  // el mismo día para la misma mascota.
+  await p.goto(`${BASE_APP}/mascotas/${mascotaId}/cita?negocio=${H}`, { waitUntil: "networkidle" });
+  await esperar("[data-pedir-cita]", "el flujo de pedir cita (segunda)");
+  await p.locator(`[data-servicio-cita="${estetica.id}"]`).click();
+  await p.locator(`[data-dia="${diaCita}"]`).click();
+  await esperar("[data-horas-cita] [data-hora]", "las horas del día");
+  await p.locator("[data-horas-cita] [data-hora]").last().click();
+  await p.locator("[data-pedir-la-cita]").click();
+  await p.waitForSelector("[data-error-cita], [data-cita-pedida]", { timeout: 30_000 }).catch(() => null);
+  const rechazo = await p.locator("[data-error-cita]").innerText().catch(() => "");
+  comprobar(/ya tiene una cita ese día/i.test(rechazo), `otra cita el mismo día: la pantalla dice el motivo de la base («${rechazo || "sin error: ¿se creó?"}»)`);
+  const { data: dobles } = await S.from("citas_estetica").select("id, reserva_id").eq("perro_id", perro.id).is("deleted_at", null);
+  for (const d of dobles ?? []) if (d.id !== cita?.id) { creados.citas.push(d.id); creados.reservas.push(d.reserva_id); }
+  await foto("cita-rechazo-mismo-dia");
 
   // ── 4. Reservar guardería tocando (y el contrato, si lo pide) ─────────────────────────────────────────────────
   seccion("4. Reservar guardería");

@@ -13,6 +13,7 @@ import { adaptador } from "@/lib/pagos/adaptadores";
 import { vigenciaLink } from "@/lib/mercadopago/links";
 import { mensajeDeError } from "@/lib/pagos/tipos";
 import { mensajeParaDueno } from "@/lib/app/mensajes";
+import { mensajeSoloLectura } from "@/lib/solo-lectura";
 import { resolverPlantilla } from "@/lib/contratos/plantilla";
 import { horasDisponiblesApp, disponibilidadEstanciaApp, type HorasDisponibles, type DisponibilidadEstancia } from "@/lib/app/negocios";
 
@@ -24,6 +25,17 @@ import { horasDisponiblesApp, disponibilidadEstanciaApp, type HorasDisponibles, 
 export type ResultadoApp<T = Record<string, unknown>> = { error: string | null; datos?: T; registros?: RegistroFinal[] };
 
 const UUID = /^[0-9a-f-]{36}$/i;
+
+/**
+ * El rechazo de la base, dicho al dueño: su propio texto («ya se ocupó», «ese día no abre»…, sin rutas del personal) y,
+ * si el negocio no deja escribir, el aviso de la demo o el de solo lectura. `mensajeDeError` (de pagos) solo entiende
+ * excepciones de JavaScript: con un error de la base daba «No pudimos hablar con el proveedor de cobro».
+ */
+function rechazoDeLaBase(error: { code?: string; message?: string }): string {
+  const texto = (error.message ?? "").trim();
+  if (error.code === "42501" && /solo lectura|En la demo no se guardan/.test(texto)) return mensajeSoloLectura(error);
+  return texto ? mensajeParaDueno(texto) : "No pudimos guardarlo. Intenta de nuevo.";
+}
 
 async function negocioMio(negocioId: string): Promise<string | null> {
   const s = await sesionApp();
@@ -45,7 +57,7 @@ export async function confirmarVisitaApp(negocioId: string, tipo: "estetica" | "
   if (falta) return { error: falta };
   const supabase = await supabaseAppEnNegocio(negocioId);
   const { data, error } = await supabase.rpc("portal_confirmar_visita", { p_tipo: tipo, p_id: id });
-  if (error) return { error: mensajeDeError(error) };
+  if (error) return { error: rechazoDeLaBase(error) };
   const d = data as { id: string; estado: string; updated_at: string };
   const tabla = tipo === "estetica" ? "citas_estetica" : "estancias";
   // El dueño no lee citas_estetica ni estancias por tabla (llevan precio): el registro final va con lo que la base respondió.
@@ -82,7 +94,7 @@ export async function pedirCitaApp(negocioId: string, mascotaId: string, servici
   if (!UUID.test(servicioId) || Number.isNaN(Date.parse(inicioIso))) return { error: "Escoge el servicio y la hora." };
   const supabase = await supabaseAppEnNegocio(negocioId);
   const { data, error } = await supabase.rpc("portal_pedir_cita", { p_perro: v.perroId, p_servicio: servicioId, p_inicio: new Date(inicioIso).toISOString() });
-  if (error) return { error: mensajeParaDueno(mensajeDeError(error)) };
+  if (error) return { error: rechazoDeLaBase(error) };
   const d = data as { cita_id: string; reserva_id: string; estado: string; updated_at: string };
   return { error: null, datos: d, registros: await registrosDe(supabase, [{ t: "citas_estetica", i: d.cita_id, datos: d }]) };
 }
@@ -96,7 +108,7 @@ export async function reservarApp(negocioId: string, mascotaId: string, servicio
   if (!UUID.test(servicioId) || !/^\d{4}-\d{2}-\d{2}$/.test(entrada) || !/^\d{4}-\d{2}-\d{2}$/.test(salida)) return { error: "Escoge el servicio y las fechas." };
   const supabase = await supabaseAppEnNegocio(negocioId);
   const { data, error } = await supabase.rpc("portal_reservar", { p_perro: v.perroId, p_servicio: servicioId, p_entrada: entrada, p_salida: salida, p_horas: horas && horas > 0 ? Math.round(horas) : null });
-  if (error) return { error: mensajeParaDueno(mensajeDeError(error)) };
+  if (error) return { error: rechazoDeLaBase(error) };
   const d = data as { reserva_id: string; estancia_id: string; estado: string; updated_at: string; contratos_por_firmar: { id: string; tipo_nombre: string }[] };
   return {
     error: null,
@@ -208,7 +220,7 @@ export async function resenarApp(negocioId: string, tipo: "estetica" | "estancia
   if (!Number.isInteger(estrellas) || estrellas < 1 || estrellas > 5) return { error: "Califica de 1 a 5 estrellas." };
   const supabase = await supabaseAppEnNegocio(negocioId);
   const { data, error } = await supabase.rpc("portal_resenar", { p_tipo: tipo, p_id: id, p_estrellas: estrellas, p_texto: texto.trim().slice(0, 500) || null });
-  if (error) return { error: mensajeDeError(error) };
+  if (error) return { error: rechazoDeLaBase(error) };
   const d = data as { id: string };
   return { error: null, datos: d, registros: await registrosDe(supabase, [{ t: "resenas", i: d.id }]) };
 }
