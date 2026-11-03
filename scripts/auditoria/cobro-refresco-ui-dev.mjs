@@ -85,7 +85,7 @@ try {
   await p.goto(`${BASE}/caja/cobrar/${c1}`, { waitUntil: "networkidle" });
   const boton = p.getByRole("button", { name: /Registrar cobro|Cobrando|Actualizando/ });
   await boton.first().click();
-  await p.getByText("Cobro registrado.").first().waitFor({ timeout: 20000 });
+  await p.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 20000 });
   const t0 = await p.locator("body").innerText();
   comprobar(/Cobrado:\s*\$220\.00/.test(t0), "al terminar de guardar ya dice «Cobrado: $220.00» (sin esperar el refresco)");
   comprobar(/Saldo:\s*\$0\.00/.test(t0), "y «Saldo: $0.00»");
@@ -121,8 +121,8 @@ try {
   const b3 = pRapida.getByRole("button", { name: /Registrar cobro|Cobrando|Actualizando/ }).first();
   await b3.dblclick({ delay: 0 });
   const textoBoton = await pRapida.getByRole("button", { name: /Cobrando|Actualizando/ }).first().innerText().catch(() => "");
-  comprobar(/Cobrando|Actualizando/.test(textoBoton) || (await pRapida.getByText("Cobro registrado.").count()) > 0, `el botón muestra que está procesando («${textoBoton.trim()}») o ya terminó`);
-  await pRapida.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  comprobar(/Cobrando|Actualizando/.test(textoBoton) || (await pRapida.getByText(/Cobro registrado.|Abono registrado/).count()) > 0, `el botón muestra que está procesando («${textoBoton.trim()}») o ya terminó`);
+  await pRapida.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 });
   await pRapida.waitForTimeout(4000);
   comprobar((await cobros(c3)) === 1, "un doble clic deja UN solo cobro en la base");
 
@@ -148,7 +148,7 @@ try {
   bloquear = true;
   await pA.getByLabel("Monto").first().fill("10");
   await pA.getByRole("button", { name: "Registrar cobro" }).first().click();
-  await pA.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  await pA.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 });
   // Recepción, con la pantalla de antes (saldo $900), cobra $10 más.
   await pR.getByLabel("Monto").first().fill("10");
   bloquear = false;
@@ -160,7 +160,7 @@ try {
   comprobar(!/—/.test(texto4.split("¿")[0]), "y el autor no sale como «—»");
   comprobar((await cobros(c4)) === 1, "mientras nadie confirma, solo está el cobro de la primera sesión");
   await pR.locator("[data-registrar-de-todos-modos]").click();
-  await pR.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  await pR.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 });
   comprobar((await cobros(c4)) === 2, "al confirmar «Registrar de todos modos» se registra el segundo cobro");
 
   console.log("5. N29: se anula un cobro desde otra sesión y la pantalla de cobro se actualiza sola");
@@ -195,9 +195,9 @@ try {
   await pV.locator("[data-saldo-cambio]").waitFor({ timeout: 5000 });
   await pV.getByRole("button", { name: "Registrar cobro" }).first().click();
   const conf5 = pV.locator("[data-confirmar-cobro]");
-  await Promise.race([conf5.waitFor({ timeout: 30000 }), pV.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 })]);
+  await Promise.race([conf5.waitFor({ timeout: 30000 }), pV.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 })]);
   if (await conf5.count()) await pV.locator("[data-registrar-de-todos-modos]").click();
-  await pV.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  await pV.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 });
   await pV.waitForTimeout(1500);
   comprobar((await pV.locator("[data-saldo-cambio]").count()) === 0, "N41: después de «Cobro registrado.» ya no queda el aviso «El saldo cambió»");
 
@@ -236,7 +236,7 @@ try {
   comprobar(pidio && /Se acaba de registrar otro cobro de \$10\.00/.test(await caja7.innerText().catch(() => "")), "aunque ya lo enseñaba, pide confirmar porque otra persona cobró hace menos de 2 minutos");
   comprobar((await cobros(c7)) === 1, "y no registró nada sin confirmar");
   if (pidio) await pW.locator("[data-registrar-de-todos-modos]").click();
-  await pW.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  await pW.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 });
 
   // QA S15 (19 de octubre de 2026): recepción recarga con F5 (o entra de nuevo a Cobrar) DESPUÉS del cobro del admin;
   // la pantalla nace sabiendo ese cobro y aun así el servidor tiene que pedir confirmación.
@@ -259,7 +259,7 @@ try {
     comprobar((await cobros(cuF)) === 1, `(${via}) y no registró nada sin confirmar`);
     if (pidioF) {
       await pF.locator("[data-registrar-de-todos-modos]").click();
-      await pF.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+      await pF.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 });
       comprobar((await cobros(cuF)) === 2, `(${via}) al confirmar sí se registra`);
     }
     await pF.close();
@@ -272,7 +272,7 @@ try {
   await pM.goto(`${BASE}/caja/cobrar/${c8}`, { waitUntil: "networkidle" });
   await pM.getByLabel("Monto").first().fill("100");
   await pM.getByRole("button", { name: "Registrar cobro" }).first().click();
-  await pM.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+  await pM.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 });
   await pM.waitForFunction(() => /Saldo:\s*\$200\.00/.test(document.body.innerText), null, { timeout: 30000 });
   await pM.getByLabel("Monto").first().fill("50");
   await pM.getByRole("button", { name: "Registrar cobro" }).first().click();
@@ -314,17 +314,17 @@ try {
   lento = false;
   await pAn.goto(`${BASE}/caja/cobrar/${c10}`, { waitUntil: "networkidle" });
   await pAn.getByRole("button", { name: "Registrar cobro" }).first().click();
-  const ok9 = await pAn.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 }).then(() => true, () => false);
+  const ok9 = await pAn.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 }).then(() => true, () => false);
   if (!ok9) {
     hallazgo(`sección 9: no salió «Cobro registrado.» (pantalla: «${(await pAn.locator("main").innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 600)}»)`);
     throw new Error("sección 9");
   }
-  comprobar(await pAn.getByText("Cobro registrado.").first().isVisible(), "sale «Cobro registrado.»");
+  comprobar(await pAn.getByText(/Cobro registrado.|Abono registrado/).first().isVisible(), "sale «Cobro registrado.»");
   const { data: cob10 } = await SB.from("cobros").select("id").eq("reserva_id", c10).order("created_at", { ascending: false }).limit(1).single();
   const an10 = await admB.rpc("anular_cobro", { p_cobro_id: cob10.id, p_motivo: "prueba QA S14" });
   if (an10.error) hallazgo(`no se pudo anular el cobro de prueba (${an10.error.message})`);
   await pAn.getByRole("button", { name: "Registrar cobro" }).first().waitFor({ timeout: 40000 }).catch(() => {});
-  comprobar((await pAn.getByText("Cobro registrado.").count()) === 0, "tras anular, «Cobro registrado.» ya no se ve");
+  comprobar((await pAn.getByText(/Cobro registrado.|Abono registrado/).count()) === 0, "tras anular, «Cobro registrado.» ya no se ve");
   comprobar(await pAn.getByRole("button", { name: "Registrar cobro" }).first().isVisible().catch(() => false), "y la cuenta vuelve a pedir el cobro");
 
   console.log("10. QA S14: una reserva cancelada sin saldo no ofrece «Cobrar»");
@@ -375,7 +375,7 @@ try {
     await Promise.all([v1.goto(`${BASE}/caja/cobrar/${cuM}`, { waitUntil: "networkidle" }), v2.goto(`${BASE}/caja/cobrar/${cuM}`, { waitUntil: "networkidle" })]);
     await v1.getByLabel("Monto").first().fill("10");
     await v1.getByRole("button", { name: "Registrar cobro" }).first().click();
-    await v1.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+    await v1.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 });
     await v2.reload({ waitUntil: "networkidle" });
     await v2.getByLabel("Monto").first().fill("10");
     await v2.getByRole("button", { name: "Registrar cobro" }).first().click();
@@ -420,7 +420,7 @@ try {
     const t1 = Date.now();
     await pA2.getByRole("button", { name: "Registrar cobro" }).first().click();
     const conf = pA2.locator("[data-confirmar-cobro]");
-    await Promise.race([conf.waitFor({ timeout: 30000 }), pA2.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 })]).catch(() => {});
+    await Promise.race([conf.waitFor({ timeout: 30000 }), pA2.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 })]).catch(() => {});
     if (await conf.count()) await pA2.locator("[data-registrar-de-todos-modos]").click();
     await pA2.waitForFunction(() => /Saldo:\s*\$330\.00/.test(document.body.innerText), null, { timeout: 7000 }).catch(() => {});
     comprobar(/Saldo:\s*\$330\.00/.test(await pA2.locator("body").innerText()), `al registrar $100 el saldo queda en $330.00 sin esperar el refresco (${Date.now() - t1} ms, con el refresco tardando 8 s)`);
@@ -463,7 +463,7 @@ try {
     await p13.goto(`${BASE}/caja/cobrar/${cu13}`, { waitUntil: "networkidle" });
     await p13.getByLabel("Monto").first().fill("10");
     await p13.getByRole("button", { name: "Registrar cobro" }).first().click();
-    await p13.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 });
+    await p13.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 });
     await p13.reload({ waitUntil: "networkidle" });
     await p13.getByLabel("Monto").first().fill("10");
     await p13.getByRole("button", { name: "Registrar cobro" }).first().click();
@@ -568,7 +568,7 @@ try {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set.call(el, "10");
     });
     await p15.getByRole("button", { name: "Registrar cobro" }).first().click();
-    await p15.getByText("Cobro registrado.").first().waitFor({ timeout: 30000 }).catch(() => {});
+    await p15.getByText(/Cobro registrado.|Abono registrado/).first().waitFor({ timeout: 30000 }).catch(() => {});
     const m15 = (await SB.from("cobros").select("cobro_metodos(monto)").eq("reserva_id", cu15)).data ?? [];
     const total15 = m15.flatMap((c) => c.cobro_metodos).reduce((x, m) => x + Number(m.monto), 0);
     comprobar(total15 === 10, `con autollenado se registró $${total15} (el campo decía $10, nunca el saldo de $240)`);
@@ -576,7 +576,7 @@ try {
     await p15.getByLabel("Monto").first().fill("15");
     await p15.getByRole("button", { name: "Registrar cobro" }).first().click();
     const conf15 = p15.locator("[data-confirmar-cobro]");
-    await Promise.race([conf15.waitFor({ timeout: 30000 }), p15.getByText("Cobro registrado.").nth(0).waitFor({ timeout: 30000 })]).catch(() => {});
+    await Promise.race([conf15.waitFor({ timeout: 30000 }), p15.getByText(/Cobro registrado.|Abono registrado/).nth(0).waitFor({ timeout: 30000 })]).catch(() => {});
     if (await conf15.count()) await p15.locator("[data-registrar-de-todos-modos]").click();
     await p15.waitForTimeout(1500);
     const m15b = (await SB.from("cobros").select("cobro_metodos(monto)").eq("reserva_id", cu15)).data ?? [];
