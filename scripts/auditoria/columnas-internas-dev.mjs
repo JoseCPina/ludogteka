@@ -22,6 +22,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { clienteApi, DEV } from "../nube/migraciones-api.mjs";
+import { apiLecturaDesarrollo } from "../lib/sql-dev.mjs";
 import { B, SB, datos, rpc, get, post, patch, borrar, personas, fijarModulo, comprobar, seccion, terminar } from "./veterinaria-comun-dev.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
@@ -57,7 +58,8 @@ const RPC_SOLO_PERSONAL = [
   ["regenerar_contrato", (c) => ({ p_contrato_id: c.contrato ?? "00000000-0000-0000-0000-000000000000" })],
 ];
 
-const api = await clienteApi(DEV);
+// Sin SUPABASE_ACCESS_TOKEN (la PC), el catálogo se lee por el CLI de Supabase (misma sesión que `db push`).
+const api = process.env.SUPABASE_ACCESS_TOKEN ? await clienteApi(DEV) : apiLecturaDesarrollo;
 const P = await personas();
 const ctx = { cliente: datos.clienteSoloB, perro: null, contrato: null };
 
