@@ -1,5 +1,6 @@
 import { textoSinNombre } from "@/lib/personal/nombres";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { navStaffPara } from "@/lib/nav/config";
 import { StaffShell } from "@/components/chrome/staff-shell";
@@ -53,13 +54,21 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       aviso={
         <>
           <AvisoInstalar />
-          <AvisoPlan esPersonal />
+          {/* Tiempo del panel, quinta vuelta: la franja del plan y la de tickets piden lo suyo a la base; en Suspense, la
+              pantalla sale sin esperarlas y ellas llegan en el mismo envío cuando terminan. */}
+          <Suspense fallback={null}>
+            <AvisoPlan esPersonal />
+          </Suspense>
           {avisarEsteticaApagada(zonaSesion) && (
             <p role="status" className="rounded-lg border border-ambar-oscuro/30 bg-ambar-suave px-4 py-3 text-sm text-ambar-oscuro" data-modulo-apagado-aviso>
               El módulo de Estética está apagado en este negocio. Lo enciende quien administra, en «Módulos y plan». Mientras tanto puedes usar lo que sí tienes en el menú.
             </p>
           )}
-          {conAyuda && <AvisoTickets />}
+          {conAyuda && (
+            <Suspense fallback={null}>
+              <AvisoTickets />
+            </Suspense>
+          )}
         </>
       }
       rol={sesion.rol}

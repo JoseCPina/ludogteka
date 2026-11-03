@@ -1,7 +1,10 @@
 // Ningún botón ni enlace lleva a una página que la persona no puede abrir (QA N127) — SOLO DESARROLLO, en Huellitas,
 // con `next start` en el 3001.
 //
-//   node scripts/auditoria/permisos-pantalla-dev.mjs [--roles admin,recepcion,estetica] [--max 220] [--botones 20] [--sin-botones] [--ver]
+//   node scripts/auditoria/permisos-pantalla-dev.mjs [--roles admin,recepcion,estetica] [--max 220] [--botones 20] [--sin-botones] [--ver] [--solo-sesion]
+//
+// Antes de recorrer, la sección «Sesión firmada» (abajo): la sesión que el middleware le pasa a la app no se puede
+// falsificar ni reutilizar, y un cambio de rol o una baja cuentan en la petición siguiente.
 //
 // Entra con cada rol del personal (estética, recepción con sus permisos de siempre, una «encargada» de recepción con
 // los permisos de administrar, un médico veterinario designado, y admin) y recorre la app desde su
@@ -216,6 +219,98 @@ function pedir(ruta, cookie) {
 const hallazgos = [];
 const porRol = {};
 const avisos = [];
+
+// ── Sesión firmada (fix/layout-cascaron, 3 de noviembre de 2026; src/lib/auth/sesion-firmada.ts) ──────────────────
+// El middleware le pasa al layout y a la página la sesión que acaba de comprobar, firmada. Aquí se prueba que:
+//   1. la firma no se puede falsificar ni reutilizar: otra llave, cuerpo cambiado, vencida, de otra persona/cookie,
+//      de otro negocio o de otra área → no se acepta;
+//   2. un encabezado `x-peludesk-sesion` que llega de afuera no cambia nada (ni uno bien firmado que dice «admin»):
+//      el middleware lo tira, /admin sigue cerrado y el menú de recepción es el mismo; y nunca sale en la respuesta;
+//   3. un cambio de rol y la baja de un empleado cuentan en la petición SIGUIENTE (con la misma cookie de sesión).
+// `--solo-sesion` corre solo esta sección.
+const SOLO_SESION = process.argv.includes("--solo-sesion");
+async function pruebaSesionFirmada() {
+  console.log("\n── Sesión firmada ──");
+  const crypto = await import("node:crypto");
+  process.env.SUPABASE_SECRET_KEY ??= env.SUPABASE_SECRET_KEY;
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??= URL;
+  const firma = await import("../../src/lib/auth/sesion-firmada.ts");
+  const mal = (t) => { hallazgos.push({ rol: "recepcion", pantalla: "(sesión firmada)", boton: t, destino: "", motivo: "sesión firmada" }); console.log(`  ✘ ${t}`); };
+  const ok = (t) => console.log(`  ✔ ${t}`);
+  const id = CUENTAS.recepcion;
+  const galletas = await cookiesDe(id);
+  const prefijo = `sb-${REF}-auth-token`;
+  const huella = await firma.huellaDeCookies(galletas, prefijo);
+  const base = { u: id, e: null, c: false, n: B, a: "personal", k: huella, s: { rol: "admin", permisos: [], modulos: [] } };
+
+  // 1. La firma sola.
+  const esperado = { negocioId: B, area: "personal", huella };
+  const valida = await firma.firmarSesion(base);
+  if (!(await firma.leerSesionFirmada(valida, esperado))) mal("una sesión recién firmada no se acepta");
+  const [cuerpo] = valida.split(".");
+  const otraLlave = `${cuerpo}.${crypto.createHmac("sha256", "otra-llave").update(cuerpo).digest("hex")}`;
+  const cambiado = Buffer.from(JSON.stringify({ ...JSON.parse(Buffer.from(cuerpo, "base64url").toString()), u: CUENTAS.admin })).toString("base64url");
+  const realNow = Date.now;
+  Date.now = () => realNow() - 16_000;
+  const vencida = await firma.firmarSesion(base);
+  Date.now = realNow;
+  const casos = [
+    ["firmada con otra llave", otraLlave, esperado],
+    ["con el cuerpo cambiado (otra persona) y la firma de antes", `${cambiado}.${valida.split(".")[1]}`, esperado],
+    ["vencida (16 s)", vencida, esperado],
+    ["con la cookie de otra sesión", valida, { ...esperado, huella: "0".repeat(32) }],
+    ["sin cookie de sesión", valida, { ...esperado, huella: "" }],
+    ["de otro negocio", valida, { ...esperado, negocioId: datos.A ?? "10000000-0000-4000-8000-000000000001" }],
+    ["de otra área (portal)", valida, { ...esperado, area: "portal" }],
+  ];
+  for (const [t, v, e] of casos) if (await firma.leerSesionFirmada(v, e)) mal(`se acepta una sesión ${t}`);
+  ok(`la firma se acepta recién hecha y se rechaza ${casos.length} veces: ${casos.map((c) => c[0]).join("; ")}`);
+
+  // 2. Por HTTP, con la cookie de recepción.
+  const pedir = (ruta, extra = {}) => new Promise((res, rej) => {
+    const r = http.request(`${BASE}${ruta}`, { headers: { cookie: galletas.map((g) => `${g.name}=${g.value}`).join("; "), ...extra } }, (resp) => {
+      let cuerpoR = "";
+      resp.on("data", (d) => (cuerpoR += d));
+      resp.on("end", () => res({ status: resp.statusCode, location: resp.headers.location ?? "", cabeceras: Object.keys(resp.headers), cuerpo: cuerpoR }));
+    });
+    r.on("error", rej);
+    r.setTimeout(60_000, () => r.destroy(new Error("sin respuesta en 60 s")));
+    r.end();
+  });
+  const enlaces = (html) => [...new Set([...html.matchAll(/href="(\/[^"#?]*)/g)].map((m) => m[1]))].sort().join(" ");
+  const normal = await pedir("/recepcion");
+  if (normal.status !== 200) mal(`/recepcion con la sesión de recepción → ${normal.status} ${normal.location}`);
+  if (normal.cabeceras.some((c) => /peludesk-sesion/i.test(c))) mal("la respuesta trae el encabezado de la sesión firmada");
+  const admin = await firma.firmarSesion({ ...base, s: { rol: "admin", permisos: ["personal", "gastos", "tarifas", "configuracion_negocio"], modulos: ["guarderia", "hotel", "estetica", "veterinaria", "gastos"] } });
+  for (const [t, v] of [["basura", "x.y"], ["bien firmada que dice «admin»", admin]]) {
+    const r = await pedir("/recepcion", { [firma.ENCABEZADO_SESION]: v });
+    if (r.status !== 200 || enlaces(r.cuerpo) !== enlaces(normal.cuerpo)) mal(`un encabezado ${t} desde afuera cambia /recepcion (${r.status})`);
+    const a = await pedir("/admin", { [firma.ENCABEZADO_SESION]: v });
+    if (a.status === 200) mal(`un encabezado ${t} desde afuera abre /admin a recepción`);
+  }
+  ok("un encabezado de sesión desde afuera (basura o bien firmado como admin) no abre /admin ni cambia el menú; la respuesta no lo trae");
+
+  // 3. Cambio de rol y baja, con la MISMA cookie de sesión.
+  const { data: mem } = await SB.from("membresias").select("id, rol, deleted_at").eq("negocio_id", B).eq("profile_id", id).is("deleted_at", null).single();
+  try {
+    await SB.from("membresias").update({ rol: "estetica" }).eq("id", mem.id);
+    const r = await pedir("/recepcion");
+    if (r.status === 200) mal("con el rol cambiado a estética, /recepcion se sigue abriendo");
+    else ok(`rol cambiado a estética: /recepcion → ${r.status} ${r.location}`);
+    await SB.from("membresias").update({ rol: mem.rol }).eq("id", mem.id);
+    const de = await pedir("/recepcion");
+    if (de.status !== 200) mal(`con el rol de regreso, /recepcion → ${de.status} ${de.location}`);
+    await SB.from("membresias").update({ deleted_at: new Date().toISOString() }).eq("id", mem.id);
+    const b = await pedir("/recepcion");
+    if (b.status === 200 || !/sin-acceso/.test(b.location)) mal(`dado de baja, /recepcion → ${b.status} ${b.location} (se esperaba /sin-acceso)`);
+    else ok(`dado de baja: /recepcion → ${b.status} ${b.location}`);
+  } finally {
+    await SB.from("membresias").update({ rol: mem.rol, deleted_at: null }).eq("id", mem.id);
+  }
+  const fin = await pedir("/recepcion");
+  if (fin.status !== 200) mal(`recepción no quedó como estaba: /recepcion → ${fin.status}`);
+  else ok("recepción quedó como estaba");
+}
 
 const cerrarConTope = (promesa) => Promise.race([promesa.catch(() => {}), new Promise((r) => setTimeout(r, 10_000))]);
 
@@ -508,7 +603,8 @@ async function recorrer(rol) {
 }
 
 try {
-  for (const rol of ROLES) {
+  await pruebaSesionFirmada();
+  for (const rol of SOLO_SESION ? [] : ROLES) {
     console.log(`\n── ${rol} ──`);
     await recorrer(rol);
   }

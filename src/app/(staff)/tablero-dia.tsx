@@ -120,6 +120,20 @@ function Cifra({ etiqueta, valor, sub, href, icono, tono }: { etiqueta: string; 
 
 const TONO_CITA: Record<string, TonoChip> = { reservada: "info", confirmada: "info", en_curso: "proceso", finalizada: "exito", cancelada: "neutro", no_llego: "pendiente" };
 
+// Una parte de «Necesita atención» (tablero_atencion, migración 20261203002400). Si la base falla, la parte sale vacía
+// (como cuando cada consulta fallaba sola) y el error va al log; una pieza que falló adentro viene en `fallos`.
+type PartesAtencion = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+type Dato = { data: any }; // eslint-disable-line @typescript-eslint/no-explicit-any
+const SIN_ATENCION: PartesAtencion = {};
+async function grupoAtencion(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, grupo: "general" | "dinero" | "clinica"): Promise<PartesAtencion> {
+  const { data, error } = await Promise.resolve(supabase.rpc("tablero_atencion", { p_grupo: grupo })).catch((e: unknown) => ({ data: null, error: { message: e instanceof Error ? e.message : String(e) } }));
+  if (error) console.error(`tablero_atencion(${grupo}):`, error.message);
+  const partes = (data ?? {}) as PartesAtencion;
+  if (Array.isArray(partes.fallos) && partes.fallos.length) console.error(`tablero_atencion(${grupo}) sin: ${partes.fallos.join(", ")}`);
+  return partes;
+}
+const pieza = (grupo: Promise<PartesAtencion>, clave: string) => grupo.then((d): Dato => ({ data: d[clave] ?? null }));
+
 export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   const negocio = await negocioActual();
   const zona = negocio.zona_horaria;
@@ -132,17 +146,10 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // Tiempo del panel, cuarta vuelta (2 de noviembre de 2026): lo que no depende del rol ni de los módulos arranca ANTES
   // de esperar la sesión (antes esperaba a la sesión y luego salía todo junto: una tanda más en el camino del tablero).
   const sinSesion = arrancarTodas({
-    bajas: supabase
-    .from("perros_bajas")
-    .select("id, perro_id, perro_nombre, motivo, created_at")
-    .eq("tipo", "solicitud")
-    .eq("resultado", "pendiente")
-    .is("deleted_at", null)
-    .order("created_at")
-    .limit(50),
-    evaluacionExigida: supabase.rpc("evaluacion_exigida"),
+    // Tiempo del panel, quinta vuelta (3 de noviembre de 2026): «Necesita atención» sale de tablero_atencion() (la base
+    // aplica las mismas reglas de rol, permiso y módulo con la RLS de quien llama) en vez de ~20 consultas sueltas.
+    general: grupoAtencion(supabase, "general"),
     saldos: cargarSaldosDeSalidas(supabase, hoy, zona),
-    cfdi: supabase.rpc("cfdi_atencion"),
     principal: Promise.all([
       supabase.from("llegadas_hoy").select(columnas).order("perro_nombre"),
       supabase.from("salidas_hoy").select(columnas).order("perro_nombre"),
@@ -207,63 +214,28 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
 
   // Tiempo del panel (31 de octubre de 2026): lo que depende del rol o de los módulos se pide A LA VEZ, aquí; cada
   // bloque de abajo solo espera lo suyo (antes eran 14 viajes a la base uno tras otro).
-  const previas = arrancarTodas({
-    bajas: sinSesion.bajas,
-    evaluacionExigida: sinSesion.evaluacionExigida,
+  // Las tres partes de «Necesita atención» salen A LA VEZ (en serie sumarían sus tiempos): la general ya salió arriba,
+  // la de dinero solo para admin y la clínica solo con Veterinaria. Cada bloque de abajo espera solo la suya.
+  const general: Promise<PartesAtencion> = sinSesion.general;
+  const dinero = sesion?.rol === "admin" ? grupoAtencion(supabase, "dinero") : Promise.resolve(SIN_ATENCION);
+  const clinica = mods.includes("veterinaria") ? grupoAtencion(supabase, "clinica") : Promise.resolve(SIN_ATENCION);
+  // Ya son promesas en marcha (grupoAtencion nunca rechaza: un error de red deja la parte vacía).
+  const previas = {
+    bajas: pieza(general, "bajas"),
+    evaluacionExigida: pieza(general, "evaluacion_exigida"),
     saldos: sinSesion.saldos,
-    razas: tienePermiso(sesion, "tarifas")
-      ? Promise.all([
-      supabase.rpc("razas_sin_grupo"),
-      supabase.rpc("razas_propuestas_sin_grupo"),
-    ])
-      : Promise.resolve([{ data: null }, { data: null }] as const),
-    gastos: tienePermiso(sesion, "gastos") && mods.includes("gastos")
-      ? leerTodo<Record<string, unknown>>(() => supabase.rpc("gastos_por_atender").order("id"))
-      : Promise.resolve({ data: null }),
-    vet: mods.includes("veterinaria")
-      ? Promise.all([
-      tienePermiso(sesion, "lotes_clinicos") ? supabase.rpc("inventario_clinico_alertas") : Promise.resolve({ data: null }),
-      tienePermiso(sesion, "configuracion_negocio") ? supabase.rpc("permisos_establecimiento_por_vencer") : Promise.resolve({ data: null }),
-      supabase.rpc("veterinaria_atencion"),
-    ])
-      : Promise.resolve([{ data: null }, { data: null }, { data: null }] as const),
-    fallosWa: mods.includes("veterinaria")
-      ? supabase.rpc("wa_fallos_atencion")
-      : Promise.resolve({ data: null }),
-    recordatorios: sesion && ["admin", "recepcion"].includes(sesion.rol)
-      ? Promise.all([
-      supabase.from("recordatorios_mensajes").select("tipo, created_at").is("deleted_at", null).is("atendido_at", null).neq("tipo", "baja").order("created_at").limit(200),
-      supabase.from("recordatorios_wa").select("id", { count: "exact", head: true }).eq("estado", "pausado").is("deleted_at", null),
-    ])
-      : Promise.resolve([{ data: null }, { count: null }] as const),
-    reembolsos: sesion && ["admin", "recepcion"].includes(sesion.rol)
-      ? leerTodo<Record<string, unknown>>(() => supabase.rpc("reembolsos_por_atender").order("id"))
-      : Promise.resolve({ data: null }),
-    conciliacion: sesion && ["admin", "recepcion"].includes(sesion.rol)
-      ? Promise.all([
-      // Los pagos ajenos (informativos) nunca cuentan en «Necesita atención».
-      leerTodo<{ id: string; tipo: string; monto: number; detectada_at: string }>(() =>
-        supabase.from("conciliacion_terminal").select("id, tipo, monto, detectada_at").is("resuelta_at", null).neq("tipo", "pago_ajeno").order("detectada_at").order("id")
-      ),
-      leerTodo<{ id: string; monto: number; created_at: string }>(() =>
-        supabase.from("mp_ordenes").select("id, monto, created_at").eq("estado", "por_confirmar").is("deleted_at", null).order("created_at").order("id")
-      ),
-    ])
-      : Promise.resolve([{ data: null }, { data: null }] as const),
-    tarjetas: sesion?.rol === "admin"
-      ? Promise.all([
-      leerTodo<Record<string, unknown>>(() => supabase.rpc("tarjetas_manuales_por_revisar", { p_historial: false }).order("id")),
-      supabase.rpc("tarjetas_manuales_atencion"),
-    ])
-      : Promise.resolve([{ data: null }, { data: null }] as const),
-    ajustes: conEstetica && sesion && ["admin", "recepcion"].includes(sesion.rol)
-      ? leerTodo<Record<string, unknown>>(() => supabase.rpc("ajustes_servicio_por_atender").order("correccion_id"))
-      : Promise.resolve({ data: null }),
-    cobro: sesion?.rol === "admin"
-      ? supabase.rpc("estado_cobro")
-      : Promise.resolve({ data: null }),
-    cfdi: sinSesion.cfdi,
-  });
+    razas: general.then((d): [Dato, Dato] => [{ data: d.razas_sin_grupo ?? null }, { data: d.razas_propuestas ?? null }]),
+    gastos: pieza(general, "gastos"),
+    vet: clinica.then((d): [Dato, Dato, Dato] => [{ data: d.vet_inventario ?? null }, { data: d.vet_permisos ?? null }, { data: d.vet_atencion ?? null }]),
+    fallosWa: pieza(clinica, "fallos_wa"),
+    recordatorios: general.then((d): [Dato, { count: number | null }] => [{ data: d.recordatorios_mensajes ?? null }, { count: (d.recordatorios_pausados ?? null) as number | null }]),
+    reembolsos: pieza(general, "reembolsos"),
+    conciliacion: general.then((d): [Dato, Dato] => [{ data: d.conciliacion ?? null }, { data: d.mp_por_confirmar ?? null }]),
+    tarjetas: dinero.then((d): [Dato, Dato] => [{ data: d.tarjetas ?? null }, { data: d.tarjetas_atencion ?? null }]),
+    ajustes: pieza(general, "ajustes"),
+    cobro: pieza(dinero, "cobro"),
+    cfdi: pieza(general, "cfdi"),
+  };
 
   const [
     [
