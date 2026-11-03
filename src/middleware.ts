@@ -8,6 +8,7 @@ import { ENCABEZADOS_NEGOCIO, ENCABEZADO_APP, ENCABEZADO_PLATAFORMA, hostPorMuda
 import { ENCABEZADO_FIRMA, firmaValida, firmarNegocio, firmarPlataforma, plataformaFirmada } from "@/lib/negocio/firma";
 import { DOMINIO_PLATAFORMA, esHostApp, esHostPlataforma } from "@/lib/negocio/host";
 import { moduloDeRuta, moduloRequeridoActivo } from "@/lib/plan/modulos";
+import { ENCABEZADO_SESION, firmarSesion, huellaDeCookies, prefijoCookieSesion } from "@/lib/auth/sesion-firmada";
 import { ZONAS_API, accesoAbreZona, zonaDeRuta, zonaPidePermisos, zonaPideVeterinaria, type Acceso } from "@/lib/auth/acceso";
 
 // Los encabezados de negocio que puso este mismo middleware (firmados).
@@ -79,6 +80,8 @@ export async function middleware(request: NextRequest) {
   cabeceras.delete(ENCABEZADO_FIRMA);
   cabeceras.delete(ENCABEZADO_PLATAFORMA);
   cabeceras.delete(ENCABEZADO_APP);
+  // La sesión firmada solo la pone este middleware (abajo), nunca el navegador.
+  cabeceras.delete(ENCABEZADO_SESION);
 
   if (pathname === "/negocio-no-encontrado" || pathname === "/pagina-no-encontrada") {
     return NextResponse.next({ request: { headers: cabeceras } });
@@ -179,8 +182,10 @@ export async function middleware(request: NextRequest) {
   // acción. Solo si la ruta es de una zona y trae la cookie de sesión de su área (sin sesión no hay nada que preguntar).
   // Si el token venció, las dos llamadas esperan la MISMA renovación (supabase-js la hace una sola vez). Se usa solo
   // después de comprobar que hay usuario, igual que antes.
-  const cookieSesion = nombreCookieSesion(areaSesion) ?? `sb-${new URL(process.env.NEXT_PUBLIC_SUPABASE_URL!).hostname.split(".")[0]}-auth-token`;
-  const accesoEnCamino = zona && request.cookies.getAll().some((c) => c.name.startsWith(cookieSesion)) ? supabase.rpc("acceso_de_sesion") : null;
+  // Tiempo del panel, quinta vuelta: `sesion_actual()` (lo de acceso_de_sesion más el expediente y el nombre) para que la
+  // misma respuesta viaje firmada al layout y a la página, que ya no vuelven a preguntar (src/lib/auth/sesion-firmada.ts).
+  const cookieSesion = prefijoCookieSesion(nombreCookieSesion(areaSesion));
+  const accesoEnCamino = zona && request.cookies.getAll().some((c) => c.name.startsWith(cookieSesion)) ? supabase.rpc("sesion_actual") : null;
 
   // getUser() (no getSession()) revalida el token contra el servidor de
   // Auth en vez de confiar en lo que ya traiga la cookie.
@@ -217,7 +222,7 @@ export async function middleware(request: NextRequest) {
   // negocio.
   let respuestaAcceso = accesoEnCamino ? await accesoEnCamino : null;
   // Un reintento si falló (salió a la par de la renovación de la sesión o la red falló un instante), o si no se lanzó.
-  if (!respuestaAcceso || respuestaAcceso.error) respuestaAcceso = await supabase.rpc("acceso_de_sesion");
+  if (!respuestaAcceso || respuestaAcceso.error) respuestaAcceso = await supabase.rpc("sesion_actual");
   const datosAcceso = (respuestaAcceso.data ?? null) as {
     rol?: string | null; modulos?: string[] | null; permisos?: string[] | null; acceso_veterinaria?: boolean; es_medico?: boolean;
   } | null;
@@ -273,6 +278,27 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // La ruta pasó todas sus revisiones: la sesión que se acaba de comprobar viaja firmada a la app (solo en la petición,
+  // nunca en la respuesta), ligada a esta persona, este negocio, esta área y la cookie de sesión de ESTA petición (ya
+  // renovada, si Auth la renovó arriba). El layout y la página la leen en vez de volver a preguntarle a Auth y a la base.
+  try {
+    cabeceras.set(
+      ENCABEZADO_SESION,
+      await firmarSesion({
+        u: user.id,
+        e: user.email ?? null,
+        c: debeCambiarPassword(user),
+        n: negocio.id,
+        a: areaSesion,
+        k: await huellaDeCookies(request.cookies.getAll(), cookieSesion),
+        s: (respuestaAcceso.data ?? null) as Record<string, unknown> | null,
+      }),
+    );
+    response = conCookiesDe(response, siguiente());
+  } catch (e) {
+    // Sin firma, la app pregunta como siempre.
+    console.error("sesión firmada:", e instanceof Error ? e.message : e);
+  }
   return response;
 }
 
