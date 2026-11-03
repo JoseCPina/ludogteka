@@ -132,8 +132,30 @@ precio, «Por pagar» sigue al panel.
   por pagar con el saldo de la cita → pases → opinar (reseña en la base) → la reseña en la página pública. Sin desbordes
   a 390 px; un error de JavaScript en la página es hallazgo. Limpia lo que crea.
 
+## Parte 2: reseñas del personal y avisos del negocio (3 de noviembre de 2026, rama ux/resenas-y-avisos-f3)
+Migración `20261203002300`:
+- Permiso `responder_resenas` («Responder y esconder reseñas», módulo portal). `resenas_update_staff` pide admin o
+  recepción CON el permiso (antes, cualquier recepción). La pantalla `/resenas` (menú Clientes → Reseñas; `ZONAS`: admin o
+  el permiso; módulo portal): promedio (`resenas_de_negocio`, el mismo de la página pública), cuántas y sin respuesta
+  (conteos de la base), filtros Todas / Sin respuesta / Escondidas, «Contestar» (respuesta + `respondida_at`) y
+  «Esconder de la página» / «Mostrar en la página» (`publicada`). Acciones en `src/app/(staff)/resenas/actions.ts` con
+  registro final (`resenas` en LECTURAS).
+- Avisos del NEGOCIO al dueño (tipo `negocio` de `app_avisos`): disparadores en la base, para que cubran todos los
+  caminos (agenda, reservas, series, cancelar cuenta): `aviso_cambio_cita_estetica` (insert en
+  `citas_estetica_cambios`: reprogramación y cancelación), `aviso_confirma_cita_estetica` (reservada → confirmada),
+  `aviso_cambio_estancia` (confirmar, cancelar y mover fechas) y `aviso_respuesta_resena` (el negocio contestó).
+  Todos pasan por `aviso_del_negocio_al_dueno(perro, …)`: solo si quien lo hace es admin, recepción o estética (lo que
+  hace el dueño por la app, el WhatsApp o la llave de servicio no le avisa a él mismo), nunca en el plan demo, y solo
+  si el expediente está ligado a una mascota de la app (`mascotas_vinculos`). Deja `datos.push_pendiente = true`.
+- El push: `despacharAvisosPendientes()` (`src/lib/app/avisos-negocio.ts`) toma los pendientes del último día,
+  apaga la marca ANTES de mandar (dos despachos no mandan dos veces) y llama `enviarPush`. Lo llaman con `after()`
+  las acciones del personal (reprogramar, cancelar y confirmar cita; cancelar, mover y confirmar estancia; cancelar
+  reserva; pausar y cancelar serie) y, de respaldo, `/api/cron/app-recordatorios` cada 15 minutos.
+- El personal confirma: «Confirmar cita» en el detalle de la cita (`confirmarCita`) y «Confirmar» en la estancia dentro
+  de la reserva (`confirmarEstancia`), solo desde «reservada».
+- Prueba: `node scripts/auditoria/resenas-avisos-dev.mjs`.
+
 ## Pendiente
 - Los mensajes de `validar_estancia`/`validar_cita_estetica` hablan al personal; la pantalla del dueño los traduce.
 - Las ausencias del personal se excluyen solo si `ausencias.estado = 'aprobada'`; si el catálogo de estados es otro, se
   ajusta `portal_horas_disponibles` y `portal_pedir_cita`.
-- Push/aviso al dueño cuando el negocio confirma, mueve o cancela (hoy el negocio avisa por WhatsApp): Fase 3, parte 2.

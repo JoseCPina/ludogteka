@@ -48,6 +48,7 @@ export const RUTAS_DE_MODULO: { prefijo: string; modulo: ClaveModulo | ClaveModu
   { prefijo: "/gastos", modulo: "gastos" },
   { prefijo: "/portal", modulo: "portal" },
   { prefijo: "/vinculacion", modulo: "portal" },
+  { prefijo: "/resenas", modulo: "portal" },
   { prefijo: "/clientes/invitaciones", modulo: "portal" },
 ];
 

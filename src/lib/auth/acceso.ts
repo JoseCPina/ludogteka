@@ -80,6 +80,8 @@ export const ZONAS: Zona[] = [
   // Lo que contestan los clientes a los recordatorios por WhatsApp (cambios, solicitudes, mensajes) y los enviados.
   { prefijo: "/recordatorios", roles: ["admin", "recepcion"] },
   { prefijo: "/vinculacion", roles: ["admin", "recepcion"] },
+  // Reseñas de los dueños: admin, o recepción con «Responder y esconder reseñas».
+  { prefijo: "/resenas", roles: ["admin"], permisos: ["responder_resenas"] },
   // Estética entra a la ficha del perro: escribe peso/alergias/alertas, aunque no pueda tocar los datos base
   // (eso lo filtra RLS, no esta zona).
   { prefijo: "/perros", roles: ["admin", "recepcion", "estetica"] },

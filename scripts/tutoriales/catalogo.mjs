@@ -51,7 +51,7 @@ export const VIDEOS = [
   v("12", "vacunas-alertas-y-datos-del-perro", "clientes", "Vacunas, alertas y datos del perro en su expediente", "Registras vacunas, alergias, celo y evaluación, y entiendes qué bloquea una reserva.", { rutas: ["/perros/[id]"], articulos: ["vacunas-alertas-y-datos-del-perro"], etiquetas: ["expediente", "vacunas"] }),
   v("13", "revisa-los-comprobantes-de-vacunas", "clientes", "Revisa los comprobantes de vacunas que mandan los dueños", "Confirmas o rechazas el carnet que subió el dueño desde su celular.", { modulos: ["portal"], rutas: ["/recepcion/comprobantes"], articulos: ["revisar-comprobante-sanitario"], etiquetas: ["comprobantes", "vacunas"] }),
   v("14", "agrega-una-raza-que-no-aparece", "clientes", "Qué hacer cuando una raza no aparece en el catálogo", "Propones la raza, asignas su grupo de precio y normalizas razas escritas a mano.", { permisos: ["tarifas"], rutas: ["/perros/razas", "/perros/razas/grupos"], articulos: ["agregar-una-raza-que-no-aparece"], avisos: ["razas-sin-grupo"], etiquetas: ["razas", "grupos de precio"] }),
-  v("15", "el-portal-del-dueno", "clientes", "El portal del dueño: qué ve y cómo lo invitas", "Invitas al dueño a su portal, vinculas cuentas y restableces contraseñas.", { modulos: ["portal"], rutas: ["/portal", "/portal/perros/[id]", "/vinculacion", "/activar/[token]"], articulos: ["portal-del-dueno", "restablecer-contrasena-de-cliente"], avisos: ["vincular"], etiquetas: ["portal", "dueño"] }),
+  v("15", "el-portal-del-dueno", "clientes", "El portal del dueño: qué ve y cómo lo invitas", "Invitas al dueño a su portal, vinculas cuentas y restableces contraseñas.", { modulos: ["portal"], permisos: ["responder_resenas"], rutas: ["/portal", "/portal/perros/[id]", "/vinculacion", "/resenas", "/activar/[token]"], articulos: ["portal-del-dueno", "restablecer-contrasena-de-cliente", "resenas-de-tus-clientes"], avisos: ["vincular"], etiquetas: ["portal", "dueño"] }),
 
   // ── CONTRATOS ──
   v("16", "plantillas-de-contrato", "contratos", "Crea y publica tus plantillas de contrato", "Escribes tu contrato con variables, lo publicas y decides cuándo se genera.", { rol: "admin", modulos: ["contratos"], permisos: ["plantillas_contrato"], rutas: ["/contratos"], etiquetas: ["contratos", "plantillas"] }),
@@ -76,7 +76,7 @@ export const VIDEOS = [
   v("31", "reporte-de-comportamiento-fotos-y-videos", "guarderia", "Reporte del día, fotos y videos de los perros adentro", "Llenas el reporte, mandas fotos y videos y cuidas lo que ve el dueño.", { modulos: ["guarderia", "hotel"], permisos: ["reportes_guarderia"], rutas: ["/adentro", "/guarderia/reportes", "/guarderia/reportes/[perroId]", "/admin/reporte-guarderia", "/r/[token]", "/f/[token]"], articulos: ["llenar-el-reporte-de-comportamiento", "enviar-fotos-y-videos"], etiquetas: ["reporte", "fotos"] }),
 
   // ── CAJA Y COBROS ──
-  v("32", "abre-turno-y-corte-de-caja", "caja", "Abre tu turno y haz el corte de caja sin diferencias", "Abres el turno, registras retiros y cierras con el arqueo.", { rutas: ["/caja/turno"], articulos: ["corte-de-caja"], avisos: ["turno"], etiquetas: ["caja", "corte"] }),
+  v("32", "abre-turno-y-corte-de-caja", "caja", "Abre tu turno y haz el corte de caja sin diferencias", "Abres el turno, registras retiros y cierras con el arqueo.", { rutas: ["/caja/turno", "/caja/historial"], articulos: ["corte-de-caja"], avisos: ["turno"], etiquetas: ["caja", "corte"] }),
   v("33", "cobra-una-cuenta", "caja", "Cobra una cuenta: efectivo, tarjeta y varios métodos", "Cobras una cuenta abierta y la partes entre métodos.", { rutas: ["/caja", "/caja/cobrar/[reservaId]"], articulos: ["cobrar-una-cuenta"], avisos: ["cobro"], etiquetas: ["cobro", "caja"] }),
   v("34", "cobra-con-terminal-o-link", "caja", "Cobra con la terminal o con un link de pago", "Mandas el cobro a la terminal o un link por WhatsApp y se registra solo.", { rutas: ["/caja/cobrar/[reservaId]"], articulos: ["cobrar-con-terminal", "terminal-no-recibe-el-cobro", "link-de-pago-whatsapp", "tarjeta-registro-manual"], etiquetas: ["terminal", "link de pago"] }),
   v("35", "venta-rapida-de-mostrador", "caja", "Venta rápida: vende un producto sin reserva", "Vendes un producto o un concepto libre y lo cobras en segundos.", { rutas: ["/caja/venta"], articulos: ["venta-rapida"], etiquetas: ["venta", "mostrador"] }),
@@ -194,6 +194,13 @@ export const EXCLUIDOS = {
     "/app/mascotas/[id]/qr": "App para dueños (Fase 1): el QR de la placa; pendiente de grabar con una cuenta de dueño del demo.",
     "/app/mascotas/[id]/perdida": "App para dueños (Fase 1): mascota perdida; pendiente de grabar con una cuenta de dueño del demo.",
     "/app/mascotas/[id]/cita": "App para dueños (Fase 1): pedir cita; pendiente de grabar con una cuenta de dueño del demo.",
+    "/app/contratos": "App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.",
+    "/app/contratos/[negocio]/[id]": "App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.",
+    "/app/mascotas/[id]/negocio/[negocio]": "App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.",
+    "/app/mascotas/[id]/reservar": "App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.",
+    "/app/pagos": "App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.",
+    "/app/pases": "App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.",
+    "/app/visitas": "App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.",
     "/app/m/[token]": "App para dueños (Fase 1): el perfil público del QR de la placa, lo ve quien encuentra a la mascota; no es una tarea del negocio.",
     "/app/m/[token]/registrar": "App para dueños (Fase 2): el formulario público con el que un negocio SIN PeluDesk registra una atención desde el QR; no es una pantalla del panel.",
     "/negocio-no-encontrado": "Pantalla de error técnica (dominio sin negocio); no es una tarea del usuario.",
@@ -205,6 +212,7 @@ export const EXCLUIDOS = {
   },
   avisos: {
     "recordatorios-respuestas": "Pendiente de grabar (folio 100): necesita la respuesta de un cliente real a un recordatorio.",
+    "baja": "Pendiente de grabar: la solicitud de baja de una mascota la manda el dueño desde su portal o su app; se graba con una cuenta de dueño del demo (docs/baja-de-mascotas.md).",
     "recordatorios-pausados": "Pendiente de grabar (folio 100): necesita un negocio que haya llegado a sus recordatorios gratis del mes.",
   },
   permisos: {},

@@ -16,6 +16,7 @@ const LECTURAS: Record<string, Lectura> = {
   estancias: { fila: "estancias", por: "id" },
   reservas: { fila: "reservas", por: "id" },
   citas_estetica: { fila: "citas_estetica", por: "id" },
+  resenas: { fila: "resenas", por: "id" },
   vet_citas: { soloVersionVet: true },
   vet_consultas: { soloVersionVet: true },
   cargos_aplicados: { fila: "cargos_aplicados", por: "id" },

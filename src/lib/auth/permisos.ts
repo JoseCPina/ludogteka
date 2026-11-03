@@ -257,6 +257,12 @@ export const PERMISOS = [
     implica:
       "Cancela una cuenta por cobrar que no se va a cobrar (no se presentó, cita cancelada, error de captura u otro motivo escrito) desde Caja, con el motivo y su nombre en el historial; si la cuenta viene de una cita que no empezó, puede cancelarla en el mismo paso. No cancela cuentas con cobros (se anulan primero). Una cortesía sobre un servicio que ya se realizó solo la hace admin. Viene apagado.",
   },
+  {
+    clave: "responder_resenas",
+    etiqueta: "Responder y esconder reseñas",
+    implica:
+      "Contesta las reseñas que dejan los dueños desde su app (la respuesta se ve junto a la reseña en la página del negocio) y esconde de la vista pública las que no deben salir; las estrellas y el texto del dueño no se pueden cambiar. Con el módulo Portal prendido. Viene apagado.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

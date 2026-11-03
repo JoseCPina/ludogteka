@@ -13,6 +13,7 @@ import { describirCita, horaLocalDeInstante, horaLocalParaInput, instanteDeHoraL
 import { useZonaNegocio } from "@/components/zona-negocio";
 import {
   reprogramarCita,
+  confirmarCita,
   cancelarCita,
   deshacerInicioCita,
   eliminarCita,
@@ -178,6 +179,19 @@ export function CitaDetalle({
       url: res.urlWhatsApp,
     });
     router.refresh();
+  }
+
+  // ux/resenas-y-avisos-f3: el negocio confirma la cita; si el dueño usa la app, le llega el aviso.
+  async function accionConfirmar(forzar = false) {
+    setError(null);
+    const res = await cargando.ejecutar(() => confirmarCita(citaId, ctl.control(forzar)));
+    if (ctl.huboConflicto(res, () => accionConfirmar(true))) return;
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setEstado("confirmada");
+    setAviso({ texto: "Cita confirmada. Si el dueño usa la app de PeluDesk, le llega un aviso." });
   }
 
   async function accionCancelar(forzar = false) {
@@ -526,6 +540,11 @@ export function CitaDetalle({
             </div>
           ) : (
             <div className="flex flex-wrap gap-3">
+              {estado === "reservada" && (
+                <Button type="button" variante="secundario" cargando={cargando.cargando} onClick={() => accionConfirmar()} data-confirmar-cita>
+                  Confirmar cita
+                </Button>
+              )}
               <Button type="button" variante="secundario" onClick={() => setReagendando(true)}>
                 Reprogramar
               </Button>
