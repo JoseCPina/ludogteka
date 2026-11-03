@@ -110,6 +110,11 @@ días como tarjetas y horas grandes; Octopus: lo lleno dice «Lleno»), `app-pag
   intervalos desde la apertura. `app-duenos-f3-dev` lo comprueba (todas las horas el mismo día y dentro del horario; 23:30
   rechazada).
 - Los mensajes de la base que mandan a rutas del personal se traducen para el dueño (`mensajeParaDueno`, `src/lib/app/mensajes.ts`).
+- Las acciones decían cualquier rechazo de la base como «No pudimos hablar con el proveedor de cobro» (`mensajeDeError` de
+  pagos solo entiende excepciones): ahora `rechazoDeLaBase()` dice el texto de la base y, si el negocio no deja escribir,
+  el aviso de la demo o el de solo lectura. Y `mensajeSiSoloLectura()` ya no traduce en app.peludesk.mx (el negocio del
+  dominio no es el del vínculo: decía «solo lectura» a la dueña de la demo). La auditoría de pantallas prueba un rechazo
+  (segunda cita el mismo día) con su texto.
 
 ## Pruebas de pantalla
 - `node scripts/auditoria/app-duenos-f3-pantallas-dev.mjs [--capturas <carpeta>]` (desarrollo, Huellitas, app compilada en
