@@ -72,6 +72,9 @@ export async function iniciarCobroTerminal(
     const saldo = Number((Array.isArray(t) ? t[0] : t)?.saldo ?? 0);
     if (saldo <= 0.005) return { error: "Esta cuenta no tiene saldo por cobrar." };
     if (monto > saldo + 0.005) return { error: `El monto (${dinero(monto)}) pasa del saldo de la cuenta (${dinero(saldo)}). Cobra hasta el saldo.` };
+    // Cobros parciales: la misma regla de la base para un abono (registrar_cobro): no dejar un resto de menos de $1.
+    const resto = Math.round((saldo - monto) * 100) / 100;
+    if (resto > 0.005 && resto < 1) return { error: `Ese link dejaría ${dinero(resto)} pendientes. Cobra el saldo completo (${dinero(saldo)}) o deja al menos $1.00 por pagar.` };
   }
   const { data: turno } = await supabase.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle();
   if (!turno) return { error: "No hay turno de caja abierto. Ábrelo antes de cobrar." };

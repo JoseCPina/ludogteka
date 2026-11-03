@@ -306,6 +306,9 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
 
   const llegan = (llegadas as FilaPerro[]) ?? [];
   const seVan = (salidas as FilaPerro[]) ?? [];
+  // Cobros parciales: lo que debe cada cuenta de quien se va hoy, en UNA consulta (saldos_de_reservas → cuenta_totales_reserva).
+  const idsSalida = [...new Set(seVan.map((f) => (f as { reserva_id?: string }).reserva_id).filter(Boolean))] as string[];
+  const saldosSalida = (idsSalida.length ? ((await supabase.rpc("saldos_de_reservas", { p_reservas: idsSalida })).data ?? {}) : {}) as Record<string, number>;
   const dentro = (adentro as FilaPerro[]) ?? [];
   const hoyCal = ((calendario as FilaCalendario[]) ?? [])[0] ?? null;
 
@@ -1131,7 +1134,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   );
 
   const movimientos = conEstancias && (
-    <MovimientosDia llegan={llegan} seVan={seVan} dentro={dentro} detalle={(f) => `${ETIQUETA_CATEGORIA[f.categoria ?? ""] ?? f.categoria} · ${f.servicio_nombre}`} />
+    <MovimientosDia llegan={llegan} seVan={seVan} dentro={dentro} detalle={(f) => `${ETIQUETA_CATEGORIA[f.categoria ?? ""] ?? f.categoria} · ${f.servicio_nombre}`} saldoDe={(f) => (f.reserva_id ? Number(saldosSalida[f.reserva_id] ?? 0) : null)} />
   );
 
   return (

@@ -23,3 +23,11 @@ Lo que la app y el portal del dueño dicen de dinero (total de una reserva o cit
 sale de la cuenta: `cuenta_totales_reserva` / `cuenta_lineas_estancia` (y `cuentas_abiertas`, su copia rápida, para la lista
 «Por pagar»). Ninguna función del dueño calcula precio × noches por su cuenta (`portal_reservar` lo hacía hasta la
 migración `20261203001900`). Pruebas: `dinero-cliente.mjs` (saldo de la app = panel, al centavo) y `app-duenos-f3-dev.mjs`.
+
+## Cobros parciales (abonos) (3 de noviembre de 2026, ux/cobros-parciales)
+- La base ya aceptaba abonos (`registrar_cobro` valida contra el saldo; un resto de menos de $1 no se deja). Lo agregado es de pantalla y de lectura, de la MISMA fuente (`cuenta_totales_reserva` y los cobros):
+  - `CuentaCobro`: atajos de monto (lo que falta, la mitad, una noche o un día; ninguno deja menos de $1), aviso «Es un abono: después quedan $X» y «Abono registrado… Resta $X».
+  - Salida (check-out): Total / Pagado / Por pagar. Recepción: «Debe $X» en «Se van hoy» (`saldos_de_reservas(uuid[])`, solo personal, una consulta).
+  - Dueño: «Por pagar» en el portal (`src/app/portal/por-pagar.tsx`) y en la app, con lo pagado y sus abonos (`mis_abonos`, definer, sin quién cobró).
+  - Link de pago del dueño (`src/lib/pagos/link-de-saldo.ts`, app y portal): cobra el SALDO; un link vivo se reusa solo si cobra exactamente ese saldo. El link del personal (`crearLinkPago`) ya no deja un resto de menos de $1.
+- Migraciones `20261203002000` y `20261203002100`. Prueba de punta a punta: `cobros-parciales-dev.mjs` (abono de una noche, abono repartido, salida y Recepción con saldo, app y portal, link del saldo pagado en simulación, devolución de un abono y cuadre al centavo).

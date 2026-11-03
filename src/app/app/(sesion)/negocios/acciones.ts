@@ -8,10 +8,7 @@ import { sesionApp } from "@/lib/app/sesion";
 import { supabaseAppEnNegocio } from "@/lib/app/en-negocio";
 import { vinculoDe, vinculosApp } from "@/lib/app/negocios";
 import { firmarContratoCon, ipDeFirma } from "@/lib/contratos/firmar";
-import { conexionDeCobro, negocioParaCobro } from "@/lib/pagos/conexion";
-import { adaptador } from "@/lib/pagos/adaptadores";
-import { vigenciaLink } from "@/lib/mercadopago/links";
-import { mensajeDeError } from "@/lib/pagos/tipos";
+import { linkDeSaldo } from "@/lib/pagos/link-de-saldo";
 import { mensajeParaDueno } from "@/lib/app/mensajes";
 import { mensajeSoloLectura } from "@/lib/solo-lectura";
 import { resolverPlantilla } from "@/lib/contratos/plantilla";
@@ -155,61 +152,9 @@ export async function pedirLinkPagoApp(negocioId: string, reservaId: string): Pr
   if (falta) return { error: falta };
   if (!UUID.test(reservaId)) return { error: "Cuenta inválida." };
   const supabase = await supabaseAppEnNegocio(negocioId);
-  // Solo una cuenta del dueño con saldo (la misma lista que ve en la app).
-  const { data: pendientes } = await supabase.rpc("mis_pagos_pendientes");
-  const cuenta = ((pendientes ?? []) as { reserva_id: string; saldo: number; descripcion: string; link: { url: string; monto: number; expira_at: string | null } | null }[]).find((p) => p.reserva_id === reservaId);
-  if (!cuenta || Number(cuenta.saldo) <= 0) return { error: "Esa cuenta no tiene saldo pendiente." };
-  // Ya hay un link vivo: no se crea nada (nada que repintar).
-  if (cuenta.link?.url) return { error: null, datos: { url: cuenta.link.url, monto: Number(cuenta.link.monto), simulado: false }, registros: [] };
-  const negocio = await negocioParaCobro(negocioId);
-  if (!negocio) return { error: "No encontramos el negocio." };
-  const cx = await conexionDeCobro(negocio);
-  if (!cx) return { error: "Este negocio no cobra con link todavía: paga en el mostrador o pídeselo por WhatsApp." };
   const s = await sesionApp();
-  const admin = createSupabaseAdminClient(negocioId);
-  const monto = Math.round(Number(cuenta.saldo) * 100) / 100;
-  const expira = vigenciaLink();
-  const titulo = `Pago a ${negocio.nombre}`;
-  const { data: orden, error: errorOrden } = await admin
-    .from("mp_ordenes")
-    .insert({
-      negocio_id: negocioId,
-      proveedor: cx.proveedor,
-      cuenta_id: cx.cuentaId,
-      tipo: "link",
-      reserva_id: reservaId,
-      monto,
-      descripcion: `${titulo} · ${cuenta.descripcion}`.slice(0, 120),
-      estado: "creada",
-      simulado: cx.simulado,
-      expira_at: expira.toISOString(),
-      created_by: s?.user.id ?? null,
-    })
-    .select("id")
-    .single();
-  if (errorOrden || !orden) return { error: "No pudimos preparar el link. Intenta de nuevo." };
-  const ad = adaptador(cx.proveedor);
-  if (!ad.crearLinkPago) {
-    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: "El proveedor de cobro del negocio no hace links." }).eq("id", orden.id).eq("negocio_id", negocioId);
-    return { error: "Este negocio no cobra con link todavía: paga en el mostrador o pídeselo por WhatsApp." };
-  }
-  try {
-    const { data: reservaFila } = await admin.from("reservas").select("cliente_id").eq("id", reservaId).eq("negocio_id", negocioId).maybeSingle();
-    const { data: dueno } = reservaFila?.cliente_id ? await admin.from("clientes").select("nombre, telefono").eq("id", reservaFila.cliente_id as string).maybeSingle() : { data: null };
-    const link = await ad.crearLinkPago(cx, {
-      ordenId: orden.id as string,
-      monto,
-      titulo,
-      clienteNombre: (dueno?.nombre as string | null) ?? "Cliente",
-      clienteTelefono: ((dueno?.telefono as string | null) ?? "").replace(/\D/g, "") || null,
-      expiraAt: expira,
-    });
-    await admin.from("mp_ordenes").update({ mp_preference_id: link.idRemoto, url_pago: link.url, ultimo_evento: link.crudo as object }).eq("id", orden.id).eq("negocio_id", negocioId);
-    return { error: null, datos: { url: link.url, monto, simulado: cx.simulado }, registros: await registrosDe(supabase, [{ t: "mp_ordenes", i: orden.id as string, datos: { id: orden.id, url_pago: link.url, monto, estado: "creada" } }]) };
-  } catch (e) {
-    await admin.from("mp_ordenes").update({ estado: "fallida", detalle_error: mensajeDeError(e) }).eq("id", orden.id).eq("negocio_id", negocioId);
-    return { error: mensajeDeError(e) };
-  }
+  // El SALDO de la cuenta, nunca el total; un link vivo se reusa solo si cobra exactamente ese saldo (link-de-saldo.ts).
+  return linkDeSaldo(supabase, negocioId, reservaId, s?.user.id ?? null);
 }
 
 // ── Reseña verificada ───────────────────────────────────────────────────────────────────────────────────────────

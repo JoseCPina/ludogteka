@@ -1,4 +1,5 @@
 import { textoSalidaAnticipada, type CotizacionSalida } from "@/lib/reservas/salida-anticipada";
+import { dinero } from "@/lib/dinero";
 import { cuentaPorCobrar } from "@/lib/caja/cuenta-por-cobrar";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -91,7 +92,12 @@ export default async function CheckoutEstanciaPage({
     cuentasPorEstancia(supabase, estancia.reserva_id),
   ]);
   const cuentaEstancia = cuentas.get(estanciaId) ?? null;
-  const saldoCuenta = Number((Array.isArray(totalesCuenta) ? totalesCuenta[0] : totalesCuenta)?.saldo ?? 0);
+  const totalesFila = (Array.isArray(totalesCuenta) ? totalesCuenta[0] : totalesCuenta) as { total_cuenta?: number; total_cobrado?: number; total_devuelto?: number; total_bono?: number; total_descuento?: number; saldo?: number } | null;
+  const saldoCuenta = Number(totalesFila?.saldo ?? 0);
+  // Cobros parciales: lo pagado (cobrado − devuelto) y lo que falta, de la cuenta (cuenta_totales_reserva), en la salida.
+  const totalCuenta = Number(totalesFila?.total_cuenta ?? 0);
+  const pagadoCuenta = Number(totalesFila?.total_cobrado ?? 0) - Number(totalesFila?.total_devuelto ?? 0);
+  const cubiertoCuenta = Number(totalesFila?.total_bono ?? 0) + Number(totalesFila?.total_descuento ?? 0);
   const avisoSalida = textoSalidaAnticipada((salidaAnticipada ?? null) as CotizacionSalida | null, { salio: estancia.estado === "finalizada" });
 
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
@@ -254,6 +260,23 @@ export default async function CheckoutEstanciaPage({
           cobroHref={`/caja/cobrar/${estancia.reserva_id}`}
           salidaAnticipada={(salidaAnticipada ?? null) as CotizacionSalida | null}
         />
+      )}
+
+      {totalCuenta > 0 && (
+        <dl className="grid grid-cols-3 gap-3 rounded-lg border border-border bg-card p-4 shadow-tarjeta" data-cuenta-salida data-saldo={saldoCuenta.toFixed(2)}>
+          <div>
+            <dt className="text-sm text-n-600">Total de la cuenta</dt>
+            <dd className="text-lg font-semibold text-n-900">{dinero(totalCuenta)}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-n-600">Pagado{cubiertoCuenta > 0.005 ? " (sin pase ni descuento)" : ""}</dt>
+            <dd className="text-lg font-semibold text-n-900" data-pagado>{dinero(pagadoCuenta)}</dd>
+          </div>
+          <div>
+            <dt className="text-sm text-n-600">Por pagar</dt>
+            <dd className={`text-lg font-semibold ${cuentaPorCobrar(saldoCuenta) ? "text-coral-oscuro" : "text-menta-oscuro"}`} data-por-pagar>{cuentaPorCobrar(saldoCuenta) ? dinero(saldoCuenta) : "Pagada"}</dd>
+          </div>
+        </dl>
       )}
 
       <div className="border-t border-border pt-4">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { PorPagarPortal } from "./por-pagar";
 import { Alert } from "@/components/ui/alert";
 import { PerroFoto } from "@/app/(staff)/perros/perro-foto";
 import { MisDatosForm } from "./mis-datos-form";
@@ -124,6 +125,8 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           </ul>
         </Alert>
       )}
+
+      <PorPagarPortal supabase={supabase} zona={zona} />
 
       <MisVisitas supabase={supabase} hoy={hoy} comoSeAgenda={comoSeAgenda} />
 
