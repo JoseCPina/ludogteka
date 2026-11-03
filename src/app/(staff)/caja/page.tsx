@@ -85,6 +85,7 @@ export default async function CajaPage() {
         <div className="flex flex-wrap gap-2">
           <Enlace href="/caja/venta">Venta rápida</Enlace>
           <Enlace href="/caja/turno">Turno y arqueo</Enlace>
+          <Enlace href="/caja/historial" data-ir-historial>Historial</Enlace>
           {sesion?.rol === "admin" && (
             <Enlace href="/caja/conciliacion">Conciliación</Enlace>
           )}

@@ -469,10 +469,20 @@ Con **Ver la cuenta** abres la cuenta del cliente. Abajo, en **Últimos reembols
     grupo: "caja",
     modulo: null,
     roles: ["admin", "recepcion"],
-    rutas: ["/caja/turno"],
-    palabras: ["corte", "arqueo", "cerrar caja", "abrir caja", "fondo", "retiro", "turno"],
+    rutas: ["/caja/turno", "/caja/historial"],
+    palabras: ["historial de caja", "movimientos", "movimientos de caja", "turnos anteriores", "quién cobró", "corte", "arqueo", "cerrar caja", "abrir caja", "fondo", "retiro", "turno"],
     captura: "corte-de-caja.jpg",
-    cuerpo: `El turno junta todo lo que entra y sale de la caja desde que abres hasta que cierras. Sin turno abierto no se puede cobrar. En **Movimientos de este turno** la columna **Hora** muestra la hora del negocio (por ejemplo «09:14 a.m.») y debajo la fecha; ves primero los 50 más recientes; aprieta **Ver más movimientos** para ampliar la lista. El corte es ciego: mientras el turno está abierto, esa lista no enseña montos ni totales por método a nadie, tampoco al admin, y Reportes no enseña el dinero por método de un periodo que incluye ese turno. Lo esperado sale solo al tocar **Enviar conteo** y queda en el corte, en **Turnos cerrados**.
+    cuerpo: `Abre el turno con su fondo, registra retiros y cierra con el arqueo. Todo lo que pasa por la caja queda en el **Historial**.
+
+## Historial de caja
+
+En [Caja](/caja) → **Historial** ves los movimientos del turno abierto y de turnos anteriores: cobros y abonos, ventas, pases, devoluciones, anulaciones y correcciones, retiros, gastos pagados de caja y efectivo agregado, con la hora, el tipo, la forma de pago, el monto, quién lo hizo y el cliente. Filtra por fechas, turno, tipo y forma de pago, y toca la hora de un movimiento para ver su detalle: lo que se cobró (las líneas de la cuenta), de qué cita viene, cómo se pagó, el folio de la tarjeta, la factura si la hay, el comprobante del gasto y los enlaces a la cuenta y al cliente.
+
+- **Corte ciego:** con el turno abierto, recepción no ve los montos de ese turno ni los totales (dicen «Al cerrar»); se ven al cerrarlo. El admin sí los ve.
+- Recepción ve el turno abierto y los turnos que ella abrió; el admin, todos.
+- La factura la ve quien tiene permiso de facturar, y el gasto quien tiene el de gastos.
+
+El turno junta todo lo que entra y sale de la caja desde que abres hasta que cierras. Sin turno abierto no se puede cobrar. En **Movimientos de este turno** la columna **Hora** muestra la hora del negocio (por ejemplo «09:14 a.m.») y debajo la fecha; ves primero los 50 más recientes; aprieta **Ver más movimientos** para ampliar la lista. El corte es ciego: mientras el turno está abierto, esa lista no enseña montos ni totales por método a nadie, tampoco al admin, y Reportes no enseña el dinero por método de un periodo que incluye ese turno. Lo esperado sale solo al tocar **Enviar conteo** y queda en el corte, en **Turnos cerrados**.
 
 ## Abrir el turno
 
