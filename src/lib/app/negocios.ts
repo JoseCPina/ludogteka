@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAppEnNegocio } from "./en-negocio";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { BUCKET_REPORTES, TTL_URL_FIRMADA_S } from "@/lib/reporte/constantes";
+import type { AbonosCuenta } from "@/lib/pagos/abonos";
 
 /**
  * App para dueños · Fase 3 · capa de datos de «negocios que ya usan PeluDesk» (docs/app-duenos/FASE-3.md).
@@ -223,6 +224,13 @@ export async function pagosPendientesApp(): Promise<PagoPendiente[]> {
     })
   );
   return porNegocio.flat();
+}
+
+/** Lo pagado y los abonos de una cuenta del dueño (mis_abonos: cuenta_totales_reserva + los cobros registrados). */
+export async function abonosDeCuentaApp(negocioId: string, reservaId: string): Promise<AbonosCuenta | null> {
+  const supabase = await supabaseAppEnNegocio(negocioId);
+  const { data } = await supabase.rpc("mis_abonos", { p_reserva: reservaId });
+  return (data as AbonosCuenta | null) ?? null;
 }
 
 export async function pasesApp(): Promise<PaseApp[]> {

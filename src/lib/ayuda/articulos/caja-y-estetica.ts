@@ -11,9 +11,20 @@ export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
     modulo: null,
     roles: ["admin", "recepcion"],
     rutas: ["/caja", "/caja/cobrar/[reservaId]", "/reservas/[id]/cobrar"],
-    palabras: ["cobrar", "pagar", "saldo", "propina", "efectivo", "transferencia", "cuenta abierta", "cancelar cuenta", "no se presentó", "cortesía", "cuenta que no se cobra", "próximas"],
+    palabras: ["cobrar", "pagar", "saldo", "propina", "efectivo", "transferencia", "abono", "abonos", "pago parcial", "pagar una parte", "una noche", "la mitad", "lo que falta", "anticipo", "cuenta abierta", "cancelar cuenta", "no se presentó", "cortesía", "cuenta que no se cobra", "próximas"],
     captura: "cobrar-una-cuenta.jpg",
-    cuerpo: `Todo lo que se le debe a un cliente (estancias, citas de estética, cargos y ventas) aparece en Caja con su saldo. Desde ahí lo cobras en uno o varios métodos.
+    cuerpo: `Todo lo que se le debe a un cliente (estancias, citas de estética, cargos y ventas) aparece en Caja con su saldo. Desde ahí lo cobras en uno o varios métodos, completo o en abonos.
+
+## Cobrar una parte (abonos)
+
+Cualquier cuenta acepta pagos parciales: el cliente paga una noche de cinco, o una parte en efectivo y otra por transferencia, y la cuenta queda con su saldo.
+
+- El **Monto** abre con el saldo completo, pero puedes escribir otro. Arriba tienes atajos: **Lo que falta**, **La mitad** y, en una estancia, **Una noche** (o **Un día**).
+- Si el monto es menor al saldo, la pantalla te avisa «Es un abono: después quedan $X por pagar» y, al registrarlo, «Abono registrado… Resta $X».
+- Para repartir un abono entre métodos usa **+ Repartir en otro método**.
+- Un abono no puede dejar menos de $1.00 pendiente: cobra el saldo completo o deja al menos un peso.
+- Cada abono queda en **Cobros de esta reserva** con su fecha, su forma de pago y quién cobró; entra al turno abierto (y al corte ciego) como cualquier cobro, se devuelve uno por uno y se factura uno por uno.
+- Lo que falta se ve en la salida del perro (**Total**, **Pagado**, **Por pagar**), en Recepción («Debe $X» en **Se van hoy**) y el dueño lo ve en su portal y en su app, en **Por pagar**, con sus abonos. El link de pago que pide el dueño cobra solo lo que falta.
 
 1. Entra a [Caja](/caja) y busca la cuenta en **Por cobrar** (**Cuentas abiertas de hoy**, o los **Días anteriores** si se quedó pendiente), o escribe el perro, el dueño o el teléfono en **¿A quién le cobras?**. Con varias palabras, todas tienen que coincidir, cada una con el dueño, alguno de sus perros o, si es un número, el teléfono: «S32 Est» trae a «Qa S32 Est» y no a otro cliente que solo tenga un 32 en su teléfono.
 2. Abre la cuenta y revisa los conceptos y el **Saldo**.

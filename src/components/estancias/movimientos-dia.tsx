@@ -11,12 +11,13 @@ import { Tarjeta } from "@/components/ui/tarjeta";
  */
 export type FilaMovimiento = {
   estancia_id: string;
+  reserva_id?: string;
   perro_nombre: string;
   servicio_nombre: string;
   categoria?: string;
 };
 
-export function ListaPerros({ filas, vacio, destino, detalle }: { filas: FilaMovimiento[]; vacio: string; destino: (f: FilaMovimiento) => string; detalle?: (f: FilaMovimiento) => string }) {
+export function ListaPerros({ filas, vacio, destino, detalle, extra }: { filas: FilaMovimiento[]; vacio: string; destino: (f: FilaMovimiento) => string; detalle?: (f: FilaMovimiento) => string; extra?: (f: FilaMovimiento) => ReactNode }) {
   if (filas.length === 0) return <p className="py-2 text-sm text-muted-foreground">{vacio}</p>;
   return (
     <ul className="-mx-2 flex flex-col">
@@ -30,6 +31,7 @@ export function ListaPerros({ filas, vacio, destino, detalle }: { filas: FilaMov
               <span className="block truncate font-semibold text-foreground">{f.perro_nombre}</span>
               <span className="block truncate text-xs text-muted-foreground">{detalle ? detalle(f) : f.servicio_nombre}</span>
             </span>
+            {extra?.(f)}
             <ChevronRight aria-hidden="true" className="size-4 flex-none text-n-400" />
           </Enlace>
         </li>
@@ -43,15 +45,26 @@ export function MovimientosDia({
   seVan,
   dentro,
   detalle,
+  saldoDe,
 }: {
   llegan: FilaMovimiento[];
   seVan: FilaMovimiento[];
   dentro: FilaMovimiento[];
   detalle?: (f: FilaMovimiento) => string;
+  /** Cobros parciales: lo que debe la cuenta de quien se va hoy (de cuenta_totales_reserva); sin saldo, nada. */
+  saldoDe?: (f: FilaMovimiento) => number | null;
 }) {
-  const columnas: { titulo: string; filas: FilaMovimiento[]; vacio: string; icono: ReactNode; destino: (f: FilaMovimiento) => string }[] = [
+  const debe = (f: FilaMovimiento) => {
+    const s = saldoDe?.(f) ?? 0;
+    return s >= 1 ? (
+      <span className="flex-none rounded-full bg-coral-suave px-2 py-0.5 text-xs font-semibold tabular-nums text-coral-oscuro" data-debe={s.toFixed(2)}>
+        Debe ${s.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </span>
+    ) : null;
+  };
+  const columnas: { titulo: string; filas: FilaMovimiento[]; vacio: string; icono: ReactNode; destino: (f: FilaMovimiento) => string; extra?: (f: FilaMovimiento) => ReactNode }[] = [
     { titulo: "Llegan hoy", filas: llegan, vacio: "Nadie más por llegar.", icono: <LogIn />, destino: (f) => `/reservas/estancias/${f.estancia_id}/checkin` },
-    { titulo: "Se van hoy", filas: seVan, vacio: "Nadie más por salir.", icono: <LogOut />, destino: (f) => `/reservas/estancias/${f.estancia_id}/checkout` },
+    { titulo: "Se van hoy", filas: seVan, vacio: "Nadie más por salir.", icono: <LogOut />, destino: (f) => `/reservas/estancias/${f.estancia_id}/checkout`, extra: saldoDe ? debe : undefined },
     { titulo: "Siguen aquí ahora", filas: dentro, vacio: "No hay nadie dentro.", icono: <BedDouble />, destino: (f) => `/reservas/estancias/${f.estancia_id}/checkout` },
   ];
   return (
@@ -65,7 +78,7 @@ export function MovimientosDia({
               <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold tabular-nums text-n-700">{col.filas.length}</span>
             </header>
             <div className="px-4 pb-3 sm:px-5">
-              <ListaPerros filas={col.filas} vacio={col.vacio} destino={col.destino} detalle={detalle} />
+              <ListaPerros filas={col.filas} vacio={col.vacio} destino={col.destino} detalle={detalle} extra={col.extra} />
             </div>
           </section>
         ))}

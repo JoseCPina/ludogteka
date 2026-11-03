@@ -453,6 +453,25 @@ export function CuentaCobro({
   // Solo el efectivo admite cambio; los demás métodos no pueden pasar del saldo.
   const sinEfectivo = metodosEfectivos.filter((m) => m.metodo !== "efectivo").reduce((s, m) => s + (Number(m.monto) || 0), 0);
   const cambioPrevisto = Math.round((totalMetodos - Math.max(totales.saldo, 0)) * 100) / 100;
+  // Cobros parciales (ux/cobros-parciales): el campo propone el saldo completo, pero cualquier monto menor es un ABONO.
+  // Atajos: lo que falta, la mitad y una noche (o un día) de la estancia. Ninguno deja un resto de menos de $1 (la
+  // regla de la base): si lo dejaría, el atajo cobra el saldo completo.
+  const saldoRedondo = Math.round(Math.max(totales.saldo, 0) * 100) / 100;
+  const sinRestoDeCentavos = (monto: number) => (saldoRedondo - monto > 0.005 && saldoRedondo - monto < 1 ? saldoRedondo : Math.round(monto * 100) / 100);
+  const lineaPorUnidad = lineas.find((l) => l.tipo === "estancia" && l.cantidad > 1 && l.precioUnitario > 0 && l.precioUnitario < saldoRedondo - 0.005);
+  const atajosMonto = saldoRedondo > 0.005
+    ? [
+        { clave: "falta", etiqueta: `Lo que falta · ${dinero(saldoRedondo)}`, monto: saldoRedondo },
+        ...(saldoRedondo >= 2 ? [{ clave: "mitad", etiqueta: `La mitad · ${dinero(sinRestoDeCentavos(saldoRedondo / 2))}`, monto: sinRestoDeCentavos(saldoRedondo / 2) }] : []),
+        ...(lineaPorUnidad ? [{ clave: "unidad", etiqueta: `${/d[ií]a/i.test(lineaPorUnidad.descripcion) && !/noche/i.test(lineaPorUnidad.descripcion) ? "Un día" : "Una noche"} · ${dinero(sinRestoDeCentavos(lineaPorUnidad.precioUnitario))}`, monto: sinRestoDeCentavos(lineaPorUnidad.precioUnitario) }] : []),
+      ]
+    : [];
+  function usarAtajo(monto: number) {
+    setMetodos((prev) => [{ ...prev[0], monto: monto.toFixed(2) }]);
+    setMontoTocado(true);
+  }
+  // Lo que quedará por pagar si se cobra lo que hay en los campos (sin contar el cambio del efectivo).
+  const restaTrasEsteCobro = Math.max(0, Math.round((saldoRedondo - Math.min(totalMetodos, saldoRedondo)) * 100) / 100);
 
   async function accionAbrirTurno() {
     const fondo = Number(fondoInicial);
@@ -557,7 +576,14 @@ export function CuentaCobro({
     }
     const abonado = Math.max(0, Math.min(totalMetodos - (res.cambio ?? 0), totales.saldo));
     setSaldoDelExito(Math.max(0, totales.saldo - abonado));
-    setExitoCobro(res.cambio ? `Cobro registrado. Cambio: ${dinero(res.cambio)} (a la caja entró solo el saldo).` : "Cobro registrado.");
+    const resta = Math.max(0, Math.round((totales.saldo - abonado) * 100) / 100);
+    setExitoCobro(
+      resta > 0.005
+        ? `Abono registrado: ${dinero(abonado)}. Resta ${dinero(resta)} por pagar.`
+        : res.cambio
+          ? `Cobro registrado. Cambio: ${dinero(res.cambio)} (a la caja entró solo el saldo). La cuenta quedó pagada.`
+          : "Cobro registrado. La cuenta quedó pagada."
+    );
     setSaldoAntesDelCambio(null);
     setNotasCobro("");
     setMetodos([NuevaFilaMetodo()]);
@@ -984,6 +1010,16 @@ export function CuentaCobro({
       ) : (
         <div className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">
           <p className="font-semibold text-n-900">Registrar cobro</p>
+          {atajosMonto.length > 1 && (
+            <div className="flex flex-wrap gap-2" data-atajos-monto>
+              <span className="self-center text-sm text-n-600">Cobrar:</span>
+              {atajosMonto.map((a) => (
+                <Button key={a.clave} type="button" variante="secundario" tamano="compacto" onClick={() => usarAtajo(a.monto)} data-atajo={a.clave}>
+                  {a.etiqueta}
+                </Button>
+              ))}
+            </div>
+          )}
           {mp.terminalManualBloqueada && (
             <p data-terminal-bloqueada className="text-sm text-n-600">
               {AVISO_COBRO_TARJETA}
@@ -996,6 +1032,7 @@ export function CuentaCobro({
                   label="Método"
                   value={m.metodo}
                   onChange={(e) => actualizarMetodo(i, { metodo: e.target.value as MetodoPago })}
+                  data-metodo-cobro={i}
                 >
                   <option value="efectivo">Efectivo</option>
                   {!mp.terminalManualBloqueada && <option value="terminal">Terminal</option>}
@@ -1057,6 +1094,11 @@ export function CuentaCobro({
           <p className="text-sm text-n-600">
             Total de este cobro: <span className="font-semibold text-n-900">{dinero(totalMetodos)}</span>
           </p>
+          {totalMetodos > 0.005 && restaTrasEsteCobro > 0.005 && (
+            <p className="text-sm font-semibold text-ambar-oscuro" data-resta-tras-cobro={restaTrasEsteCobro.toFixed(2)}>
+              Es un abono: después quedan {dinero(restaTrasEsteCobro)} por pagar.
+            </p>
+          )}
 
           {cambioPrevisto > 0.005 && sinEfectivo <= totales.saldo + 0.005 && (
             <p className="text-sm font-semibold text-menta-oscuro" data-cambio>Cambio: {dinero(cambioPrevisto)}</p>
@@ -1085,7 +1127,7 @@ export function CuentaCobro({
             </div>
           )}
           <AccionesFormulario error={error} exito={exitoCobro}>
-            <Button type="button" cargando={cobrando.cargando || refrescando} onClick={() => enviarCobro()}>
+            <Button type="button" cargando={cobrando.cargando || refrescando} onClick={() => enviarCobro()} data-registrar-cobro>
               {cobrando.cargando ? "Cobrando…" : refrescando ? "Actualizando saldo…" : "Registrar cobro"}
             </Button>
           </AccionesFormulario>
