@@ -13,6 +13,7 @@ import { Requisitos } from "@/components/landing/requisitos";
 import { Ubicacion } from "@/components/landing/ubicacion";
 import { LlamadoFinal, Pie, WhatsAppFlotante } from "@/components/landing/cierre";
 import { LandingBasica } from "@/components/landing/basica";
+import { ResenasNegocio } from "@/components/landing/resenas-negocio";
 import { PaginaNegocio, type DatosPagina } from "@/components/pagina-negocio";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { patronHuesos } from "@/components/landing/patron";
@@ -135,6 +136,8 @@ export default async function Landing() {
         <Recoleccion />
         <Patio />
         <Requisitos />
+        {/* Fase 3 de la app para dueños: reseñas verificadas de sus clientes (sin reseñas no sale). */}
+        <ResenasNegocio negocioId={(await cargarNegocioLanding()).id} />
         <Ubicacion />
         <LlamadoFinal />
       </main>

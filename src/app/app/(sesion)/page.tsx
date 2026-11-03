@@ -1,12 +1,22 @@
 import Link from "next/link";
 import { misMascotas, misNegocios, edadTexto, nombreEspecie, type Mascota } from "@/lib/app/datos";
 import { sesionApp } from "@/lib/app/sesion";
+import { vinculosApp, contratosPorFirmarApp, pagosPendientesApp, visitasApp } from "@/lib/app/negocios";
 import { IconoFlecha, IconoHuella } from "@/components/app/iconos";
 
 // Mis mascotas: la pantalla principal. Una tarjeta por mascota con su foto, qué es, su edad y en qué negocios la
 // conocen. Sin mascotas: cómo van a aparecer (Fase 0 todavía no las da de alta aquí; eso llega en la Fase 1).
 export default async function MisMascotasPage() {
-  const [s, mascotas, negocios] = await Promise.all([sesionApp(), misMascotas(), misNegocios()]);
+  const [s, mascotas, negocios, vinculos] = await Promise.all([sesionApp(), misMascotas(), misNegocios(), vinculosApp()]);
+  // Fase 3: lo que le pide algo al dueño en los negocios donde su mascota tiene expediente (solo si hay vínculos).
+  const [contratos, pagos, visitas] = vinculos.length ? await Promise.all([contratosPorFirmarApp(), pagosPendientesApp(), visitasApp()]) : [[], [], []];
+  const porConfirmar = visitas.filter((v) => v.puedeConfirmar).length;
+  const porPagar = pagos.reduce((t, p) => t + p.saldo, 0);
+  const pendientes = [
+    contratos.length > 0 && { href: "/contratos", titulo: `${contratos.length} ${contratos.length === 1 ? "contrato por firmar" : "contratos por firmar"}`, nota: "Fírmalo con el dedo en un minuto", chip: "apd-chip apd-chip-ambar", dato: "contratos" },
+    porConfirmar > 0 && { href: "/visitas", titulo: `${porConfirmar} ${porConfirmar === 1 ? "visita por confirmar" : "visitas por confirmar"}`, nota: "Confírmala con un toque", chip: "apd-chip apd-chip-ambar", dato: "confirmar" },
+    pagos.length > 0 && { href: "/pagos", titulo: `$${porPagar.toFixed(2)} por pagar`, nota: `${pagos.length} ${pagos.length === 1 ? "cuenta" : "cuentas"} con saldo`, chip: "apd-chip apd-chip-coral", dato: "pagos" },
+  ].filter(Boolean) as { href: string; titulo: string; nota: string; chip: string; dato: string }[];
   const nombre = s?.dueno.nombre?.split(" ")[0] ?? null;
   const vivas = mascotas.filter((m) => !m.fallecido);
   const idas = mascotas.filter((m) => m.fallecido);
@@ -23,6 +33,26 @@ export default async function MisMascotasPage() {
               : `Tienes ${vivas.length} mascotas aquí, con todo lo que se sabe de cada una.`}
         </p>
       </div>
+
+      {pendientes.length > 0 && (
+        <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 1 }} data-pendientes>
+          <h2 className="apd-seccion-titulo">Te toca</h2>
+          <ul className="apd-lista">
+            {pendientes.map((p) => (
+              <li key={p.href}>
+                <Link href={p.href} className="apd-tarjeta apd-fila" data-pendiente={p.dato}>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: "block", fontWeight: 800 }}>{p.titulo}</span>
+                    <span className="apd-nota" style={{ display: "block" }}>{p.nota}</span>
+                  </span>
+                  <span className={p.chip} style={{ flex: "none" }}>Pendiente</span>
+                  <IconoFlecha style={{ width: 20, height: 20, color: "var(--apd-morado)", flex: "none" }} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {vivas.length === 0 ? (
         <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 1 }}>
@@ -71,8 +101,33 @@ export default async function MisMascotasPage() {
         </section>
       )}
 
+      {vinculos.length > 0 && (
+        <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: mascotas.length + 2 }} data-accesos-negocios>
+          <ul className="apd-lista">
+            <li>
+              <Link href="/visitas" className="apd-tarjeta apd-fila" data-ir-mis-visitas>
+                <span style={{ flex: 1 }}>
+                  <span style={{ fontWeight: 800 }}>Mis visitas</span>
+                  <span className="apd-nota" style={{ display: "block" }}>Citas y estancias: confírmalas y califícalas</span>
+                </span>
+                <IconoFlecha style={{ width: 20, height: 20, color: "var(--apd-morado)", flex: "none" }} />
+              </Link>
+            </li>
+            <li>
+              <Link href="/pases" className="apd-tarjeta apd-fila" data-ir-pases>
+                <span style={{ flex: 1 }}>
+                  <span style={{ fontWeight: 800 }}>Mis pases</span>
+                  <span className="apd-nota" style={{ display: "block" }}>Cuántos días te quedan en cada negocio</span>
+                </span>
+                <IconoFlecha style={{ width: 20, height: 20, color: "var(--apd-morado)", flex: "none" }} />
+              </Link>
+            </li>
+          </ul>
+        </section>
+      )}
+
       {negocios.length > 0 && (
-        <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: mascotas.length + 2 }}>
+        <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: mascotas.length + 3 }}>
           <h2 className="apd-seccion-titulo">Donde te conocen</h2>
           <ul className="apd-lista">
             {negocios.map((n) => (

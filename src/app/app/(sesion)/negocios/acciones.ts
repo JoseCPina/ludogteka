@@ -12,6 +12,9 @@ import { conexionDeCobro, negocioParaCobro } from "@/lib/pagos/conexion";
 import { adaptador } from "@/lib/pagos/adaptadores";
 import { vigenciaLink } from "@/lib/mercadopago/links";
 import { mensajeDeError } from "@/lib/pagos/tipos";
+import { mensajeParaDueno } from "@/lib/app/mensajes";
+import { resolverPlantilla } from "@/lib/contratos/plantilla";
+import { horasDisponiblesApp, disponibilidadEstanciaApp, type HorasDisponibles, type DisponibilidadEstancia } from "@/lib/app/negocios";
 
 /**
  * App para dueños · Fase 3 · acciones del servidor (docs/app-duenos/FASE-3.md). Cada una comprueba la sesión de la app
@@ -49,6 +52,27 @@ export async function confirmarVisitaApp(negocioId: string, tipo: "estetica" | "
   return { error: null, datos: d, registros: await registrosDe(supabase, [{ t: tabla, i: d.id, datos: { id: d.id, estado: d.estado, updated_at: d.updated_at } }]) };
 }
 
+// ── Lo que se ofrece: horas libres de un día y cupo por noche (solo leen) ───────────────────────────────────────
+// registro-final: solo lee la disponibilidad; no cambia nada.
+export async function horasApp(negocioId: string, servicioId: string, fecha: string): Promise<{ error: string | null; datos?: HorasDisponibles }> {
+  const falta = await negocioMio(negocioId);
+  if (falta) return { error: falta };
+  if (!UUID.test(servicioId) || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return { error: "Escoge el servicio y el día." };
+  const r = await horasDisponiblesApp(negocioId, servicioId, fecha);
+  if ("error" in r) return { error: mensajeParaDueno(r.error) };
+  return { error: null, datos: r };
+}
+
+// registro-final: solo lee el cupo; no cambia nada.
+export async function cupoApp(negocioId: string, servicioId: string, entrada: string, salida: string): Promise<{ error: string | null; datos?: DisponibilidadEstancia }> {
+  const falta = await negocioMio(negocioId);
+  if (falta) return { error: falta };
+  if (!UUID.test(servicioId) || !/^\d{4}-\d{2}-\d{2}$/.test(entrada) || !/^\d{4}-\d{2}-\d{2}$/.test(salida)) return { error: "Escoge el servicio y las fechas." };
+  const r = await disponibilidadEstanciaApp(negocioId, servicioId, entrada, salida);
+  if ("error" in r) return { error: mensajeParaDueno(r.error) };
+  return { error: null, datos: r };
+}
+
 // ── Pedir cita de estética ───────────────────────────────────────────────────────────────────────────────────────
 export async function pedirCitaApp(negocioId: string, mascotaId: string, servicioId: string, inicioIso: string): Promise<ResultadoApp> {
   const falta = await negocioMio(negocioId);
@@ -58,7 +82,7 @@ export async function pedirCitaApp(negocioId: string, mascotaId: string, servici
   if (!UUID.test(servicioId) || Number.isNaN(Date.parse(inicioIso))) return { error: "Escoge el servicio y la hora." };
   const supabase = await supabaseAppEnNegocio(negocioId);
   const { data, error } = await supabase.rpc("portal_pedir_cita", { p_perro: v.perroId, p_servicio: servicioId, p_inicio: new Date(inicioIso).toISOString() });
-  if (error) return { error: mensajeDeError(error) };
+  if (error) return { error: mensajeParaDueno(mensajeDeError(error)) };
   const d = data as { cita_id: string; reserva_id: string; estado: string; updated_at: string };
   return { error: null, datos: d, registros: await registrosDe(supabase, [{ t: "citas_estetica", i: d.cita_id, datos: d }]) };
 }
@@ -72,7 +96,7 @@ export async function reservarApp(negocioId: string, mascotaId: string, servicio
   if (!UUID.test(servicioId) || !/^\d{4}-\d{2}-\d{2}$/.test(entrada) || !/^\d{4}-\d{2}-\d{2}$/.test(salida)) return { error: "Escoge el servicio y las fechas." };
   const supabase = await supabaseAppEnNegocio(negocioId);
   const { data, error } = await supabase.rpc("portal_reservar", { p_perro: v.perroId, p_servicio: servicioId, p_entrada: entrada, p_salida: salida, p_horas: horas && horas > 0 ? Math.round(horas) : null });
-  if (error) return { error: mensajeDeError(error) };
+  if (error) return { error: mensajeParaDueno(mensajeDeError(error)) };
   const d = data as { reserva_id: string; estancia_id: string; estado: string; updated_at: string; contratos_por_firmar: { id: string; tipo_nombre: string }[] };
   return {
     error: null,
@@ -82,6 +106,23 @@ export async function reservarApp(negocioId: string, mascotaId: string, servicio
       ...d.contratos_por_firmar.map((c) => ({ t: "contratos", i: c.id })),
     ]),
   };
+}
+
+// ── El texto del contrato antes de firmar (el mismo que llevará el PDF: plantilla resuelta con los datos del contrato) ──
+// registro-final: solo lee el contrato; no cambia nada.
+export async function textoContratoApp(negocioId: string, contratoId: string): Promise<{ error: string | null; datos?: { titulo: string; cuerpo: string; estado: string } }> {
+  const falta = await negocioMio(negocioId);
+  if (falta) return { error: falta };
+  if (!UUID.test(contratoId)) return { error: "Contrato inválido." };
+  const supabase = await supabaseAppEnNegocio(negocioId);
+  const { data: c } = await supabase.from("contratos").select("id, estado, plantillas_contrato(titulo, cuerpo)").eq("id", contratoId).maybeSingle();
+  if (!c) return { error: "No encontramos ese contrato." };
+  const pl = (Array.isArray(c.plantillas_contrato) ? c.plantillas_contrato[0] : c.plantillas_contrato) as { titulo: string; cuerpo: string } | null;
+  if (!pl) return { error: "No pudimos leer este contrato." };
+  const { data: campos, error } = await supabase.rpc("resolver_campos_de_contrato", { p_contrato_id: contratoId });
+  if (error || !campos) return { error: "No pudimos preparar tu contrato. Intenta de nuevo en unos minutos." };
+  const t = campos as Record<string, string>;
+  return { error: null, datos: { titulo: resolverPlantilla(pl.titulo, t), cuerpo: resolverPlantilla(pl.cuerpo, t), estado: c.estado as string } };
 }
 
 // ── Firmar un contrato pendiente (la misma firma del portal) ────────────────────────────────────────────────────

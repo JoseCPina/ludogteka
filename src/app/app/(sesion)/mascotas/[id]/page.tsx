@@ -4,7 +4,7 @@ import { miMascota, edadTexto, nombreEspecie } from "@/lib/app/datos";
 import { cartillaDe, proximas, hoyMx, diasEntre, type RegistroCartilla } from "@/lib/app/cartilla";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatearFechaCalendario } from "@/lib/formato";
-import { IconoFlecha, IconoFlechaArriba } from "@/components/app/iconos";
+import { IconoFlecha } from "@/components/app/iconos";
 import { aAtencionDelDueno } from "@/lib/app/atenciones";
 import { AtencionesDeNegocios } from "./atenciones";
 
@@ -156,13 +156,14 @@ export default async function MascotaPage({ params }: { params: Promise<{ id: st
           <ul className="apd-lista">
             {m.vinculos.map((v) => (
               <li key={v.perroId}>
-                <a href={v.portalUrl} target="_blank" rel="noopener" className="apd-tarjeta apd-fila" data-vinculo>
+                {/* Fase 3: su pestaña de ese negocio vive en la app (fotos, reportes, carnet, pedir cita, reservar). */}
+                <Link href={`/mascotas/${m.id}/negocio/${v.negocioId}`} className="apd-tarjeta apd-fila" data-vinculo>
                   <span style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ fontWeight: 800 }}>{v.negocioNombre}</span>
-                    <span className="apd-nota" style={{ display: "block" }}>Su expediente, citas y estancias ahí</span>
+                    <span className="apd-nota" style={{ display: "block" }}>Sus fotos, reportes y carnet; pedir cita o reservar</span>
                   </span>
-                  <IconoFlechaArriba style={{ width: 20, height: 20, color: "var(--apd-morado)", flex: "none" }} />
-                </a>
+                  <IconoFlecha style={{ width: 20, height: 20, color: "var(--apd-morado)", flex: "none" }} />
+                </Link>
               </li>
             ))}
           </ul>

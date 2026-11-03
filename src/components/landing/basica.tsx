@@ -2,6 +2,7 @@ import Link from "next/link";
 import { MapPinIcon as MapPin, ClockIcon as Clock, LogInIcon as SignIn } from "lucide-react";
 import { IconoWhatsApp as WhatsappLogo } from "@/components/iconos/whatsapp";
 import { cargarNegocioLanding, linkWhatsAppDe, pesos } from "@/lib/landing/negocio";
+import { ResenasNegocio } from "./resenas-negocio";
 
 // La landing de un negocio de PeluDesk que no tiene tema propio: nombre,
 // lo que ofrece, cómo contactarlo y dónde está — todo de `negocios.landing`,
@@ -93,6 +94,8 @@ export async function LandingBasica() {
           </section>
         )}
       </main>
+
+      <ResenasNegocio negocioId={negocio.id} />
 
       <footer className="border-t border-n-200 bg-white py-6 text-center text-sm text-n-500">
         © {new Date().getFullYear()} {negocio.nombre}
