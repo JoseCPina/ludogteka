@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { correrRecordatoriosApp } from "@/lib/app/recordatorios";
+import { despacharAvisosPendientes } from "@/lib/app/avisos-negocio";
 
 /**
  * Recordatorios de la app para dueños (vacuna, desparasitación, medicamento), cada 15 minutos (vercel.json): manda
- * los pendientes cuya hora llegó, por push, al centro de avisos y por WhatsApp (src/lib/app/recordatorios.ts).
+ * los pendientes cuya hora llegó, por push, al centro de avisos y por WhatsApp (src/lib/app/recordatorios.ts), y el
+ * push de los avisos del negocio que quedaron pendientes (src/lib/app/avisos-negocio.ts).
  * Vercel manda `Authorization: Bearer <CRON_SECRET>`.
  */
 export const runtime = "nodejs";
@@ -23,7 +25,9 @@ export async function GET(request: NextRequest) {
   if (!autorizado(request)) return NextResponse.json({ error: "No autorizado." }, { status: 401 });
   try {
     const resumen = await correrRecordatoriosApp();
-    return NextResponse.json({ ok: true, ...resumen });
+    // Los push de los avisos del negocio (confirmó, movió, canceló, contestó) que no salieron al terminar la acción.
+    const avisos = await despacharAvisosPendientes();
+    return NextResponse.json({ ok: true, ...resumen, avisosNegocio: avisos.enviados });
   } catch (e) {
     console.error("[app-recordatorios]", e instanceof Error ? e.message : e);
     return NextResponse.json({ ok: false }, { status: 500 });

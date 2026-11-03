@@ -1,5 +1,6 @@
 "use server";
 
+import { despacharAvisosAlTerminar } from "@/lib/app/avisos-negocio";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { traducirError } from "./traducir-error";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
@@ -147,6 +148,7 @@ export async function pausarSerie(
   motivo: string
 ): Promise<EstadoPausarSerie> {
   const supabase = await createSupabaseServerClient();
+  despacharAvisosAlTerminar();
 
   const { error: errorInsert } = await supabase
     .from("series_pausas")
@@ -193,6 +195,7 @@ export type EstadoCancelarSerie = { error: string | null; canceladas: number; re
 
 export async function cancelarSerie(serieId: string): Promise<EstadoCancelarSerie> {
   const supabase = await createSupabaseServerClient();
+  despacharAvisosAlTerminar();
 
   const { error: errorUpdate } = await supabase
     .from("series_recurrentes")

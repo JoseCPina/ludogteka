@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { formatearFechaCalendario } from "@/lib/formato";
-import { cancelarEstancia, marcarNoLlego } from "../reserva-actions";
+import { cancelarEstancia, confirmarEstancia, marcarNoLlego } from "../reserva-actions";
 import { MoverFechas } from "../mover-fechas";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import type { Conflicto } from "@/lib/concurrencia/tipos";
@@ -86,7 +86,7 @@ export function EstanciaFila({
     setFechaEntrada(fila.fechaEntrada);
     setFechaSalida(fila.fechaSalida);
   }
-  const [conflicto, setConflicto] = useState<{ c: Conflicto; accion: "cancelar" | "no_llego" } | null>(null);
+  const [conflicto, setConflicto] = useState<{ c: Conflicto; accion: "cancelar" | "no_llego" | "confirmar" } | null>(null);
   const cargando = useEspera();
   const [error, setError] = useState<string | null>(null);
   // Qué pasó con el pase al cancelar (se devolvió, o venció y no).
@@ -122,6 +122,19 @@ export function EstanciaFila({
     setEstado("cancelada");
     setAvisoBono(res.aviso ?? null);
     setConfirmandoCancelar(false);
+  }
+
+  // ux/resenas-y-avisos-f3: el negocio confirma la estancia; si el dueño usa la app, le llega el aviso.
+  async function accionConfirmar(forzar = false) {
+    setError(null);
+    const res = await cargando.ejecutar(() => confirmarEstancia(fila.id, control(forzar)));
+    if (res.conflicto) return setConflicto({ c: res.conflicto, accion: "confirmar" });
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+    setConflicto(null);
+    setEstado("confirmada");
   }
 
   async function accionNoLlego(forzar = false) {
@@ -235,7 +248,7 @@ export function EstanciaFila({
                 setConfirmandoCancelar(false);
                 setConfirmandoNoLlego(false);
               }}
-              onGuardarEncima={() => (conflicto.accion === "cancelar" ? accionCancelar(true) : accionNoLlego(true))}
+              onGuardarEncima={() => (conflicto.accion === "cancelar" ? accionCancelar(true) : conflicto.accion === "confirmar" ? accionConfirmar(true) : accionNoLlego(true))}
             />
           )}
           {moviendoFechas ? (
@@ -295,6 +308,11 @@ export function EstanciaFila({
             </div>
           ) : (
             <div className="flex flex-wrap gap-3">
+              {estado === "reservada" && (
+                <Button type="button" variante="secundario" cargando={cargando.cargando} onClick={() => accionConfirmar()} data-confirmar-estancia>
+                  Confirmar
+                </Button>
+              )}
               <Button type="button" variante="secundario" onClick={() => setMoviendoFechas(true)}>
                 Mover fechas
               </Button>

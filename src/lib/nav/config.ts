@@ -64,6 +64,7 @@ export const SECCIONES_STAFF: ItemNav[] = [
   // Respuestas de los clientes a los recordatorios automáticos por WhatsApp y su estado.
   { etiqueta: "Recordatorios", href: "/recordatorios", grupo: "clientes", roles: ["admin", "recepcion"] },
   { etiqueta: "Vinculación", href: "/vinculacion", grupo: "clientes", roles: ["admin", "recepcion"], modulo: "portal" },
+  { etiqueta: "Reseñas", href: "/resenas", grupo: "clientes", roles: ["admin"], permisos: ["responder_resenas"], modulo: "portal" },
   { etiqueta: "Caja", href: "/caja", grupo: "dinero", roles: ["admin", "recepcion"] },
   { etiqueta: "Contratos", href: "/contratos", grupo: "clientes", roles: ["admin", "recepcion"], modulo: "contratos", ademas: ["guarderia", "hotel"] },
   { etiqueta: "Inventario", href: "/inventario", grupo: "equipo", roles: ["admin", "recepcion", "estetica"], modulo: "inventario" },

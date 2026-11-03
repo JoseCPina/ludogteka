@@ -1,5 +1,6 @@
 "use server";
 
+import { despacharAvisosAlTerminar } from "@/lib/app/avisos-negocio";
 import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { revalidatePath } from "next/cache";
@@ -229,6 +230,7 @@ async function linkWhatsApp(d: DatosCambio, plantilla: (c: { cliente: string; pe
 /** Cambia la fecha y la hora de una cita (la base revisa empalmes, cobro y estado, y deja el historial). */
 export async function reprogramarCita(citaId: string, nuevoInicio: string, motivo: string, control?: ControlVersion): Promise<ResultadoAgenda> {
   const supabase = await createSupabaseServerClient();
+  despacharAvisosAlTerminar();
   const { data, error } = await conControl(supabase.rpc("reprogramar_cita_estetica", { p_cita_id: citaId, p_inicio: nuevoInicio, p_motivo: motivo.trim() || null }), control);
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
   const d = (data ?? {}) as DatosCambio;
@@ -251,6 +253,7 @@ export async function reprogramarCita(citaId: string, nuevoInicio: string, motiv
 /** «Cancelada» (con motivo) o «no se presentó» (sin motivo obligatorio): dos estados distintos. */
 export async function cancelarCita(citaId: string, motivo: string, noLlego = false, control?: ControlVersion): Promise<ResultadoAgenda> {
   const supabase = await createSupabaseServerClient();
+  despacharAvisosAlTerminar();
   // QA S53: «No se presentó» solo desde la hora de la cita (la pantalla lo enseña deshabilitado; aquí se vuelve a revisar).
   if (noLlego) {
     const { data: cita } = await supabase.from("citas_estetica").select("inicio").eq("id", citaId).maybeSingle();
@@ -457,4 +460,17 @@ export async function cotizarCitaEstetica(
     tarifaAplicable: Boolean(d.tarifa_guarderia_aplicable),
     tarifaAviso: d.tarifa_guarderia_aviso ?? null,
   };
+}
+
+/**
+ * El negocio confirma una cita reservada (por ejemplo, después de hablar con el dueño). Si el dueño usa la app, le llega
+ * el aviso «… confirmó la cita de …» (lo deja la base; el push sale al terminar).
+ */
+export async function confirmarCita(citaId: string, control?: ControlVersion): Promise<ResultadoAgenda> {
+  const supabase = await createSupabaseServerClient();
+  despacharAvisosAlTerminar();
+  const { data, error } = await conControl(supabase.from("citas_estetica").update({ estado: "confirmada" }).eq("id", citaId).eq("estado", "reservada").select("id"), control);
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
+  if (!data?.length) return { error: "Esta cita ya no está reservada: se confirma solo antes de empezar.", registros: await registrosDe(supabase, [{ t: "citas_estetica", i: citaId }]) };
+  return { error: null, registros: await registrosFinales(supabase, control, [{ t: "citas_estetica", i: citaId }]) };
 }

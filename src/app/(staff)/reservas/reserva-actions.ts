@@ -1,5 +1,6 @@
 "use server";
 
+import { despacharAvisosAlTerminar } from "@/lib/app/avisos-negocio";
 import { registrosDe, registrosFinales } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -261,6 +262,7 @@ const motivoLimpio = (motivo?: string | null) => (motivo ?? "").trim().slice(0, 
 
 export async function cancelarEstancia(estanciaId: string, control?: ControlVersion, motivo?: string | null): Promise<EstadoAccionEstancia> {
   const supabase = await createSupabaseServerClient();
+  despacharAvisosAlTerminar();
   const desde = new Date(Date.now() - 5000).toISOString();
   const { error } = await conControl(supabase
     .from("estancias")
@@ -301,6 +303,7 @@ export async function moverFechas(
   control: ControlVersion & { totalVisto: number }
 ): Promise<EstadoAccionEstancia> {
   const supabase = await createSupabaseServerClient();
+  despacharAvisosAlTerminar();
   const { data, error } = await conControl(
     supabase.rpc("estancia_mover_fechas", { p_estancia_id: estanciaId, p_entrada: fechaEntrada, p_salida: fechaSalida, p_total_visto: control.totalVisto }),
     control
@@ -335,6 +338,7 @@ export type ResultadoCancelarReserva = {
 // solo se cuenta como "no cancelable" para que la pantalla lo explique.
 export async function cancelarReserva(reservaId: string, control?: ControlVersion, motivo?: string | null): Promise<ResultadoCancelarReserva> {
   const supabase = await createSupabaseServerClient();
+  despacharAvisosAlTerminar();
   const { data: estancias, error: errorLectura } = await supabase
     .from("estancias")
     .select("id, estado")
@@ -400,4 +404,18 @@ export async function consultarChoqueReserva(
   if (error) return { error: "No pudimos revisar las reservas de esta mascota.", mensaje: null };
   if (!data) return { error: null, mensaje: null };
   return { error: null, mensaje: mensajeTraslapeConDetalle(data as EstanciaQueChoca) };
+}
+
+/** El negocio confirma una estancia reservada; si el dueño usa la app, le llega el aviso (lo deja la base). */
+export async function confirmarEstancia(estanciaId: string, control?: ControlVersion): Promise<EstadoAccionEstancia> {
+  const supabase = await createSupabaseServerClient();
+  despacharAvisosAlTerminar();
+  const { data, error } = await conControl(supabase.from("estancias").update({ estado: "confirmada" }).eq("id", estanciaId).eq("estado", "reservada").select("id"), control);
+  if (error) {
+    const conflicto = await conflictoDeEstancia(supabase, error, estanciaId);
+    if (conflicto) return { error: null, conflicto, registros: await registrosFinales(supabase, control, [{ t: "estancias", i: estanciaId }]) };
+    return { error: traducirError(error) };
+  }
+  if (!data?.length) return { error: "Esta estancia ya no está reservada: se confirma solo antes de la llegada.", registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]) };
+  return { error: null, registros: await registrosFinales(supabase, control, [{ t: "estancias", i: estanciaId }]) };
 }

@@ -30,6 +30,7 @@ export const VIDEOS_DE_ARTICULO: Record<string, string[]> = {
   "revisar-comprobante-sanitario": ["13"],
   "agregar-una-raza-que-no-aparece": ["14"],
   "portal-del-dueno": ["15", "18"],
+  "resenas-de-tus-clientes": ["15"],
   "restablecer-contrasena-de-cliente": ["03", "15"],
 
   // ── Contratos ──
