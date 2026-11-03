@@ -64,7 +64,15 @@ const errores = async (p) => limpio(await p.locator("[role=alert]").allInnerText
 try {
   // Un día y una hora fuera de horario distintos en cada corrida (las citas de corridas anteriores no chocan).
   const semilla = Date.now();
-  const dia = sumaDias(await hoy(P.admin), 30 + (Math.floor(semilla / 1000) % 300));
+  // fix/checkout-intermitente: la semilla repite día cada 5 minutos; un día que ya tiene citas de otra corrida choca con
+  // la estilista («ya tiene a … a las 22:10») y nunca sale «Cita agendada». Se busca un día sin citas en Huellitas.
+  const hoyB = await hoy(P.admin);
+  let dia = sumaDias(hoyB, 30 + (Math.floor(semilla / 1000) % 300));
+  for (let i = 0; i < 400; i += 1) {
+    const { count } = await SB.from("citas_estetica").select("id", { count: "exact", head: true }).eq("negocio_id", B).is("deleted_at", null).gte("inicio", `${sumaDias(dia, -1)}T00:00:00Z`).lt("inicio", `${sumaDias(dia, 2)}T00:00:00Z`);
+    if (!count) break;
+    dia = sumaDias(hoyB, 30 + ((Math.floor(semilla / 1000) + i * 7) % 900));
+  }
   const horaFuera = `${20 + (Math.floor(semilla / 60000) % 4)}:${String((Math.floor(semilla / 1000) % 6) * 10).padStart(2, "0")}`;
 
   // ═══ Estética ═══
@@ -95,7 +103,12 @@ try {
   const avisoAntes = await pe.locator("[data-aviso-horario]").count();
   const agendar = pe.getByRole("button", { name: /^(Agendar cita|Agendando…)$/ });
   let ms = await apretar(pe, agendar);
-  if (await pe.locator("[data-agendar-de-todos-modos]").count()) ms = await apretar(pe, pe.locator("[data-agendar-de-todos-modos]"));
+  // fix/checkout-intermitente: a los 3 s el botón dice «Sigue trabajando…» y `apretar` lo pierde antes de la respuesta; si
+  // la respuesta es «Esta mascota ya tiene cita ese día» (la semilla repite días entre corridas), se espera a que salga
+  // una de las dos cosas antes de decidir.
+  const todosModos = pe.locator("[data-agendar-de-todos-modos]");
+  await pe.getByText(/Cita agendada/).first().or(todosModos).first().waitFor({ timeout: 30000 });
+  if (await todosModos.count()) ms += await apretar(pe, todosModos);
   await pe.getByText(/Cita agendada/).first().waitFor({ timeout: 30000 });
   await espera(INMEDIATO_MS);
   const avisoDespues = limpio(await pe.locator("[data-aviso-horario]").allInnerTexts().then((x) => x.join(" ")).catch(() => ""));

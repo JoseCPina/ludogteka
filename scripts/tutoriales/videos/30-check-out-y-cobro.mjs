@@ -33,7 +33,7 @@ export default {
     {
       titulo: "Confirmar la salida",
       dice: "Aprieta «Confirmar salida». La salida queda registrada con quién lo recogió y qué pertenencias se llevó. La cuenta queda en «Caja», en «Cuentas abiertas de hoy», y ahí cobras. Lo vemos en el video de cobros.",
-      pasos: [["clic", "Confirmar salida"], ["esperar", 2500], ["resaltar", "Este perro ya salió", 2600], ["ir", "/caja"], ["resaltar", "Cuentas abiertas de hoy", 2800]],
+      pasos: [["clic", "Confirmar salida"], ["esperar", 2500], ["resaltar", "Salida registrada", 2600], ["ir", "/caja"], ["resaltar", "Cuentas abiertas de hoy", 2800]],
     },
   ],
   resumen: ["Registras quién recoge al perro y qué pertenencias se lleva.", "Los cargos extra se aplican en el mismo paso.", "La cuenta queda abierta en Caja para cobrarla."],

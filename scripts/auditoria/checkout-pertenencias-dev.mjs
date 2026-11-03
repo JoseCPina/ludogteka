@@ -92,7 +92,7 @@ try {
   await p.locator("#checkout-motivo-sin-entrega").fill("Se las lleva en la próxima visita");
   await p.getByRole("button", { name: "Confirmar salida" }).click();
   await confirmarSiFueraDeHorario(p);
-  comprobar(await esperarTexto(p, /Este perro ya salió/), "con motivo escrito: la salida se cierra");
+  comprobar(await esperarTexto(p, /Salida registrada: este perro salió/), "con motivo escrito: la salida se cierra");
   const fin = (await SB.from("estancias").select("estado, pertenencias_sin_entrega_motivo, pertenencias_sin_entrega_por").eq("id", e.data.id).single()).data;
   comprobar(fin.estado === "finalizada" && fin.pertenencias_sin_entrega_motivo === "Se las lleva en la próxima visita" && fin.pertenencias_sin_entrega_por, "queda registrado el motivo y quién cerró la salida");
   const t = sinNum(await texto(p));
@@ -119,7 +119,7 @@ try {
   await p.getByRole("button", { name: "Sí, es el dueño" }).click();
   await p.getByRole("button", { name: "Confirmar salida" }).click();
   await confirmarSiFueraDeHorario(p);
-  comprobar(await esperarTexto(p, /Este perro ya salió/), "la salida se cierra sin motivo");
+  comprobar(await esperarTexto(p, /Salida registrada: este perro salió/), "la salida se cierra sin motivo");
   const fin2 = (await SB.from("estancias").select("pertenencias_sin_entrega_motivo").eq("id", e2.data.id).single()).data;
   const ent = (await SB.from("estancia_pertenencias").select("devuelto").eq("estancia_id", e2.data.id)).data;
   comprobar(fin2.pertenencias_sin_entrega_motivo === null && ent.every((x) => x.devuelto), "todas quedan devueltas y sin motivo");

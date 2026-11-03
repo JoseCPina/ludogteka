@@ -127,8 +127,16 @@ export function TurnoAbierto({
   const [motivoCancelacion, setMotivoCancelacion] = useState("");
   const cancelandoRetiro = useEspera();
 
+  // La respuesta de la acción se pinta al llegar (regla del registro final): el retiro nuevo aparece y el cancelado se
+  // tacha sin esperar a router.refresh(), que trae lo demás. Antes la lista dependía solo del repintado y, con la base
+  // lenta, «Confirmar retiro» o «Cancelar retiro» parecían no hacer nada (caja-turno-dev fallaba ahí).
+  const [agregados, setAgregados] = useState<Retiro[]>([]);
+  const [cancelados, setCancelados] = useState<Record<string, string>>({});
+  const retirosVista: Retiro[] = [...retiros, ...agregados.filter((a) => !retiros.some((r) => r.id === a.id))].map((r) =>
+    cancelados[r.id] !== undefined && !r.cancelado ? { ...r, cancelado: true, motivoCancelacion: cancelados[r.id], puedeCancelar: false } : r
+  );
   // Solo los vivos suman: un retiro cancelado se ve tachado y no cuenta.
-  const totalRetiros = retiros.filter((r) => !r.cancelado).reduce((sum, r) => sum + r.monto, 0);
+  const totalRetiros = retirosVista.filter((r) => !r.cancelado).reduce((sum, r) => sum + r.monto, 0);
 
   async function confirmarCancelacion(id: string) {
     setError(null);
@@ -137,6 +145,7 @@ export function TurnoAbierto({
       setError(res.error);
       return;
     }
+    setCancelados((x) => ({ ...x, [id]: motivoCancelacion.trim() }));
     setCancelando(null);
     setMotivoCancelacion("");
     router.refresh();
@@ -196,6 +205,7 @@ export function TurnoAbierto({
       setError(res.error);
       return;
     }
+    if (res.retiroId) setAgregados((x) => [...x, { id: res.retiroId!, monto, motivo: motivoRetiro.trim(), creadoEn: new Date().toISOString(), creadoPorNombre: "Tú", cancelado: false, motivoCancelacion: null, canceladoPorNombre: null, puedeCancelar: true }]);
     setMontoRetiro("");
     setMotivoRetiro("");
     setRegistrandoRetiro(false);
@@ -443,13 +453,13 @@ export function TurnoAbierto({
 
       <div className="flex flex-col gap-2">
         <p className="text-[0.9375rem] font-semibold text-foreground">
-          Retiros de este turno {retiros.length > 0 ? `— total ${dinero(totalRetiros)}` : ""}
+          Retiros de este turno {retirosVista.length > 0 ? `— total ${dinero(totalRetiros)}` : ""}
         </p>
-        {retiros.length === 0 ? (
+        {retirosVista.length === 0 ? (
           <p className="text-sm text-n-500">Ninguno todavía.</p>
         ) : (
           <ul className="flex flex-col gap-1">
-            {retiros.map((r) => (
+            {retirosVista.map((r) => (
               <li
                 key={r.id}
                 data-retiro={r.cancelado ? "cancelado" : "vivo"}
