@@ -245,6 +245,85 @@ try {
     }
   }
 
+  // ───────────────────────────── N168 ─────────────────────────────
+  if (toca("n168") && ESCRIBIR) {
+    console.log("\nN168 · vet S62: después de una devolución, «Devuelto» y el saldo sin recargar");
+    const V = await negocioPrueba("prueba-qa-vet-s62");
+    const sesion = await V.sesion("admin");
+    const api = comoPersona(sesion.token, V.negocio.id);
+    let { data: turno } = await api.from("turnos_caja").select("id").eq("estado", "abierto").maybeSingle();
+    let abriTurno = false;
+    if (!turno) { turno = (await api.from("turnos_caja").insert({ fondo_inicial: 0, notas_apertura: "Verificación QA S63 (N168)" }).select("id").single()).data; abriTurno = true; }
+    try {
+      const { data: rs } = await V.N.from("reservas").select("id").eq("negocio_id", V.negocio.id).is("deleted_at", null).order("created_at", { ascending: false }).limit(80);
+      let reserva = null;
+      for (const r of rs ?? []) { const { data: t } = await api.rpc("cuenta_totales_reserva", { p_reserva_id: r.id }); if (Number(t?.[0]?.saldo ?? 0) >= 50) { reserva = r.id; break; } }
+      if (!reserva) mal("no hay una cuenta con saldo de $50 en vet S62");
+      else {
+        const { error } = await api.rpc("registrar_cobro", { p_reserva_id: reserva, p_notas: "Verificación QA S63 (N168), se devuelve enseguida", p_metodos: [{ metodo: "efectivo", monto: 50, propina: 0 }] });
+        if (error) throw new Error(`registrar_cobro: ${error.message}`);
+        const antes = Number((await api.rpc("cuenta_totales_reserva", { p_reserva_id: reserva })).data?.[0]?.total_devuelto ?? 0);
+        const p = await pagina(sesion);
+        await p.goto(`${V.base}/caja/cobrar/${reserva}`, { waitUntil: "networkidle" });
+        await p.getByRole("button", { name: "Registrar devolución" }).last().click();
+        await p.getByLabel("Monto").last().fill("50");
+        await p.getByLabel("Motivo").last().fill("Verificación QA S63 (N168): devolución de prueba");
+        await p.getByRole("button", { name: "Confirmar devolución" }).first().click();
+        await p.waitForTimeout(1500);
+        const texto = limpio(await p.locator("main").innerText());
+        const visto = texto.match(/Devuelto:\s*\$([\d,.]+)/)?.[1]?.replace(/,/g, "");
+        revisa(Math.round(Number(visto) * 100) === Math.round((antes + 50) * 100), `sin recargar dice «Devuelto: $${visto}» (antes $${antes.toFixed(2)})`);
+        await p.context().close();
+      }
+    } finally {
+      if (abriTurno && turno) {
+        const { data: r } = await api.rpc("resumen_turno", { p_turno_id: turno.id });
+        const n = (m) => (r ?? []).filter((x) => x.metodo === m).reduce((s, x) => s + Number(x.cobrado) + Number(x.propinas) - Number(x.devuelto), 0);
+        const { error } = await api.rpc("cerrar_turno", { p_turno_id: turno.id, p_conteo_efectivo: n("efectivo"), p_conteo_terminal: n("terminal"), p_conteo_transferencia: n("transferencia"), p_explicacion_diferencias: "", p_notas_cierre: "Verificación QA S63 (N168)" });
+        ver(`turno de la prueba: ${error ? `NO se cerró (${error.message})` : "cerrado"}`);
+      }
+    }
+  }
+
+  // ───────────────────────────── N161 ─────────────────────────────
+  if (toca("n161") && ESCRIBIR) {
+    console.log("\nN161 · estética S62: dos pestañas, A reprograma, B choca: el encabezado de B dice la hora nueva");
+    const EST = await negocioPrueba("prueba-qa-estetica-s62");
+    const sesion = await EST.sesion("admin");
+    const api = comoPersona(sesion.token, EST.negocio.id);
+    const { data: base } = await EST.N.from("citas_estetica").select("servicio_id, empleado_id, perro_id").eq("negocio_id", EST.negocio.id).not("empleado_id", "is", null).is("deleted_at", null).limit(1).single();
+    const { data: reservaId } = await api.rpc("crear_reserva_para_cita", { p_perro_id: base.perro_id });
+    let d = new Date(Date.now() + 9 * 86400000); d.setUTCHours(17, 0, 0, 0);
+    for (let i = 0; i < 7 && (await api.rpc("negocio_abre", { p_fecha: d.toISOString().slice(0, 10) })).data !== true; i++) d = new Date(d.getTime() + 86400000);
+    const c = await api.from("citas_estetica").insert({ reserva_id: reservaId, perro_id: base.perro_id, servicio_id: base.servicio_id, empleado_id: base.empleado_id, inicio: d.toISOString() }).select("id").single();
+    if (c.error) mal(`cita de prueba: ${c.error.message}`);
+    else {
+      const pa = await pagina(sesion);
+      const pb = await pagina(sesion);
+      await pa.goto(`${EST.base}/estetica/${c.data.id}`, { waitUntil: "networkidle" });
+      await pb.goto(`${EST.base}/estetica/${c.data.id}`, { waitUntil: "networkidle" });
+      const reprogramar = async (pg, hh) => {
+        await pg.getByRole("button", { name: "Reprogramar" }).first().click();
+        const campo = pg.locator("[data-reprogramar] input[type='datetime-local']");
+        await campo.fill((await campo.inputValue()).replace(/T\d{2}:\d{2}/, `T${hh}`));
+        await pg.getByRole("button", { name: "Guardar la nueva hora" }).click();
+      };
+      const horaB0 = await pb.locator("[data-hora-cita]").first().getAttribute("data-hora-cita");
+      await reprogramar(pa, "13:00");
+      await pa.waitForTimeout(4000);
+      const vigente = (await EST.N.from("citas_estetica").select("inicio").eq("id", c.data.id).single()).data.inicio;
+      await reprogramar(pb, "15:00");
+      const choque = await pb.locator("[data-conflicto-version]").first().waitFor({ timeout: 20000 }).then(() => true).catch(() => false);
+      await pb.waitForTimeout(800);
+      const horaB1 = await pb.locator("[data-hora-cita]").first().getAttribute("data-hora-cita");
+      revisa(choque && Date.parse(horaB1) === Date.parse(vigente) && Date.parse(horaB0) !== Date.parse(vigente), `B ve el conflicto y su encabezado pasó de ${horaB0} a ${horaB1} (lo vigente: ${vigente})`);
+      await pa.context().close();
+      await pb.context().close();
+      await api.rpc("cancelar_cita_estetica", { p_cita_id: c.data.id, p_motivo: "Verificación QA S63: cita de prueba", p_no_llego: false });
+      await EST.N.from("citas_estetica").update({ estado: "cancelada" }).eq("id", c.data.id).eq("estado", "reservada");
+    }
+  }
+
   // ───────────────────────────── N169 ─────────────────────────────
   if (toca("n169") && ESCRIBIR) {
     console.log("\nN169 · vet S62: «Reprogramar» con la misma fecha y hora y otro médico");
