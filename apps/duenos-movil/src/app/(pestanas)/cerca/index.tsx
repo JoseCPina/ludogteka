@@ -56,7 +56,7 @@ export default function Cerca() {
   const [error, setError] = useState<string | null>(null);
   const [elegido, setElegido] = useState<Lugar | null>(null);
   const [ficha, setFicha] = useState<Ficha | null>(null);
-  const [hoja, setHoja] = useState(hayMapa ? 1 : 2);
+  const [hoja, setHoja] = useState(1);
 
   const pedida = useRef(0);
   const buscar = useCallback(async (punto: { lat: number; lng: number }, cat: Categoria) => {
@@ -135,6 +135,43 @@ export default function Cerca() {
     </View>
   );
 
+  const chips = (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+      {CHIPS.map((ch) => <Chip key={ch.clave} texto={ch.texto} icono={ch.icono} color={coloresLugar[ch.clave === "abiertas" ? "veterinaria" : ch.clave === "urgencias" ? "urgencias" : (ch.clave as keyof typeof coloresLugar)] ?? c.primario} activo={categoria === ch.clave} alTocar={() => cambiarCategoria(ch.clave)} />)}
+    </ScrollView>
+  );
+  const contenido = elegido ? (
+      <FichaLugar l={elegido} ficha={ficha} />
+    ) : (
+      <FlatList
+        ref={lista}
+        data={lugares}
+        keyExtractor={(l) => l.id}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: inset.bottom + 90, gap: 10 }}
+        onScrollToIndexFailed={() => {}}
+        ListHeaderComponent={
+          <View style={{ gap: 10 }}>
+            {sinPermiso ? <Mensaje tono="info" texto="Sin tu ubicación te enseñamos San Luis Potosí. Para ver lo que hay cerca de ti, da permiso de ubicación." /> : null}
+            <Mensaje texto={error} />
+          </View>
+        }
+        ListEmptyComponent={!cargando && !error ? <Vacio icono="explorar" titulo="Nada por aquí" texto={hayMapa ? "Prueba con otra categoría o muévete en el mapa." : "Prueba con otra categoría."} /> : undefined}
+        ListFooterComponent={datos?.atribucionGoogle ? <Texto v="pie" color={c.textoTenue} style={{ paddingVertical: 8 }}>Algunos datos son de Google Maps.</Texto> : undefined}
+        renderItem={({ item: l }) => <RenglonLugar l={l} alTocar={() => elegir(l, true)} />}
+      />
+    );
+
+  // Sin mapa (Android sin la llave de Google Maps): chips arriba y la lista abajo, sin hoja.
+  if (!hayMapa) {
+    return (
+      <View style={{ flex: 1, backgroundColor: c.fondo, paddingTop: inset.top + 10, gap: 10 }}>
+        {chips}
+        {encabezado}
+        <View style={{ flex: 1 }}>{contenido}</View>
+      </View>
+    );
+  }
+
   return (
     <View style={{ flex: 1, backgroundColor: c.fondo }}>
       <Mapa ref={mapa} style={{ flex: 1 }} initialRegion={regionDe((aqui ?? CENTRO_MX).lat, (aqui ?? CENTRO_MX).lng, 6)} onPress={() => elegido && setElegido(null)} mapPadding={{ top: inset.top + 60, right: 0, bottom: 0, left: 0 }}>
@@ -142,40 +179,15 @@ export default function Cerca() {
           <Pin key={l.id} coordenada={{ latitude: l.lat, longitude: l.lng }} color={l.enPeluDesk ? coloresLugar.peludesk : coloresLugar[l.tipo]} icono={icono(l)} peludesk={l.enPeluDesk} elegido={elegido?.id === l.id} alTocar={() => elegir(l)} titulo={l.nombre} />
         ))}
       </Mapa>
-
       {/* Chips arriba, sobre el mapa */}
       <View style={{ position: "absolute", top: inset.top + 10, left: 0, right: 0 }} pointerEvents="box-none">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
-          {CHIPS.map((ch) => <Chip key={ch.clave} texto={ch.texto} icono={ch.icono} color={coloresLugar[ch.clave === "abiertas" ? "veterinaria" : ch.clave === "urgencias" ? "urgencias" : (ch.clave as keyof typeof coloresLugar)] ?? c.primario} activo={categoria === ch.clave} alTocar={() => cambiarCategoria(ch.clave)} />)}
-        </ScrollView>
+        {chips}
       </View>
-      {hayMapa ? (
-        <View style={{ position: "absolute", right: 16, top: inset.top + 64 }}>
-          <BotonIcono icono="ubicacion" etiqueta="Ir a mi ubicación" relleno alTocar={() => ubicar(categoria)} />
-        </View>
-      ) : null}
-
-      <HojaInferior indice={hoja} alCambiarIndice={setHoja} encabezado={encabezado} alturaAsomada={hayMapa ? 120 : 400}>
-        {elegido ? (
-          <FichaLugar l={elegido} ficha={ficha} />
-        ) : (
-          <FlatList
-            ref={lista}
-            data={lugares}
-            keyExtractor={(l) => l.id}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: inset.bottom + 90, gap: 10 }}
-            onScrollToIndexFailed={() => {}}
-            ListHeaderComponent={
-              <View style={{ gap: 10 }}>
-                {sinPermiso ? <Mensaje tono="info" texto="Sin tu ubicación te enseñamos San Luis Potosí. Para ver lo que hay cerca de ti, da permiso de ubicación." /> : null}
-                <Mensaje texto={error} />
-              </View>
-            }
-            ListEmptyComponent={!cargando && !error ? <Vacio icono="explorar" titulo="Nada por aquí" texto="Prueba con otra categoría o muévete en el mapa." /> : undefined}
-            ListFooterComponent={datos?.atribucionGoogle ? <Texto v="pie" color={c.textoTenue} style={{ paddingVertical: 8 }}>Algunos datos son de Google Maps.</Texto> : undefined}
-            renderItem={({ item: l }) => <RenglonLugar l={l} alTocar={() => elegir(l, true)} />}
-          />
-        )}
+      <View style={{ position: "absolute", right: 16, top: inset.top + 64 }}>
+        <BotonIcono icono="ubicacion" etiqueta="Ir a mi ubicación" relleno alTocar={() => ubicar(categoria)} />
+      </View>
+      <HojaInferior indice={hoja} alCambiarIndice={setHoja} encabezado={encabezado} alturaAsomada={120}>
+        {contenido}
       </HojaInferior>
     </View>
   );

@@ -67,3 +67,6 @@ export function rutaDeAviso(url: string | null | undefined): string | null {
   if (/^\/(avisos|visitas|pagos|pases|contratos|cerca|alertas|yo)(\/|$)/.test(ruta)) return ruta;
   return "/avisos";
 }
+
+/** La última notificación que tocó la persona (en web no hay: capturas y pruebas del mismo código). */
+export const useUltimaNotificacion: () => Notifications.NotificationResponse | null | undefined = Platform.OS === "web" ? () => null : Notifications.useLastNotificationResponse;
