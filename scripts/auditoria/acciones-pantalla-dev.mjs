@@ -165,7 +165,9 @@ try {
     }).select("id, reserva_id").single();
     if (est.error) throw new Error(`estancia: ${est.error.message}`);
     estancia = est.data;
-    limpieza.push(async () => api.from("estancias").update({ estado: "cancelada", motivo_cancelacion: MARCA }).eq("id", est.data.id));
+    // QA S63: una estancia que ya salió (finalizada) no se cancela y dejaba el cupo ocupado (97 restos en Huellitas):
+    // la limpieza la da de baja (deleted_at), haya llegado a donde haya llegado.
+    limpieza.push(async () => SB.from("estancias").update({ deleted_at: new Date().toISOString() }).eq("id", est.data.id));
   }
   if (!estancia) {
     comprobar(false, "Huellitas tiene una estancia en curso para el check-out (corre negocio-prueba-dev.mjs)");
@@ -295,6 +297,53 @@ try {
   comprobar(/Cobrado:\s*\$41\.00/.test(tc) && /Saldo:\s*\$0\.00/.test(tc), `en ${ms} ms dice «Cobrado: $41.00» y «Saldo: $0.00» sin esperar la recarga`);
   comprobar(!(await errores(pc)), "sin errores en pantalla");
   await pc.context().close();
+
+  // QA S63 (N168): después de una devolución, «Devuelto» y el saldo cambian con la respuesta, sin recargar.
+  seccion("Caja · devolución: «Devuelto» y el saldo con la respuesta (N168)");
+  const { p: pd } = await pantalla(P.adminId);
+  await abrir(pd, `/caja/cobrar/${venta.cuerpo}`);
+  await pd.getByRole("button", { name: "Registrar devolución" }).first().click();
+  await pd.getByLabel("Monto").last().fill("41");
+  await pd.getByLabel("Motivo").last().fill(`${MARCA}: devolución`);
+  ms = await apretar(pd, pd.getByRole("button", { name: /Confirmar devolución|Guardando…/ }).first(), /Guardando/);
+  await espera(INMEDIATO_MS);
+  const td = limpio(await pd.locator("body").innerText());
+  comprobar(/Devuelto:\s*\$41\.00/.test(td), `en ${ms} ms dice «Devuelto: $41.00» sin esperar la recarga (${(td.match(/Devuelto:\s*\$[\d,.]+/) ?? ["sin «Devuelto»"])[0]})`);
+  comprobar(!(await errores(pd)), "sin errores en pantalla");
+  await pd.context().close();
+
+  // QA S63 (N170): al cancelar la reserva, el encabezado (total, saldo, «Cobrar») cambia con la respuesta.
+  seccion("Hotel · cancelar la reserva: el encabezado de la cuenta con la respuesta (N170)");
+  {
+    const { data: hotelS } = await SB.from("servicios").select("id").eq("negocio_id", B).eq("categoria", "hotel").eq("unidad", "noche").is("deleted_at", null).limit(1).single();
+    const { data: talla } = await SB.from("tamanos_categoria").select("id").eq("clave", "chico").single();
+    const perroC = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `${MARCA} cancelar`, tamano_id: talla.id }).select("id").single()).data;
+    limpieza.push(async () => SB.from("perros").update({ deleted_at: new Date().toISOString() }).eq("id", perroC.id));
+    const { p: pr, c: cr } = await pantalla(P.adminId);
+    // El cliente de abrirComo va con el negocio de Huellitas (nunca el de por omisión).
+    const { api: api2, c: c2 } = await abrirComo(nav, P.adminId, B);
+    limpieza.push(async () => c2.close());
+    const resC = (await api2.from("reservas").insert({ cliente_id: datos.clienteSoloB }).select("id").single()).data;
+    const entrada = sumaDias(await hoy(P.admin), 10);
+    const estC = await api2.from("estancias").insert({
+      reserva_id: resC.id, perro_id: perroC.id, servicio_id: hotelS.id, fecha_entrada: entrada, fecha_salida: sumaDias(entrada, 2), dia_cerrado_confirmado: "confirmado",
+      bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: MARCA, bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: MARCA,
+    }).select("id").single();
+    if (estC.error) comprobar(false, `reserva para cancelar: ${estC.error.message}`);
+    else {
+      limpieza.push(async () => SB.from("estancias").update({ deleted_at: new Date().toISOString() }).eq("id", estC.data.id));
+      await abrir(pr, `/reservas/${resC.id}`);
+      const antesSaldo = await pr.locator("[data-saldo-reserva]").getAttribute("data-saldo-reserva");
+      await pr.getByRole("button", { name: "Cancelar toda la reserva" }).click();
+      ms = await apretar(pr, pr.getByRole("button", { name: /Sí, cancelar todo|Cancelando…/ }).first(), /Cancelando/);
+      await espera(INMEDIATO_MS + 800);
+      const saldo = await pr.locator("[data-saldo-reserva]").getAttribute("data-saldo-reserva");
+      const total = limpio(await pr.locator("[data-total-cuenta]").innerText().catch(() => ""));
+      const cobrar = limpio(await pr.locator("[data-cobrar-reserva]").innerText().catch(() => ""));
+      comprobar(Number(antesSaldo) > 0 && saldo === "0.00" && total === "$0.00" && !/^Cobrar/.test(cobrar), `en ${ms} ms el encabezado dice Total ${total}, saldo ${saldo} (antes ${antesSaldo}) y «${cobrar || "sin enlace"}», sin esperar la recarga`);
+    }
+    await cr.close();
+  }
 } catch (e) {
   comprobar(false, `la auditoría se cortó: ${e.message.split("\n").slice(0, 3).join(" | ")}`);
   for (const c of nav.contexts()) for (const pg of c.pages()) await pg.screenshot({ path: `${process.env.TEMP ?? "/tmp"}/acciones-pantalla-corte.png`, fullPage: true }).catch(() => {});

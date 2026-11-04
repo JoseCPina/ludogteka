@@ -1,5 +1,4 @@
-import { dinero } from "@/lib/dinero";
-import { cuentaPorCobrar } from "@/lib/caja/cuenta-por-cobrar";
+import { EncabezadoCuentaReserva } from "@/components/cuentas/encabezado-cuenta-reserva";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
@@ -172,12 +171,10 @@ export default async function DetalleReservaPage({
   // QA S14: una reserva cancelada (o en la que nadie llegó) sin saldo no tiene nada que cobrar; con saldo, se dice qué
   // se debe (un cargo que sí se hizo) y con saldo a favor, que se devuelve.
   const todaCancelada = filas.length > 0 && filas.every((f) => ["cancelada", "no_llego"].includes(f.estado));
-  const hayQueCobrar = cuentaPorCobrar(saldo);
   // R35: con todo cancelado el total de la cuenta es $0 (las líneas canceladas no suman); si se cobró algo, se ve
   // cuánto se cobró y cuánto se devolvió, para que el saldo a favor (o el cero) se entienda.
   const totalCobrado = Number(totalesFila?.total_cobrado ?? 0);
   const totalDevuelto = Number(totalesFila?.total_devuelto ?? 0);
-  const dinero = (n: number) => `$${n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
     <div className="flex flex-col gap-6">
@@ -243,48 +240,13 @@ export default async function DetalleReservaPage({
           </div>
           <div className="flex flex-col items-end gap-2">
             <RefrescoCuenta reservaId={id} saldo={saldo} total={totalCuenta} />
-            <dl className="flex flex-col items-end text-sm text-n-700" data-totales-reserva>
-              <div className="flex gap-1">
-                <dt>Total{todaCancelada ? " (cancelada)" : ""}:</dt>
-                <dd className="font-semibold text-n-900" data-total-cuenta>{dinero(totalCuenta)}</dd>
-              </div>
-              {totalCobrado > 0 && (
-                <div className="flex gap-1">
-                  <dt>Cobrado:</dt>
-                  <dd className="font-semibold text-n-900" data-total-cobrado>{dinero(totalCobrado)}</dd>
-                </div>
-              )}
-              {totalDevuelto > 0 && (
-                <div className="flex gap-1">
-                  <dt>Devuelto:</dt>
-                  <dd className="font-semibold text-n-900" data-total-devuelto>{dinero(totalDevuelto)}</dd>
-                </div>
-              )}
-            </dl>
-            <p className={`text-sm font-bold ${saldo > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`} data-saldo-reserva={saldo.toFixed(2)}>
-              Saldo: {dinero(Math.abs(saldo))}
-              {saldo < 0 ? " (a favor)" : ""}
-            </p>
-            {todaCancelada && (
-              <p className="max-w-xs text-right text-sm text-n-700" data-reserva-cancelada-cuenta>
-                {hayQueCobrar
-                  ? `Reserva cancelada, pero la cuenta todavía debe ${dinero(saldo)} (de un total de ${dinero(totalCuenta)}): es lo que sí se cobra.`
-                  : saldo < -0.005
-                    ? `Reserva cancelada: hay ${dinero((-saldo))} a favor del cliente que se devuelve desde la cuenta.`
-                    : "Reserva cancelada: no hay nada por cobrar."}
-              </p>
-            )}
-            <div className="flex gap-2">
-              {(!todaCancelada || hayQueCobrar || saldo < -0.005) && (
-                <Enlace href={`/reservas/${id}/cobrar`} data-cobrar-reserva>
-                    {/* N129: sin saldo por cobrar no se ofrece «Cobrar»: la cuenta pagada se abre para ver sus cobros. */}
-                    {todaCancelada ? (hayQueCobrar ? `Cobrar ${dinero(saldo)}` : "Ver la cuenta") : hayQueCobrar ? "Cobrar" : "Ver cobros"}
-                  </Enlace>
-              )}
-              {cancelables > 0 && (
+            <EncabezadoCuentaReserva
+              reservaId={id}
+              inicial={{ total: totalCuenta, cobrado: totalCobrado, devuelto: totalDevuelto, saldo, todaCancelada }}
+              acciones={cancelables > 0 ? (
                 <CancelarReservaBoton reservaId={reserva.id} cancelables={cancelables} detalle={(() => { const v = filas.filter((f) => f.estado === "reservada" || f.estado === "confirmada"); return v.length === 0 ? null : v.length === 1 ? describirEstancia(v[0].servicioNombre, v[0].perroNombre, v[0].fechaEntrada, v[0].fechaSalida, v[0].categoria) : describirEstancia(unirNombres([...new Set(v.map((f) => f.servicioNombre))]), unirNombres(v.map((f) => f.perroNombre)), v[0].fechaEntrada, v[0].fechaSalida, v[0].categoria); })()} nombres={filas.filter((f) => f.estado === "reservada" || f.estado === "confirmada").map((f) => f.perroNombre)} versiones={filas.map((f) => ({ t: "estancias", i: f.id, v: f.version }))} />
-              )}
-            </div>
+              ) : null}
+            />
           </div>
         </div>
       </div>

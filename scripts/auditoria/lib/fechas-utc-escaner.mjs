@@ -22,6 +22,9 @@ const REGLAS = [
   { id: "split-T", re: /(_at|At|\.inicio)\w*\s*\.split\(["']T["']\)\[0\]/ },
   { id: "locale-sin-zona", re: /(toLocaleDateString|toLocaleTimeString|new Date\([^)]*\)\.toLocaleString)\(\s*["'][\w-]+["']\s*(,\s*\{(?![^}]*timeZone)[^}]*\})?\s*\)/ },
   { id: "hoy-con-Date", re: /new Date\(\)\.(getMonth|getDate)\(\)/ },
+  // QA S63 (N169): la hora «de pantalla» (horaLocalDeInstante, «05:00 p.m.») no es valor de un <input type="time">: el
+  // campo queda vacío y, si es obligatorio, el navegador frena el envío sin decir nada. Para un campo: horaLocalParaInput.
+  { id: "hora-de-pantalla-en-campo", re: /(defaultValue|value|hora)=\{[^}]*horaLocalDeInstante\(/ },
 ];
 
 function* archivos(dir) {

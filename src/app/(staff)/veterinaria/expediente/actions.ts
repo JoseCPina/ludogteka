@@ -69,8 +69,14 @@ export async function reprogramarCita(id: string, fd: FormData): Promise<Resulta
     p_duracion_min: null,
   }), controlDeFormulario(fd));
   if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, controlDeFormulario(fd)) } : { error: traducirError(error) };
-  revalidatePath("/veterinaria/agenda");
-  return { error: null, registros: await registrosFinales(supabase, controlDeFormulario(fd)), exito: "Cita movida." };
+  // QA S63 (N169): la agenda acomoda las citas por médico; con otro médico la tarjeta cambia de columna y el «Cita
+  // movida» del formulario se perdía. Se abre la agenda de ese día y ella dice qué cita se movió.
+  return {
+    error: null,
+    registros: await registrosFinales(supabase, controlDeFormulario(fd)),
+    exito: "Cita movida.",
+    ir: `/veterinaria/agenda?fecha=${fecha}&aviso=movida&cita=${id}`,
+  };
 }
 
 export async function estadoCita(id: string, estado: string, fd?: FormData | ControlVersion): Promise<ResultadoAccion> {
@@ -479,4 +485,20 @@ export async function guardarPlantillaConsulta(fd: FormData): Promise<ResultadoA
     registros: await registrosDe(supabase, [{ t: "vet_consulta_plantillas", i: plantilla?.id as string | undefined }]),
     error: null,
     exito: "Plantilla guardada. Las consultas nuevas de este tipo arrancan con ella." };
+}
+
+/** QA S63 (UX): cambiar el médico de una consulta en borrador desde la consulta (la cita, si hay, también cambia). */
+export async function cambiarMedicoConsulta(id: string, fd: FormData): Promise<ResultadoAccion> {
+  const medico = texto(fd, "medico_id");
+  if (!medico) return { error: "Elige el médico veterinario." };
+  const supabase = await createSupabaseServerClient();
+  const control = controlDeFormulario(fd);
+  const { error } = await conControl(supabase.rpc("vet_consulta_cambiar_medico", { p_consulta: id, p_medico: medico }), control);
+  if (error) return conflictoDeError(error) ? { error: null, conflicto: conflictoDeError(error), registros: await registrosFinales(supabase, control) } : { error: traducirError(error) };
+  const { data: c } = await supabase.from("vet_consultas").select("cita_id").eq("id", id).maybeSingle();
+  return {
+    error: null,
+    exito: "Médico cambiado.",
+    registros: await registrosDe(supabase, [{ t: "vet_consultas", i: id }, ...(c?.cita_id ? [{ t: "vet_citas", i: c.cita_id as string }] : [])]),
+  };
 }

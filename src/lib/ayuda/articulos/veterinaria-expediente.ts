@@ -58,6 +58,8 @@ Los filtros de arriba muestran solo a un médico. Cambiar cuánto dura cada tipo
 
 Nace como **borrador** con la plantilla de su tipo (el negocio la edita en Ajustes de Veterinaria).
 
+Mientras es borrador, el médico se cambia desde la consulta: junto a «A cargo de …», **Cambiar médico**, elige al **Médico veterinario** y **Guardar médico**. Si la consulta salió de una cita, la cita cambia de médico también. Una consulta firmada ya no cambia: es de quien la firmó.
+
 ## Escribirla
 
 Se **guarda sola** unos segundos después de que dejas de escribir; arriba ves «Borrador guardado». Si se va la conexión o cierras la pestaña a medias, al volver sale «Tienes un borrador sin guardar» con **Recuperar borrador**. El peso que captures entra al historial de pesos cuando la firmas.

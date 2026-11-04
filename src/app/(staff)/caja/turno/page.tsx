@@ -23,8 +23,8 @@ const MOVIMIENTOS_TOPE = 2000;
 
 const NOMBRE_METODO_ESPERADO: Record<string, string> = { efectivo: "Efectivo (con fondo)", terminal: "Terminal", transferencia: "Transferencia", tarjeta_manual: "Tarjeta manual", link: "Link de pago" };
 
-export default async function TurnoCajaPage({ searchParams }: { searchParams: Promise<{ mov?: string }> }) {
-  const { mov } = await searchParams;
+export default async function TurnoCajaPage({ searchParams }: { searchParams: Promise<{ mov?: string; cerrar?: string }> }) {
+  const { mov, cerrar } = await searchParams;
   const limiteMovimientos = Math.min(Math.max(Number.parseInt(mov ?? "", 10) || MOVIMIENTOS_INICIAL, MOVIMIENTOS_INICIAL), MOVIMIENTOS_TOPE);
   const supabase = await createSupabaseServerClient();
 
@@ -216,6 +216,7 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
       ) : (
         <>
           <TurnoAbierto
+            pedirCierre={cerrar === "1"}
             turnoId={turnoAbierto.id}
             fondoInicial={Number(turnoAbierto.fondo_inicial)}
             abiertoEn={turnoAbierto.abierto_at}

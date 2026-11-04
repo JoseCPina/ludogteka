@@ -1,5 +1,6 @@
 "use client";
 import { dinero } from "@/lib/dinero";
+import type { TotalesCuenta } from "@/lib/cobro/totales";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -20,12 +21,15 @@ export function DevolucionIntegrada({
   disponible,
   simulado,
   onCerrar,
+  onDevuelto,
 }: {
   reservaId: string;
   cobroId: string;
   disponible: number;
   simulado: boolean;
   onCerrar: () => void;
+  /** QA S63 (N168): la cuenta nueva que devolvió el reembolso, para pintarla al momento. */
+  onDevuelto?: (totales: TotalesCuenta) => void;
 }) {
   const router = useRouter();
   const envio = useEspera();
@@ -44,6 +48,7 @@ export function DevolucionIntegrada({
     const res = await envio.ejecutar(() => devolverConProveedor(reservaId, cobroId, m, motivo));
     if (res.error) return setError(res.error);
     setExito(res.aviso ?? "Reembolsado en Mercado Pago y registrado en caja.");
+    if (res.totales) onDevuelto?.(res.totales);
     router.refresh();
   }
 

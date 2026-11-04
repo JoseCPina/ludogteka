@@ -1,4 +1,5 @@
 "use client";
+import { CorregirPrecioLinea } from "@/app/(staff)/reservas/[id]/cobrar/corregir-precio-linea";
 import { dinero } from "@/lib/dinero";
 
 import { useEffect, useState, useRef } from "react";
@@ -41,8 +42,9 @@ export function CitaDetalle({
   servicioNombre = null,
   estado: estadoInicial,
   inicio,
-  precio,
-  correccionPrecio = 0,
+  precio: precioInicial,
+  correccionPrecio: correccionInicial = 0,
+  corregirPrecio = null,
   recargo,
   recargoMotivo,
   puedeRecargo,
@@ -65,6 +67,8 @@ export function CitaDetalle({
   precio: number;
   /** QA S62 (N164): lo que las correcciones de precio vigentes le suman o restan (ya va dentro de `precio`). */
   correccionPrecio?: number;
+  /** QA S63 (N164): «Corregir precio» también aquí (con el permiso de editar montos): la misma corrección que en Caja. */
+  corregirPrecio?: { reservaId: string } | null;
   // El recargo manual que ya trae (si trae) y si quien mira puede ponerlo.
   recargo: number;
   recargoMotivo: string | null;
@@ -85,6 +89,11 @@ export function CitaDetalle({
   /** updated_at de la cita al cargar la pantalla (QA N43). */
   version?: string | null;
 }) {
+  // QA S63 (N164): el precio que se ve es el de la cuenta; una corrección hecha aquí se pinta al guardar.
+  const [precioVivo, setPrecioVivo] = useState<{ precio: number; correccion: number } | null>(null);
+  const [corrigiendoPrecio, setCorrigiendoPrecio] = useState(false);
+  const precio = precioVivo?.precio ?? precioInicial;
+  const correccionPrecio = precioVivo?.correccion ?? correccionInicial;
   // QA S41 (N143): con Veterinaria, «mascota» (o su especie), nunca «perro» fijo.
   const vm = vocabularioMascota({ conVet: useModulos().tiene("veterinaria") });
   const zona = useZonaNegocio();
@@ -147,6 +156,8 @@ export function CitaDetalle({
   }
 
   const [confirmandoCancelar, setConfirmandoCancelar] = useState(false);
+  // QA S63: el motivo es obligatorio y se dice desde que se abre la cancelación, junto al campo.
+  const [faltaMotivoCancelar, setFaltaMotivoCancelar] = useState(false);
   const [confirmandoNoLlego, setConfirmandoNoLlego] = useState(false);
 
   const [iniciando, setIniciando] = useState(false);
@@ -203,9 +214,11 @@ export function CitaDetalle({
     const motivoFinal = valorDelCampo(campoCancelar, motivoCancelar);
     setMotivoCancelar(motivoFinal);
     if (motivoFinal.trim().length < 3) {
-      setError("Escribe el motivo de la cancelación.");
+      setFaltaMotivoCancelar(true);
+      campoCancelar.current?.focus();
       return;
     }
+    setFaltaMotivoCancelar(false);
     const res = await cargando.ejecutar(() => cancelarCita(citaId, motivoFinal, false, ctl.control(forzar)));
     if (ctl.huboConflicto(res, () => accionCancelar(true))) return;
     if (res.error) {
@@ -350,6 +363,11 @@ export function CitaDetalle({
     <div className="flex flex-col gap-4">
       <p className="text-n-700">
         Precio: <span className="font-semibold text-n-900" data-precio-cita={precio.toFixed(2)}>{dinero(precio)}</span>
+        {corregirPrecio && !corrigiendoPrecio && (
+          <Button type="button" variante="secundario" tamano="compacto" className="ml-3" onClick={() => setCorrigiendoPrecio(true)} data-corregir-precio-cita>
+            Corregir precio
+          </Button>
+        )}
         {Math.abs(correccionPrecio) > 0.005 && (
           <span data-correccion-precio className="block text-sm text-n-600">
             Con una corrección de precio de {correccionPrecio > 0 ? "+" : "−"}{dinero(Math.abs(correccionPrecio))} (antes {dinero(precio - correccionPrecio)}).
@@ -361,6 +379,19 @@ export function CitaDetalle({
           </span>
         )}
       </p>
+      {corregirPrecio && corrigiendoPrecio && (
+        <CorregirPrecioLinea
+          reservaId={corregirPrecio.reservaId}
+          tipo="estetica"
+          origenId={citaId}
+          descripcion="esta cita"
+          total={precio}
+          onCerrar={() => setCorrigiendoPrecio(false)}
+          alGuardar={(_t, nuevo) => {
+            if (nuevo != null) setPrecioVivo({ precio: nuevo, correccion: correccionPrecio + (nuevo - precio) });
+          }}
+        />
+      )}
       <p className="-mt-2 text-sm text-n-600">El costo puede aumentar según el tipo de pelo y el cuidado previo.</p>
 
       {tarifa && (tarifa.aplicada || (tarifa.aplicable && tarifa.puedeCambiar)) && (estado === "reservada" || estado === "confirmada" || estado === "en_curso") && (
@@ -483,12 +514,12 @@ export function CitaDetalle({
           ) : confirmandoCancelar ? (
             <div className="flex flex-col gap-2 rounded-md border-[1.5px] border-coral bg-coral-suave p-3">
               <p className="text-sm font-semibold text-coral-oscuro">¿Cancelar {describirCita(servicioNombre, perroNombre, inicio, zona)}? Avisaste que no viene o ya no la quiere: el horario queda libre.</p>
-              <Field ref={campoCancelar} onKeyDown={(e) => { if (esEnterParaConfirmar(e)) { e.preventDefault(); void accionCancelar(); } }} label="Motivo de la cancelación" value={motivoCancelar} onChange={(e) => setMotivoCancelar(e.target.value)} placeholder="ej. La clienta se enfermó" />
+              <Field ref={campoCancelar} onKeyDown={(e) => { if (esEnterParaConfirmar(e)) { e.preventDefault(); void accionCancelar(); } }} label="Motivo de la cancelación (obligatorio)" autoFocus value={motivoCancelar} onChange={(e) => { setMotivoCancelar(e.target.value); if (e.target.value.trim().length >= 3) setFaltaMotivoCancelar(false); }} placeholder="ej. La clienta se enfermó" error={faltaMotivoCancelar ? "Escribe el motivo de la cancelación: queda en el historial." : undefined} data-motivo-cancelar-cita />
               <div className="flex gap-2">
                 <Button type="button" variante="peligro" cargando={cargando.cargando} onClick={() => accionCancelar()}>
                   {cargando.cargando ? "Cancelando…" : "Sí, cancelar la cita"}
                 </Button>
-                <Button type="button" variante="secundario" onClick={() => setConfirmandoCancelar(false)}>
+                <Button type="button" variante="secundario" onClick={() => { setConfirmandoCancelar(false); setFaltaMotivoCancelar(false); }}>
                   No
                 </Button>
               </div>

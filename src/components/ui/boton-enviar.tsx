@@ -11,5 +11,5 @@ import { Button } from "./button";
  */
 export function BotonEnviar({ textoCargando, ...props }: Omit<ComponentProps<typeof Button>, "cargando" | "type">) {
   const { pending } = useFormStatus();
-  return <Button type="submit" cargando={pending} textoCargando={textoCargando} {...props} />;
+  return <Button type="submit" cargando={pending} textoCargando={textoCargando} enviaSinHidratar {...props} />;
 }

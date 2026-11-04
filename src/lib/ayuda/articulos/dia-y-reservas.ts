@@ -132,7 +132,7 @@ Si tienes guardería u hotel prendidos, el link de guardería y hotel trae el pa
     rutas: ["/perros/[id]"],
     palabras: ["expediente", "vacunas", "requisitos sanitarios", "evaluación", "celo", "alergias", "peso", "dar de baja", "eliminar perro", "falleció", "reactivar", "ya no viene"],
     captura: "vacunas-alertas-y-datos-del-perro.jpg",
-    cuerpo: `El expediente del perro es donde se guarda todo lo que necesitas saber antes de recibirlo. Se abre tocando al perro en la ficha de su dueño.
+    cuerpo: `El expediente del perro es donde se guarda todo lo que necesitas saber antes de recibirlo. Se abre tocando al perro en la ficha de su dueño. Para admin y recepción, abajo están **Sus cuentas**: su saldo pendiente (y el saldo a favor por devolver, si hay) y el historial de las cuentas donde estuvo (estancias, citas, cargos), igual que en la ficha del dueño.
 
 1. Arriba están sus datos: raza, tamaño, alimentación, contacto de emergencia y veterinario. Cambia lo que haga falta y toca **Guardar cambios**.
 2. En **Requisitos sanitarios** escoge el **Tipo de requisito** y la **Fecha de aplicación**. Si tienes la foto del carnet, toca **Elegir foto**. Termina con **Registrar aplicación**. El registro aparece de inmediato en la tabla de abajo.
@@ -458,7 +458,7 @@ No se ajusta si la estancia está cubierta con pase («está cubierta con pase, 
 
 Antes de aplicar una salida que cambia el total o deja algo por cobrar o por devolver, al tocar **Confirmar salida** sale la revisión de la cuenta: **Total nuevo**, **Cobrado** y lo que queda (**Por cobrar $X** o **Saldo a favor: devolver $X**). Vuelves a tocar **Confirmar salida** para aplicarla, o **Volver** para dejarla como estaba. Con saldo a favor, **Salida registrada** ofrece **Devolver $X al cliente**.
 
-El aviso «El dueño no llega todavía…» (para extender la salida) solo sale cuando la salida prevista ya llegó o ya pasó.
+El aviso «¿El dueño no llega?» (para extender la salida antes de que otra reserva tome el lugar) solo sale cuando la salida prevista ya pasó o, si es hoy, cuando ya pasó la hora de cierre del negocio; en una salida normal no aparece.
 
 Si tu negocio cobra la estancia completa aunque el perro salga antes, el admin lo marca en [Configuración de hotel](/admin/hotel) (en el menú, **Configuración de hotel**; lo abre el admin o quien tenga el permiso «Configuración del negocio», con Guardería u Hotel prendido): casilla **Cobrar la estancia completa aunque salga antes** y **Guardar**. Con ella, el aviso dice «Se cobra la estancia completa ($450) por la política del negocio» y la cuenta no cambia.
 

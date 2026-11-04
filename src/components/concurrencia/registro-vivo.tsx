@@ -33,6 +33,17 @@ function suscribir(o: () => void) {
 }
 
 /**
+ * QA S63 (N168, N170): para lo que se calcula de varios registros (el total y el saldo de una cuenta): avisa cada vez
+ * que una acción de esta pestaña publica su registro final, para volver a pedir el cálculo a la base.
+ */
+export function alPublicarRegistros(o: () => void): () => void {
+  oyentes.add(o);
+  return () => {
+    oyentes.delete(o);
+  };
+}
+
+/**
  * Los datos de un registro como los muestra la pantalla: los de la página (`inicial`, con su `version`) o, si esta
  * pestaña guardó después, los que devolvió la base al guardar.
  */

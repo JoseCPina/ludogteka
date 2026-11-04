@@ -633,6 +633,7 @@ export function CuentaCobro({
     setDevolviendoCobroId(null);
     setMotivoDevolucion("");
     setMetodosDevolucion([{ metodo: "efectivo", monto: "" }]);
+    if (res.totales) setProvisional({ totales: res.totales });
     refrescar();
   }
 
@@ -1302,6 +1303,7 @@ export function CuentaCobro({
                           disponible={Math.round((totalCobro - totalDevuelto) * 100) / 100}
                           simulado={mp.ordenes.some((o) => o.cobro_id === c.id && o.simulado)}
                           onCerrar={() => setDevolviendoCobroId(null)}
+                          onDevuelto={(t) => setProvisional({ totales: t })}
                         />
                       )}
                     </div>

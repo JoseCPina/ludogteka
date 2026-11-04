@@ -70,6 +70,7 @@ export function TurnoAbierto({
   puedeCerrar,
   abiertoPorMi,
   hayTarjetaManual = false,
+  pedirCierre = false,
 }: {
   turnoId: string;
   fondoInicial: number;
@@ -84,10 +85,14 @@ export function TurnoAbierto({
   // Lo cobrado con «Tarjeta (registro manual)» en este turno (neto de devoluciones).
   // Corte ciego: solo SI hubo tarjeta manual en el turno, nunca su monto (se ve en el corte).
   hayTarjetaManual?: boolean;
+  /** QA S63: llegó desde «Cerrar turno» del inicio de Caja: abre directo la confirmación. */
+  pedirCierre?: boolean;
 }) {
   const zona = useZonaNegocio();
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  // QA S63: «Cerrar turno» pregunta antes de empezar el arqueo (un toque por error no deja la caja a medio cerrar).
+  const [confirmandoCierre, setConfirmandoCierre] = useState(pedirCierre && puedeCerrar);
 
   const [registrandoRetiro, setRegistrandoRetiro] = useState(false);
   const [montoRetiro, setMontoRetiro] = useState("");
@@ -340,13 +345,30 @@ export function TurnoAbierto({
               {agregandoEfectivo ? "Ya no agregar efectivo" : "Agregar efectivo"}
             </Button>
           )}
-          {puedeCerrar && (
-            <Button type="button" variante="peligro" onClick={iniciarCierre}>
+          {puedeCerrar && !confirmandoCierre && (
+            <Button type="button" variante="peligro" onClick={() => setConfirmandoCierre(true)} data-cerrar-turno>
               Cerrar turno
             </Button>
           )}
         </div>
       ) : null}
+
+      {confirmandoCierre && !cerrando && (
+        <div role="alertdialog" aria-labelledby="confirmar-cierre-titulo" className="flex flex-col gap-3 rounded-lg border-[1.5px] border-coral bg-coral-suave p-4" data-confirmar-cierre-turno>
+          <p id="confirmar-cierre-titulo" className="font-semibold text-n-900">¿Cerrar el turno ahora?</p>
+          <p className="text-sm text-n-800">
+            Vas a contar el efectivo y sacar el reporte del lote de la terminal. Mientras no mandes el conteo, el turno sigue abierto y se puede seguir cobrando.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variante="peligro" onClick={() => { setConfirmandoCierre(false); iniciarCierre(); }} data-confirmar-cerrar-turno>
+              Sí, empezar el cierre
+            </Button>
+            <Button type="button" variante="secundario" onClick={() => setConfirmandoCierre(false)}>
+              Todavía no
+            </Button>
+          </div>
+        </div>
+      )}
 
       {registrandoRetiro && !cerrando && (
         <div className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-4">

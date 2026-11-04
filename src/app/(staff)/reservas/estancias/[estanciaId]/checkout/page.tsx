@@ -114,6 +114,10 @@ export default async function CheckoutEstanciaPage({
   // (minutos_retraso_cierre), no comparando horas a mano aquí, mismo
   // tipo de bug que ya mordió dos veces con la zona horaria.
   let sugerenciaHotel: SugerenciaHotel | null = null;
+  // QA S63: «¿El dueño no llega?» solo cuando la salida ya pasó o, si es hoy, ya pasó la hora de cierre (de la base).
+  const pasoElCierre = esHotel && puedeCheckout && estancia.fecha_salida === hoy
+    ? Number((await supabase.rpc("minutos_retraso_cierre", { p_fecha: hoy })).data ?? 0) > 0
+    : false;
   if (esGuarderia && puedeCheckout) {
     const [{ data: minutosData }, { data: cupoData }, { data: hotelCotizable }] = await Promise.all([
       supabase.rpc("minutos_retraso_cierre", { p_fecha: hoy }),
@@ -263,6 +267,7 @@ export default async function CheckoutEstanciaPage({
           salidaAnticipada={(salidaAnticipada ?? null) as CotizacionSalida | null}
           cuenta={{ total: totalCuenta, pagado: pagadoCuenta, saldo: saldoCuenta }}
           hoy={hoy}
+          pasoElCierre={pasoElCierre}
         />
       )}
 

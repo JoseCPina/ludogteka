@@ -83,7 +83,7 @@ export async function registrarCobro(
   };
 }
 
-export type EstadoDevolucion = { error: string | null; devolucionId?: string; registros?: RegistroFinal[] };
+export type EstadoDevolucion = { error: string | null; devolucionId?: string; totales?: TotalesCuenta; registros?: RegistroFinal[] };
 
 export async function registrarDevolucion(
   reservaId: string,
@@ -106,9 +106,13 @@ export async function registrarDevolucion(
 
   if (error) return { error: traducirError(error) };
 
+  // QA S63 (N168): la cuenta nueva (Devuelto y Saldo) va en la respuesta y la pantalla la pinta al recibirla.
+  const { data: tot } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId });
+  const fila = Array.isArray(tot) ? tot[0] : tot;
   return {
     error: null,
     devolucionId: data as string,
+    totales: fila ? totalesDeFila(fila) : undefined,
     registros: await registrosDe(supabase, [{ t: "devoluciones", i: data as string }, { t: "cobros", i: cobroId }, { t: "reservas", i: reservaId }]),
   };
 }

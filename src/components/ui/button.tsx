@@ -43,6 +43,11 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   // y se bloquea (src/lib/cobro/bloqueo-escritura.ts). Uno que solo LEE (buscar, exportar) o que sirve para salir del
   // bloqueo (contratar, pagar) lleva `sinBloqueo`.
   sinBloqueo?: boolean;
+  /**
+   * QA S63: el botón de un `<form action={acciónDelServidor}>` (BotonEnviar) funciona antes de hidratar (Next manda el
+   * POST de la acción): no se ve deshabilitado al cargar. Solo para esos formularios.
+   */
+  enviaSinHidratar?: boolean;
 };
 
 // QA S16 (N58): antes de que la página se hidrate, un botón que envía un formulario manejado por React mandaría el
@@ -67,7 +72,7 @@ export function useLento(cargando: boolean | undefined) {
 }
 
 export const Button = forwardRef<HTMLButtonElement, Props>(
-  ({ variante = "primario", tamano = "normal", className = "", cargando, textoCargando, sinBloqueo = false, disabled, children, type, ...props }, ref) => {
+  ({ variante = "primario", tamano = "normal", className = "", cargando, textoCargando, sinBloqueo = false, enviaSinHidratar = false, disabled, children, type, ...props }, ref) => {
     const hidratado = useHidratado();
     const lento = useLento(cargando);
     const envia = type !== "button" && type !== "reset";
@@ -75,7 +80,7 @@ export const Button = forwardRef<HTMLButtonElement, Props>(
       <button
         ref={ref}
         type={type}
-        disabled={disabled || cargando || (envia && !hidratado)}
+        disabled={disabled || cargando || (envia && !hidratado && !enviaSinHidratar)}
         data-ui="boton"
         data-variante={variante}
         data-hidratado={hidratado ? undefined : "no"}

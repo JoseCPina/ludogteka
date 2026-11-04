@@ -1,4 +1,5 @@
 import { sinTitulosVacios } from "@/lib/veterinaria/portal-texto";
+import { MedicoConsulta } from "./medico-consulta";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
@@ -76,6 +77,16 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
   const c = d.consulta;
   const cargos = (cargosData ?? null) as DatosCargos | null;
   const soyElMedico = miMedico === c.medico_id;
+  // QA S63: los médicos del negocio (con su cédula) para «Cambiar médico», y si quien mira maneja la agenda clínica.
+  const [{ data: medicosCrudo }, { data: puedeAgenda }] = await Promise.all([
+    supabase.from("medicos_veterinarios").select("id, cedula_profesional, profiles(nombre_completo)").is("deleted_at", null).order("created_at"),
+    supabase.rpc("vet_agenda_puede"),
+  ]);
+  const medicosConsulta = (medicosCrudo ?? []).map((m) => {
+    const pr = (Array.isArray(m.profiles) ? m.profiles[0] : m.profiles) as { nombre_completo: string | null } | null;
+    return { id: m.id as string, nombre: pr?.nombre_completo ?? "Sin nombre", cedula: (m.cedula_profesional as string | null) ?? null };
+  });
+  const puedeCambiarMedico = puedeAgenda === true;
   // «Aplicar vacuna» dentro de la consulta: el mismo formulario del carnet (producto y lote del inventario, fecha, médico).
   const conFormularios = c.estado === "borrador" && puedeAtender === true && puedeRegistrarVacunas;
   // Segunda (y última) tanda: el carnet de la mascota y, en un borrador, lo que piden los formularios del carnet.
@@ -161,7 +172,15 @@ export default async function ConsultaPagina({ params }: { params: Promise<{ id:
         <p className="mt-1 text-n-700">
           {etiquetaEspecie(d.mascota.especie)}{d.mascota.raza ? ` · ${d.mascota.raza}` : ""} · de {d.dueno.nombre}{d.dueno.telefono ? ` · ${d.dueno.telefono}` : ""} · {formatearFecha(c.atendida_at, zona)}
         </p>
-        <p className="text-sm text-n-600">A cargo de {d.medico.nombre} · cédula {d.medico.cedula}{d.medico.cpa ? ` · CPA ${d.medico.cpa}` : ""}</p>
+        {/* QA S63: el médico se cambia desde la consulta mientras está en borrador; el nombre se repinta al guardar. */}
+        <MedicoConsulta
+          consultaId={id}
+          version={(c.updated_at as string | null) ?? null}
+          medicoId={c.medico_id}
+          medicos={medicosConsulta}
+          cpa={d.medico.cpa ?? null}
+          puedeCambiar={c.estado === "borrador" && puedeCambiarMedico}
+        />
         {/* QA S53 (N157): con receta emitida desde esta consulta, el botón es «Ver receta»; emitir otra queda como acción secundaria. */}
         {recetasVigentes.length > 0 && (
           <div className="mt-3 flex flex-wrap items-center gap-2" data-recetas-consulta>
