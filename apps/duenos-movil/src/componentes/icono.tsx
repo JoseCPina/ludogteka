@@ -70,5 +70,5 @@ export const ICONOS = {
 export type NombreIcono = keyof typeof ICONOS;
 
 export function Icono({ nombre, tamano = 22, color }: { nombre: NombreIcono; tamano?: number; color: ColorValue }) {
-  return <SymbolView name={ICONOS[nombre]} size={tamano} tintColor={color} />;
+  return <SymbolView name={{ ...ICONOS[nombre], web: ICONOS[nombre].android }} size={tamano} tintColor={color} />;
 }

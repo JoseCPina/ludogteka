@@ -64,7 +64,7 @@ const personasA = {
 };
 const miembrosDeB = new Set([datos.esteticaAmbos, datos.cuentaAmbos]);
 // App para dueños (docs/app-duenos/FASE-0.md): tablas de la persona, no de un negocio.
-const TABLAS_DE_LA_PERSONA = new Set(["duenos", "mascotas", "app_avisos", "app_push_suscripciones"]);
+const TABLAS_DE_LA_PERSONA = new Set(["duenos", "mascotas", "app_avisos", "app_push_suscripciones", "app_push_dispositivos", "alertas_calle", "alertas_calle_actualizaciones", "alertas_calle_reportes", "alertas_calle_coincidencias"]);
 for (const [rol, id] of Object.entries(personasA)) if (!id) throw new Error(`No hay ${rol} en Ludogteka de desarrollo.`);
 
 // La auditoría dura más que una sesión (de 17 a 40 min contra desarrollo): cada bloque renueva los tokens que tengan

@@ -4,8 +4,9 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { AndroidImportance } from "expo-notifications";
 import * as Application from "expo-application";
-import * as SecureStore from "expo-secure-store";
+import * as SecureStoreNativo from "expo-secure-store";
 import { llamar } from "./api";
+const SecureStore = Platform.OS === "web" ? { getItemAsync: async () => null, setItemAsync: async () => {}, deleteItemAsync: async () => {} } : SecureStoreNativo;
 
 /**
  * Notificaciones nativas (expo-notifications: FCM en Android, APNs en iOS). El token del celular se registra en la
@@ -27,7 +28,7 @@ export type EstadoPush = "activas" | "denegadas" | "sin_configurar" | "simulador
 
 /** Pide permiso (si hace falta) y registra el token. No vuelve a preguntar si la persona ya dijo que no. */
 export async function activarPush(preguntar: boolean): Promise<EstadoPush> {
-  if (!Device.isDevice) return "simulador";
+  if (!Device.isDevice || Platform.OS === "web") return "simulador";
   await canalAndroid();
   let { status } = await Notifications.getPermissionsAsync();
   if (status !== "granted" && preguntar) status = (await Notifications.requestPermissionsAsync()).status;

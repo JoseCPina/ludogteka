@@ -1,5 +1,15 @@
 import Constants from "expo-constants";
-import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
+import * as SecureStoreNativo from "expo-secure-store";
+
+// En web (capturas y pruebas del mismo código) no hay almacén seguro: localStorage.
+const SecureStore = Platform.OS === "web"
+  ? {
+      getItemAsync: async (k: string) => globalThis.localStorage?.getItem(k) ?? null,
+      setItemAsync: async (k: string, v: string) => globalThis.localStorage?.setItem(k, v),
+      deleteItemAsync: async (k: string) => globalThis.localStorage?.removeItem(k),
+    }
+  : SecureStoreNativo;
 
 /**
  * La app habla SOLO con /api/movil/<accion> de app.peludesk.mx (src/app/api/movil en la web): las mismas funciones de
