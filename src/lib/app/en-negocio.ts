@@ -4,6 +4,7 @@ import { ENCABEZADOS_NEGOCIO } from "@/lib/negocio/resolver";
 import { opcionesCookieSesion } from "@/lib/supabase/area";
 import { ENCABEZADO_PESTANA, esPestanaValida } from "@/lib/concurrencia/tipos";
 import { ENCABEZADO_MEDIR, fetchMedido, medirActivo } from "@/lib/medicion/consultas";
+import { cookiesDeSesionMovil, sesionMovilActual } from "@/lib/movil/contexto";
 
 /**
  * El cliente de Supabase de la app para dueños DENTRO de un negocio (Fase 3). La app vive en app.peludesk.mx, sin
@@ -20,6 +21,8 @@ export async function supabaseAppEnNegocio(negocioId: string) {
   const encabezados = await headers();
   const pestana = encabezados.get(ENCABEZADO_PESTANA);
   const idMedir = medirActivo() ? encabezados.get(ENCABEZADO_MEDIR) : null;
+  const movil = sesionMovilActual();
+  const nombreCookie = opcionesCookieSesion("portal")?.name;
   return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     global: {
       headers: {
@@ -31,9 +34,11 @@ export async function supabaseAppEnNegocio(negocioId: string) {
     cookieOptions: opcionesCookieSesion("portal"),
     cookies: {
       getAll() {
+        if (movil && nombreCookie) return cookiesDeSesionMovil(nombreCookie, movil);
         return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
+        if (movil) return;
         try {
           cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
         } catch {

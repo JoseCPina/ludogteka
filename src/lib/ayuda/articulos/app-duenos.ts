@@ -11,7 +11,7 @@ export const ARTICULOS_APP_DUENOS: Articulo[] = [
     modulo: null,
     roles: ["admin", "recepcion"],
     rutas: ["/portal"],
-    palabras: ["app", "app para dueños", "app.peludesk.mx", "mis mascotas", "entrar con whatsapp", "código por whatsapp", "sin contraseña", "avisos", "notificaciones", "instalar", "cerca de mí", "dueño", "cliente no puede entrar", "pedir cita", "reservar", "confirmar cita", "reseñas", "opiniones", "confirmar cita", "aviso al dueño", "notificación al dueño", "cancelé la cita", "pagar desde la app", "firmar contrato", "pases"],
+    palabras: ["app", "app para dueños", "app.peludesk.mx", "mis mascotas", "entrar con whatsapp", "código por whatsapp", "sin contraseña", "avisos", "notificaciones", "instalar", "cerca de mí", "dueño", "cliente no puede entrar", "pedir cita", "reservar", "confirmar cita", "reseñas", "opiniones", "confirmar cita", "aviso al dueño", "notificación al dueño", "cancelé la cita", "pagar desde la app", "firmar contrato", "pases", "mapa", "alertas", "perro en la calle", "perro herido", "animal abandonado", "hotel con cupo", "pet friendly", "app para android", "app para iphone"],
     cuerpo: `Además del portal de tu negocio, tus clientes tienen la **app PeluDesk**, gratuita, en **app.peludesk.mx**. Es de la persona, no de un negocio: ahí ve a **todas sus mascotas**, las de tu negocio y las de cualquier otro que use PeluDesk, con la misma cuenta.
 
 ## Cómo entra tu cliente
@@ -30,7 +30,7 @@ Si ya tiene contraseña del portal de tu negocio, también le sirve ahí («entr
 - Desde cada mascota abre **su ficha en tu negocio** dentro de la app: sus fotos del día, los reportes que le mandaste, su carnet, sus consultas y recetas (sin notas internas), y desde ahí **pide cita o reserva** contigo. Su expediente completo sigue en el portal de tu negocio, con la misma cuenta.
 - **Te toca**: arriba de todo, lo que le pide algo: contratos por firmar, visitas por confirmar y lo que tiene por pagar contigo.
 - **Avisos**: lo que la app le tiene que decir, y el botón para **activar los avisos en su celular** (notificaciones). En iPhone solo funcionan con la app instalada en la pantalla de inicio.
-- **Cerca de mí**: veterinarias, estéticas, guarderías y hoteles cerca de donde está, con la calificación de Google Maps; los negocios que usan PeluDesk salen marcados.
+- **Cerca de mí**: veterinarias, estéticas, guarderías y hoteles cerca de donde está, con la calificación de Google Maps; los negocios que usan PeluDesk salen marcados. En la app para celular es un mapa (abajo, «Cerca de mí en el mapa»).
 - **Instalar la app**: desde Avisos, para tenerla como app en su celular, con su ícono.
 
 ## Qué NO cambia para ti
@@ -75,7 +75,25 @@ Si la mascota tiene expediente contigo, tu cliente hace esto desde su celular y 
 - **Ver sus pases**: cuántos días o servicios le quedan y hasta cuándo (sin lo que pagó).
 - **Opinar** sobre una cita o estancia **finalizada**: estrellas y una línea, una vez por visita. Sus reseñas salen en tu página pública («Lo que dicen sus clientes», con su primer nombre y «verificadas por PeluDesk»), porque solo puede opinar quien sí fue. Las contestas o las escondes en **Reseñas** ([[articulo:resenas-de-tus-clientes]]).
 
-Lo que el dueño no ve nunca: notas internas, quién llenó un reporte, lotes ni folios, ni nada de otros clientes.`,
+Lo que el dueño no ve nunca: notas internas, quién llenó un reporte, lotes ni folios, ni nada de otros clientes.
+
+## Cerca de mí en el mapa (app para celular)
+
+En la app PeluDesk para Android y iPhone, **Cerca de mí** es un mapa a pantalla completa con la ubicación del dueño y una lista deslizable abajo. Arriba escoge qué buscar: **veterinarias**, **abiertas ahora**, **urgencias 24 h**, **estéticas**, **guarderías**, **hoteles con cupo hoy**, **pet friendly** (parques, restaurantes, cafés y hoteles que aceptan mascotas) y **tiendas**.
+
+- **Tu negocio sale primero y marcado** si usa PeluDesk y tu sucursal tiene ubicación guardada (o tu ficha del directorio está reclamada). Si tienes hotel, dice si **hay cupo esta noche** o si está lleno, con la misma cuenta de tu calendario (sin precios).
+- Si la mascota del dueño ya tiene expediente contigo, **Reservar** o **Pedir cita** abre el flujo de la app con tu cupo y tus horas reales. Si todavía no es tu cliente, el botón le abre tu WhatsApp con un mensaje listo.
+- Al lado de cada categoría sale el **rango de precios de su ciudad** del Índice de precios de PeluDesk (no tu precio).
+- Cada lugar abre su ficha: fotos, horario y opiniones de Google, tus **opiniones verificadas** de PeluDesk, llamar, WhatsApp y cómo llegar. Los negocios del directorio que no usan PeluDesk tienen «¿Es tu negocio? Reclama tu ficha».
+
+## Alertas de animales en la calle
+
+Cualquier persona con la app PeluDesk puede subir una **alerta** de un perro o gato que vio en la calle: **perdido, herido, en peligro o abandonado**, con su foto, una descripción y la ubicación del celular (el pin se ajusta en el mapa).
+
+- Al publicarla se avisa a la gente con la app a **3 km** y, por WhatsApp, a los negocios PeluDesk a 3 km (si tu sucursal tiene ubicación guardada, te llega «Alguien de la app PeluDesk vio … cerca de tu negocio» con el link de la alerta, su foto y cómo llegar).
+- Si coincide con una mascota reportada como perdida en la zona (misma especie, a menos de 5 km, perdida en los últimos 60 días), a su dueño le llega **«¿Puede ser …?»**.
+- Cada alerta dice cómo está (**sigue ahí, ya no está, rescatado, ya está con su familia**), y cualquiera le agrega novedades con foto o le escribe a quien la subió **por la app, sin ver teléfonos**. **Nunca se muestra quién la subió.**
+- Caducan solas a las **72 horas sin novedades**. Hay límite de alertas por persona y se pueden **reportar** como falsas u ofensivas: con tres reportes de personas distintas se esconde y PeluDesk la revisa.`,
   },
   {
     slug: "resenas-de-tus-clientes",

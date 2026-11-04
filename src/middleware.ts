@@ -103,7 +103,8 @@ export async function middleware(request: NextRequest) {
   if (
     pathname === "/plataforma" || pathname.startsWith("/plataforma/") || pathname === "/peludesk" || pathname.startsWith("/peludesk/") ||
     pathname === "/app" || pathname.startsWith("/app/") ||
-    pathname.startsWith("/api/stripe/") || pathname.startsWith("/api/whatsapp/") || pathname.startsWith("/api/telegram/")
+    pathname.startsWith("/api/stripe/") || pathname.startsWith("/api/whatsapp/") || pathname.startsWith("/api/telegram/") ||
+    pathname.startsWith("/api/movil/")
   ) {
     return NextResponse.rewrite(new URL("/pagina-no-encontrada", request.url), { request: { headers: cabeceras }, status: 404 });
   }
@@ -428,6 +429,8 @@ async function appDuenos(request: NextRequest, cabeceras: Headers) {
   cabeceras.set(ENCABEZADO_FIRMA, await firmarPlataforma());
   cabeceras.set(ENCABEZADO_AREA, "portal");
   cabeceras.set(ENCABEZADO_RUTA, pathname);
+  // La app nativa (apps/duenos-movil) entra por /api/movil con su sesión en Authorization: Bearer; la ruta la comprueba.
+  if (pathname.startsWith("/api/movil/")) return NextResponse.next({ request: { headers: cabeceras } });
   // Nada de la plataforma, de un negocio ni de los webhooks existe en este dominio.
   if (pathname === "/plataforma" || pathname.startsWith("/plataforma/") || pathname.startsWith("/api/") || pathname === "/app" || pathname.startsWith("/app/") || pathname === "/portal" || pathname.startsWith("/portal/")) {
     return NextResponse.rewrite(new URL("/pagina-no-encontrada", request.url), { request: { headers: cabeceras }, status: 404 });

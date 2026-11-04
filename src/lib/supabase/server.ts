@@ -4,6 +4,7 @@ import { ENCABEZADOS_NEGOCIO } from "@/lib/negocio/resolver";
 import { ENCABEZADO_AREA, areaDeEncabezado, opcionesCookieSesion, type AreaSesion } from "@/lib/supabase/area";
 import { ENCABEZADO_PESTANA, esPestanaValida } from "@/lib/concurrencia/tipos";
 import { ENCABEZADO_MEDIR, fetchMedido, medirActivo } from "@/lib/medicion/consultas";
+import { cookiesDeSesionMovil, sesionMovilActual } from "@/lib/movil/contexto";
 
 // Toda petición a la base lleva el negocio que resolvió el middleware por
 // el dominio (x-negocio-id): la base decide qué se ve según la membresía
@@ -19,6 +20,9 @@ export async function createSupabaseServerClient(area?: AreaSesion) {
   const pestana = encabezados.get(ENCABEZADO_PESTANA);
   // Tiempo del panel: con PELUDESK_MEDIR=1 (solo desarrollo) se cuentan las consultas de la petición que trae el id.
   const idMedir = medirActivo() ? encabezados.get(ENCABEZADO_MEDIR) : null;
+  // App nativa (/api/movil): la sesión viene del Bearer de la petición, no de la cookie (src/lib/movil/contexto.ts).
+  const movil = areaDeSesion === "portal" ? sesionMovilActual() : null;
+  const nombreCookie = opcionesCookieSesion(areaDeSesion)?.name;
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -34,9 +38,11 @@ export async function createSupabaseServerClient(area?: AreaSesion) {
       cookieOptions: opcionesCookieSesion(areaDeSesion),
       cookies: {
         getAll() {
+          if (movil && nombreCookie) return cookiesDeSesionMovil(nombreCookie, movil);
           return cookieStore.getAll();
         },
         setAll(cookiesToSet) {
+          if (movil) return; // La app nativa guarda su sesión ella misma.
           // En un render (Server Component) Next no deja escribir cookies y
           // lanza. supabase-js llama esto cuando renueva el token y la
           // llamada corre dentro de un evento sin quien la atrape: el error

@@ -1,0 +1,15 @@
+# EAS Build sube desde la raíz del repo: solo hace falta la app nativa (apps/duenos-movil), sin sus dependencias.
+/*
+!/apps
+/apps/*
+!/apps/duenos-movil
+/apps/duenos-movil/node_modules
+/apps/duenos-movil/.expo
+/apps/duenos-movil/dist
+/apps/duenos-movil/android
+/apps/duenos-movil/ios
+*.jks
+*.p8
+*.p12
+*.key
+.env*

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AppNativaInvitacion } from "@/components/app/app-nativa-invitacion";
 import { misMascotas, misNegocios, edadTexto, nombreEspecie, type Mascota } from "@/lib/app/datos";
 import { sesionApp } from "@/lib/app/sesion";
 import { vinculosApp, contratosPorFirmarApp, pagosPendientesApp, visitasApp } from "@/lib/app/negocios";
@@ -22,6 +23,7 @@ export default async function MisMascotasPage() {
   const idas = mascotas.filter((m) => m.fallecido);
   return (
     <>
+      <AppNativaInvitacion />
       <div className="apd-aparece">
         <span className="apd-ceja">Mis mascotas</span>
         <h1 className="apd-titulo">{nombre ? `Hola, ${nombre}` : "Hola"}</h1>

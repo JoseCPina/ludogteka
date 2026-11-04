@@ -1,5 +1,6 @@
 import webpush from "web-push";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { enviarPushNativo } from "@/lib/movil/push";
 
 /**
  * Notificaciones push de la app para dueños (Web Push con VAPID). Las llaves viven en el entorno (VAPID_PUBLIC_KEY,
@@ -19,7 +20,13 @@ function configurar(): boolean {
   return true;
 }
 
+/** Manda el aviso a todo lo que la persona tenga: los navegadores (Web Push) y los celulares con la app nativa. */
 export async function enviarPush(duenoId: string, carga: CargaPush): Promise<{ enviadas: number; quitadas: number }> {
+  const [web, nativo] = await Promise.all([enviarPushWeb(duenoId, carga), enviarPushNativo(duenoId, carga)]);
+  return { enviadas: web.enviadas + nativo.enviadas, quitadas: web.quitadas + nativo.quitadas };
+}
+
+async function enviarPushWeb(duenoId: string, carga: CargaPush): Promise<{ enviadas: number; quitadas: number }> {
   if (!configurar()) return { enviadas: 0, quitadas: 0 };
   const db = createSupabaseAdminClient();
   const { data: subs } = await db.from("app_push_suscripciones").select("id, endpoint, p256dh, auth, fallos").eq("dueno_id", duenoId).is("deleted_at", null);

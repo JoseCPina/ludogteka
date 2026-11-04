@@ -185,3 +185,67 @@ Escala de Tailwind (4 px). Panel denso: **gap 12–16 entre tarjetas, padding de
 ## 6. Lo que no cambia con el diseño
 
 Datos, reglas de negocio, permisos por pantalla (`ZONAS`, `puedeAbrir`), pintar desde el registro final, botones con tope, bloqueo de escritura, `TablaResponsiva` en celular, el español de México, «cotización»/«link» solo en la landing, y las auditorías (`celular-390-dev`, `ux-jerarquia-dev`, `ux-respuesta-dev`, `permisos-pantalla-dev`, `acciones-pantalla-dev`, `tiempo-panel-dev`). Una auditoría se ajusta solo cuando un cambio de diseño legítimo la rompe (y se dice en el commit), nunca para tapar un error.
+
+## 7. App nativa para dueños (apps/duenos-movil, 3 de noviembre de 2026)
+
+La app de PeluDesk para dueños es nativa (Expo SDK 58, React Native, expo-router). No usa Tailwind ni shadcn: tiene sus tokens en `apps/duenos-movil/src/tema/tokens.ts` y sus componentes en `apps/duenos-movil/src/componentes/`. La marca es la misma (morado, menta, coral, crema y Outfit); el lenguaje es el de una app de consumo, no el del panel.
+
+### 7.1 Reglas que no se rompen
+- **Patrones de cada plataforma**: barra de pestañas inferior nativa (`NativeTabs`: Liquid Glass en iOS, Material en Android), pila con gesto de regreso (y el gesto predictivo de Android), hojas inferiores, cámara, galería, ubicación y notificaciones con los permisos del sistema, selector de fecha del sistema, hoja de acciones en iOS y diálogo en Android, y háptica (selección en chips y pestañas, impacto en botones, éxito o error al guardar).
+- **Prohibido**: etiquetas en mayúsculas con letras separadas, títulos de pantalla gigantes (el título lo pone la barra nativa a 17, seminegrita), y pantallas hechas de tarjetas iguales de puro texto. Cada pantalla mezcla foto o mapa, una lista nativa y, cuando hace falta, una cifra que manda.
+- **Iconos nativos de cada sistema**: SF Symbols en iOS y Material Symbols en Android, por pares (`ICONOS` en `componentes/icono.tsx`, `expo-symbols`). Nunca un ícono dibujado a mano.
+- Una pantalla nueva parte de una referencia de Mobbin de apps nativas de consumo (iOS) y, si existe, de la nota de `C:\ui-library\mobbin\peludesk\app-*`.
+
+### 7.2 Tokens (claro / oscuro)
+| Token | Claro | Oscuro | Uso |
+|---|---|---|---|
+| `fondo` | `#FAF7F2` | `#131117` | Fondo de pantalla (cálido) |
+| `superficie` | `#FFFFFF` | `#1D1A22` | Listas agrupadas, tarjetas, hoja |
+| `superficieAlta` | `#F2EEE7` | `#29252F` | Segmentos, esqueletos, botón de ícono |
+| `texto` / `textoSuave` / `textoTenue` | `#221F2B` / `#625C6B` / `#857E8D` | `#F4F1F8` / `#B5AFBE` / `#8F8999` | Texto principal, secundario, pie |
+| `linea` | `#E7E1D8` | `#35303D` | Separadores (hairline) |
+| `primario` / `primarioSuave` / `sobrePrimario` | `#4B3F72` / `#ECE8F5` / `#FFFFFF` | `#B9ABF0` / `#2E2748` / `#1B1530` | Acción principal, selección |
+| `exito`, `peligro`, `aviso` (+ `…Suave`) | `#1F6B57`, `#B23C31`, `#8A5400` | `#7FD1B5`, `#F4978E`, `#F5B85C` | Estados |
+| `coloresLugar` | veterinaria `#D2483E`, urgencias `#B0161F`, estética `#8C5AD6`, guardería `#E0861A`, hotel `#2B7A99`, pet friendly `#2E8B57`, tienda `#7A5A48`, PeluDesk `#4B3F72` | = | Pines del mapa y chips |
+
+Espacio: 4, 8, 12, 16, 20, 24, 32. Radios: control 12, tarjeta 18, hoja 28, pastilla. Sombra difusa (14 de radio, 12 % de opacidad; elevación 4 en Android).
+
+### 7.3 Tipografía (Outfit, `@expo-google-fonts/outfit`)
+| Estilo | Tamaño | Peso | Uso |
+|---|---|---|---|
+| `titulo` | 22/28 | 600 | Nombre de la mascota, título de un resultado |
+| `encabezado` | 17/22 | 600 | Título de grupo o de hoja (igual que la barra nativa) |
+| `cuerpo` / `cuerpoFuerte` | 16/22 | 400 / 500 | Texto y título de fila |
+| `secundario` | 14/20 | 400 | Detalle de fila, ayudas |
+| `pie` | 12/16 | 500 | Insignias, atribuciones (sin mayúsculas forzadas) |
+| `cifra` | 28/32 | 600, números tabulares | Peso, saldo, pases |
+
+El texto respeta el tamaño de letra del sistema hasta 1.6×.
+
+### 7.4 Componentes (`apps/duenos-movil/src/componentes`)
+| Componente | Qué es |
+|---|---|
+| `Pantalla` | Desplazable con «jalar para actualizar», esqueleto de la primera carga, error con «Reintentar» y barra fija de acción (`pie`) |
+| `Grupo` + `Fila` | Lista agrupada nativa (Ajustes de iOS, listas de Material): ícono o foto, título, detalle, insignia y chevrón |
+| `Boton` | Pastilla de 52 (40 compacta); primario, secundario, texto, peligro; háptica y «Un momento…» con spinner |
+| `BotonIcono`, `Chip`, `Segmentos`, `Insignia` | Botón redondo, filtro con ícono, selector de 2–3 opciones, estado |
+| `AvatarMascota` | Foto redondeada o inicial sobre un color que sale de su nombre |
+| `Mensaje`, `Vacio`, `Esqueleto` | Aviso en línea, estado vacío con ícono y una acción, forma de la pantalla mientras carga |
+| `Campo`, `CampoFecha` | Texto y fecha con el selector del sistema |
+| `HojaInferior` | Hoja deslizable sobre el mapa (asomada, media, casi completa), con gesto nativo y resorte |
+| `Mapa` + `Pin` | Apple Maps en iOS, Google Maps en Android; pin de color por tipo, el de PeluDesk con anillo, el elegido crece |
+| `PadFirma` | Firma con el dedo (SVG) que se entrega como PNG |
+| `TarjetaAlerta` | Foto grande, tipo con su color, estado, distancia y hace cuánto |
+
+### 7.5 Referencias por pantalla
+| Pantalla | Referencia de Mobbin |
+|---|---|
+| Entrar | X y Cash App (teléfono con lada grande, un botón ancho); nota `app-entrada-whatsapp` |
+| Mis mascotas | Fi (mascota arriba, resumen en mosaicos) y Finch (perfil de mascota) |
+| Cartilla y leer con cámara | Bevel (registro médico), Fi (cartilla); nota `app-cartilla` |
+| Pedir cita y reservar | Fresha (tira de días, horas grandes), nota `app-reservar-fecha-cupo` |
+| Por pagar | BlaBlaCar (el monto en el botón), nota `app-pagar` |
+| Placa con QR | nota `app-perfil-publico-qr` |
+| Mascota perdida y Alertas | Citizen y Nextdoor (nota `app-mascota-perdida`); Yubo y Agoda (reportar con foto) |
+| Cerca de mí | TikTok «Places in this area» y Fresha (chips sobre el mapa, hoja con la lista), Apple Maps (ficha) |
+| Ajustar el pin de una alerta | Waymo «Adjust drop-off» (pin fijo al centro, se mueve el mapa) |
