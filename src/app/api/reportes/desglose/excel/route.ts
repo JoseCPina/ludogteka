@@ -1,3 +1,4 @@
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -24,7 +25,7 @@ export async function GET(req: Request) {
   }
   const supabase = await createSupabaseServerClient();
   // Corte ciego: tampoco en Excel el dinero de caja por método de un periodo con el turno abierto.
-  if (esTarjetaDeCaja(tarjeta) && (await turnoAbiertoEnPeriodo(supabase, desde, hasta, await zonaActual()))) {
+  if (esTarjetaDeCaja(tarjeta) && (await turnoAbiertoEnPeriodo(supabase, desde, hasta, await zonaActual(), await obtenerSesionConRol().then((q) => ({ rol: q?.rol, usuarioId: q?.user.id }))))) {
     return paginaDeError({ titulo: "Todavía no", que: TEXTO_CORTE_CIEGO, queHacer: ["Descárgalo cuando se cierre el turno de caja."], status: 409 });
   }
   const { data, error } = await supabase.rpc("reporte_desglose", {

@@ -342,7 +342,7 @@ export function CobroJunto({
               )}
               {m.metodo === "tarjeta_manual" && (
                 <div className="flex w-full flex-col gap-1">
-                  <CamposTarjetaManual valor={m.tarjeta} onChange={(cambios) => actualizarMetodo(i, { tarjeta: { ...m.tarjeta, ...cambios } })} />
+                  <CamposTarjetaManual valor={m.tarjeta} conTerminal={terminalManualBloqueada} onChange={(cambios) => actualizarMetodo(i, { tarjeta: { ...m.tarjeta, ...cambios } })} />
                   <p className="text-xs text-n-600">Un solo folio para todo el grupo: el del voucher de {dinero(Number(m.monto) || 0)}.</p>
                 </div>
               )}

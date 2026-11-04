@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -76,7 +77,7 @@ export function PreciosPorDia({ servicioId, precios, hoy, versionPrecios = null 
             <li key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
               <span className="text-n-900">
                 <strong>{DIAS[p.dia_semana]}</strong>:{" "}
-                <span className="tabular-nums">${Number(p.precio).toFixed(2)}</span>
+                <span className="tabular-nums">{dinero(Number(p.precio))}</span>
                 <span className="text-sm text-n-600">
                   {p.vigencia_desde > hoy ? " · a partir del " : " · desde el "}
                   {formatearFechaCalendario(p.vigencia_desde)}

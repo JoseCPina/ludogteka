@@ -14,7 +14,7 @@ type Detalle = {
   ciego: boolean;
   reserva_id?: string;
   cliente?: { id: string; nombre: string } | null;
-  cobro?: { id: string; fecha: string; origen: string | null; notas: string | null; cobro_por: string | null; anulado: boolean; anulacion_motivo: string | null; metodos: { metodo: string; monto: number | null; propina: number | null; ajuste: boolean }[] } | null;
+  cobro?: { id: string; fecha: string; origen: string | null; notas: string | null; cobro_por: string | null; anulado: boolean; anulacion_motivo: string | null; saldo_despues?: number | null; metodos: { metodo: string; monto: number | null; propina: number | null; ajuste: boolean }[] } | null;
   lineas?: { tipo: string; descripcion: string; cantidad: number; precio_unitario: number; total: number }[] | null;
   citas?: { id: string; inicio: string; servicio: string | null; estado: string }[] | null;
   tarjeta_manual?: { folio: string; banco: string | null; ultimos4: string | null } | null;
@@ -72,10 +72,21 @@ export async function DetalleMovimiento({ mov, zona }: { mov: string; zona: stri
           <h3 className="font-semibold text-n-900">El cobro</h3>
           <p className="text-n-600">{ORIGEN[d.cobro.origen ?? "manual"] ?? d.cobro.origen} · cobró {d.cobro.cobro_por ?? "—"}{d.cobro.anulado ? " · anulado" : ""}</p>
           {d.cobro.anulado && d.cobro.anulacion_motivo && <p className="text-coral-oscuro">Motivo: {d.cobro.anulacion_motivo}</p>}
-          <ul className="mt-1 flex flex-col gap-0.5">
+          {/* QA S62: si fue abono y cuánto quedó en la cuenta después de él. */}
+          {d.cobro.saldo_despues != null && !d.cobro.anulado && (
+            <p className={Number(d.cobro.saldo_despues) > 0.005 ? "font-semibold text-ambar-oscuro" : "text-menta-oscuro"} data-tipo-cobro={Number(d.cobro.saldo_despues) > 0.005 ? "abono" : "liquido"} data-saldo-despues={Number(d.cobro.saldo_despues).toFixed(2)}>
+              {Number(d.cobro.saldo_despues) > 0.005
+                ? `Abono: después quedaron ${dinero(Number(d.cobro.saldo_despues))} por cobrar.`
+                : Number(d.cobro.saldo_despues) < -0.005
+                  ? `Liquidó la cuenta y quedaron ${dinero(-Number(d.cobro.saldo_despues))} a favor del cliente.`
+                  : "Liquidó la cuenta."}
+            </p>
+          )}
+          {(d.cobro.metodos ?? []).filter((x) => !x.ajuste).length > 1 && <p className="mt-1 text-n-600">Cobro dividido en {(d.cobro.metodos ?? []).filter((x) => !x.ajuste).length} formas de pago:</p>}
+          <ul className="mt-1 flex flex-col gap-0.5" data-metodos-cobro>
             {(d.cobro.metodos ?? []).map((x, i) => (
-              <li key={i} className="flex justify-between gap-2">
-                <span>{ETIQUETA_METODO[x.metodo] ?? x.metodo}{x.ajuste ? " (ajuste)" : ""}{x.propina ? ` · propina ${monto(x.propina)}` : ""}</span>
+              <li key={i} className="flex justify-between gap-2" data-parte-metodo={x.metodo}>
+                <span>{(d.cobro!.metodos ?? []).filter((y) => !y.ajuste).length > 1 && !x.ajuste ? "Parte en " : ""}{ETIQUETA_METODO[x.metodo] ?? x.metodo}{x.ajuste ? " (ajuste)" : ""}{x.propina ? ` · propina ${monto(x.propina)}` : ""}</span>
                 <span className="tabular-nums">{monto(x.monto)}</span>
               </li>
             ))}

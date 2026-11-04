@@ -1,4 +1,6 @@
+import { dinero } from "@/lib/dinero";
 import { notFound } from "next/navigation";
+import { correccionVigenteDeLinea } from "@/lib/cuentas/precio-linea";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { tienePermiso } from "@/lib/auth/permisos";
@@ -69,6 +71,8 @@ export default async function CitaDetallePage({
     if (!borrada) notFound();
     return <CitaEliminada cita={borrada} zona={zona} citaId={citaId} />;
   }
+  // QA S62 (N164): el precio de la cita es el de su cuenta (con sus correcciones vigentes).
+  const correccionPrecio = await correccionVigenteDeLinea(supabase, "estetica", cita.id as string);
 
   const perro = Array.isArray(cita.perros) ? cita.perros[0] : cita.perros;
   const servicio = Array.isArray(cita.servicios) ? cita.servicios[0] : cita.servicios;
@@ -260,7 +264,8 @@ export default async function CitaDetallePage({
               perroNombre={perro.nombre}
               estado={cita.estado}
               inicio={cita.inicio}
-              precio={cita.precio}
+              precio={Number(cita.precio) + correccionPrecio}
+              correccionPrecio={correccionPrecio}
               recargo={Number(cita.recargo ?? 0)}
               recargoMotivo={(cita.recargo_motivo as string | null) ?? null}
               puedeRecargo={tienePermiso(sesion, "excepciones_reserva")}
@@ -337,8 +342,8 @@ export default async function CitaDetallePage({
                       {k.servicio_anterior} → {k.servicio_nuevo}
                     </span>
                     <span className="block text-n-700">
-                      ${Number(k.precio_anterior).toFixed(2)} → ${Number(k.precio_nuevo).toFixed(2)}
-                      {Number(k.diferencia) !== 0 && ` (${Number(k.diferencia) > 0 ? "+" : "−"}$${Math.abs(Number(k.diferencia)).toFixed(2)})`}
+                      {dinero(Number(k.precio_anterior))} → {dinero(Number(k.precio_nuevo))}
+                      {Number(k.diferencia) !== 0 && ` (${Number(k.diferencia) > 0 ? "+" : "−"}${dinero(Math.abs(Number(k.diferencia)))})`}
                       {k.tipo_ajuste === "cobro_adicional" && (Number(k.saldo_actual) > 0 ? " · cobro adicional por cobrar" : " · cobro adicional ya cobrado")}
                       {k.tipo_ajuste === "saldo_a_favor" && (Number(k.saldo_actual) < 0 ? " · saldo a favor por devolver" : " · saldo a favor ya devuelto")}
                     </span>
@@ -366,7 +371,7 @@ export default async function CitaDetallePage({
                     )}
                     {k.tipo === "tarifa_guarderia" && k.detalle && (
                       <span className="block">
-                        ${Number(k.detalle.precio_antes ?? 0).toFixed(2)} → ${Number(k.detalle.precio_despues ?? 0).toFixed(2)}
+                        {dinero(Number(k.detalle.precio_antes ?? 0))} → {dinero(Number(k.detalle.precio_despues ?? 0))}
                       </span>
                     )}
                     <span className="block text-xs text-n-500">

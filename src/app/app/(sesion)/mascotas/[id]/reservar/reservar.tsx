@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -88,8 +89,8 @@ export function Reservar({ mascotaId, nombre, negocios, negocioInicial }: { masc
           <span>{hecha.servicio} en {hecha.negocio}</span>
           <span>{hecha.fechas}</span>
           {hecha.conPase && <span data-con-pase>Se usó su pase</span>}
-          {hecha.total != null && !hecha.conPase && <span data-total>Total: ${hecha.total.toFixed(2)}</span>}
-          {hecha.saldo != null && hecha.saldo > 0 && <span data-saldo>Por pagar: ${hecha.saldo.toFixed(2)}</span>}
+          {hecha.total != null && !hecha.conPase && <span data-total>Total: {dinero(hecha.total)}</span>}
+          {hecha.saldo != null && hecha.saldo > 0 && <span data-saldo>Por pagar: {dinero(hecha.saldo)}</span>}
         </div>
         {hecha.contratos.length > 0 && (
           <div className="apd-tarjeta" data-contratos-reserva>

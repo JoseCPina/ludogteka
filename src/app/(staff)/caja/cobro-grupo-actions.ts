@@ -32,7 +32,7 @@ export async function registrarCobroGrupo(
   // N28: la revisión corre SIEMPRE en el servidor (también si la pantalla no mandó lo que veía).
   if (!control?.confirmado) {
     const sesion = await obtenerSesionConRol();
-    const aviso = await avisoCobroReciente(supabase, partes.map((p) => p.reservaId), control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual(), usuarioId: sesion?.user.id ?? null });
+    const aviso = await avisoCobroReciente(supabase, partes.map((p) => p.reservaId), control, { esAdmin: sesion?.rol === "admin", negocioId: await negocioIdActual(), usuarioId: sesion?.user.id ?? null }, { monto: metodos.reduce((s, m) => s + m.monto, 0), metodos: metodos.map((m) => m.metodo) });
     if (aviso) return { error: null, confirmar: aviso, registros: await registrosDe(supabase, partes.map((p) => ({ t: "reservas", i: p.reservaId }))) };
   }
   const { data, error } = await supabase.rpc("registrar_cobro_grupo", {

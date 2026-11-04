@@ -1,6 +1,6 @@
 import { textoSalidaAnticipada, type CotizacionSalida } from "@/lib/reservas/salida-anticipada";
 import { dinero } from "@/lib/dinero";
-import { cuentaPorCobrar } from "@/lib/caja/cuenta-por-cobrar";
+import { cuentaPorCobrar, estadoDeSaldo } from "@/lib/caja/cuenta-por-cobrar";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { AlertaCriticaBanner } from "@/app/(staff)/perros/alerta-critica-banner";
@@ -227,7 +227,7 @@ export default async function CheckoutEstanciaPage({
               )}
               {/* QA S27: al terminar el check-out, el siguiente paso es cobrar la cuenta (N129: si ya está pagada, ver sus cobros). */}
               <Enlace href={`/caja/cobrar/${estancia.reserva_id}`} data-cobrar-cuenta className="mt-3 text-sm">
-                {cuentaPorCobrar(saldoCuenta) ? "Cobrar la cuenta" : "Ver cobros"}
+                {cuentaPorCobrar(saldoCuenta) ? "Cobrar la cuenta" : estadoDeSaldo(saldoCuenta, dinero).tipo === "a_favor" ? "Devolver el saldo a favor" : "Ver cobros"}
               </Enlace>
               {(pertenencias ?? []).length > 0 && (
                 <div className="mt-3" data-pertenencias-salida>
@@ -261,6 +261,8 @@ export default async function CheckoutEstanciaPage({
           pertenenciasIniciales={pertenencias ?? []}
           cobroHref={`/caja/cobrar/${estancia.reserva_id}`}
           salidaAnticipada={(salidaAnticipada ?? null) as CotizacionSalida | null}
+          cuenta={{ total: totalCuenta, pagado: pagadoCuenta, saldo: saldoCuenta }}
+          hoy={hoy}
         />
       )}
 
@@ -276,7 +278,7 @@ export default async function CheckoutEstanciaPage({
           </div>
           <div>
             <dt className="text-sm text-n-600">Por pagar</dt>
-            <dd className={`text-lg font-semibold ${cuentaPorCobrar(saldoCuenta) ? "text-coral-oscuro" : "text-menta-oscuro"}`} data-por-pagar>{cuentaPorCobrar(saldoCuenta) ? dinero(saldoCuenta) : "Pagada"}</dd>
+            <dd className={`text-lg font-semibold ${estadoDeSaldo(saldoCuenta, dinero).tipo === "pagada" ? "text-menta-oscuro" : estadoDeSaldo(saldoCuenta, dinero).tipo === "a_favor" ? "text-ambar-oscuro" : "text-coral-oscuro"}`} data-por-pagar data-estado-saldo={estadoDeSaldo(saldoCuenta, dinero).tipo}>{estadoDeSaldo(saldoCuenta, dinero).tipo === "por_cobrar" ? dinero(saldoCuenta) : estadoDeSaldo(saldoCuenta, dinero).texto}</dd>
           </div>
         </dl>
       )}

@@ -4,7 +4,7 @@ import { cartillaDe, proximas, hoyMx, diasEntre } from "@/lib/app/cartilla";
 import { aAtencionDelDueno } from "@/lib/app/atenciones";
 import {
   vinculosApp, vinculoDe, contratosPorFirmarApp, pagosPendientesApp, abonosDeCuentaApp, visitasApp, pasesApp, datosDeNegociosApp,
-  misResenasApp, fotosDelDiaApp, reportesDelDiaApp, carnetApp, expedienteApp, recetasApp, serviciosApp, resenasDeNegocioApp,
+  misResenasApp, saldosAFavorApp, fotosDelDiaApp, reportesDelDiaApp, carnetApp, expedienteApp, recetasApp, serviciosApp, resenasDeNegocioApp,
 } from "@/lib/app/negocios";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -246,9 +246,9 @@ export async function pantallaVisitas() {
 
 export async function pantallaPagos() {
   if (await sinSesion()) return null;
-  const pagos = await pagosPendientesApp();
+  const [pagos, aFavor] = await Promise.all([pagosPendientesApp(), saldosAFavorApp()]);
   const abonos = await Promise.all(pagos.map((p) => abonosDeCuentaApp(p.negocioId, p.reservaId)));
-  return { pagos: pagos.map((p, i) => ({ ...p, abonos: abonos[i] })) };
+  return { pagos: pagos.map((p, i) => ({ ...p, abonos: abonos[i] })), aFavor };
 }
 
 export async function pantallaPases() {

@@ -1,3 +1,4 @@
+import { dinero } from "@/lib/dinero";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { negocioActual } from "@/lib/negocio/actual";
@@ -107,7 +108,7 @@ export default async function ConciliacionPage() {
             {(porConfirmar ?? []).map((o) => (
               <li key={o.id as string} className="rounded-md border border-ambar bg-ambar-suave px-3 py-2 text-sm">
                 <p className="font-semibold text-ambar-oscuro">
-                  ${Number(o.monto).toFixed(2)} · {formatearFecha(o.created_at as string, zona)} {horaLocalDeInstante(o.created_at as string, zona)}
+                  {dinero(Number(o.monto))} · {formatearFecha(o.created_at as string, zona)} {horaLocalDeInstante(o.created_at as string, zona)}
                   <Antiguedad dias={diasDesde(o.created_at as string, hoy, zona)} />
                 </p>
                 <p className="text-n-700">{(o.detalle_error as string | null) ?? "Mercado Pago no pudo confirmar el pago."}</p>
@@ -134,7 +135,7 @@ export default async function ConciliacionPage() {
               {tarjetasPorRevisar.map((t) => (
                 <li key={t.id} data-tarjeta-por-revisar className="flex flex-col gap-2 rounded-lg border border-ambar bg-ambar-suave p-4">
                   <p className="font-semibold text-n-900">
-                    ${Number(t.monto).toFixed(2)} · folio {t.folio}
+                    {dinero(Number(t.monto))} · folio {t.folio}
                     {t.cuentas > 1 ? <span className="ml-2 rounded-full bg-morado-suave px-2 py-0.5 text-xs font-semibold text-morado">cobro junto · {t.cuentas} cuentas</span> : null}
                     {t.sobre_tope ? <span className="ml-2 rounded-full bg-coral-suave px-2 py-0.5 text-xs font-semibold text-coral-oscuro">arriba del tope</span> : null}
                     <Antiguedad dias={diasDesde(t.registrada_at, hoy, zona)} />
@@ -148,7 +149,7 @@ export default async function ConciliacionPage() {
                   {t.turno_cerrado && (
                     <p className="text-sm text-n-600">Se registró en un turno que ya cerró: si la marcas como no recibida, el ajuste cae en el turno abierto y ese corte no cambia.</p>
                   )}
-                  {t.devuelto > 0 && <p className="text-sm text-coral-oscuro">Ya tiene una devolución manual de ${Number(t.devuelto).toFixed(2)}.</p>}
+                  {t.devuelto > 0 && <p className="text-sm text-coral-oscuro">Ya tiene una devolución manual de {dinero(Number(t.devuelto))}.</p>}
                   <div className="flex flex-wrap items-start gap-3">
                     <Enlace href={`/caja/cobrar/${t.reserva_id}`}>
                       Abrir la cuenta →
@@ -165,7 +166,7 @@ export default async function ConciliacionPage() {
               <ul className="mt-2 flex flex-col gap-1">
                 {tarjetasHechas.map((t) => (
                   <li key={t.id}>
-                    ${Number(t.monto).toFixed(2)}{t.cuentas > 1 ? ` (${t.cuentas} cuentas)` : ""} · folio {t.folio} · {t.estado === "revisada" ? "revisada con voucher" : "marcada como no recibida"}
+                    {dinero(Number(t.monto))}{t.cuentas > 1 ? ` (${t.cuentas} cuentas)` : ""} · folio {t.folio} · {t.estado === "revisada" ? "revisada con voucher" : "marcada como no recibida"}
                     {t.revisada_por_nombre ? ` por ${t.revisada_por_nombre}` : ""}
                     {t.nota_revision ? ` — ${t.nota_revision}` : ""}
                   </li>
@@ -188,7 +189,7 @@ export default async function ConciliacionPage() {
               return (
                 <li key={f.id} data-conciliacion className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
                   <p className="font-semibold text-n-900">
-                    {f.tipo === "cobro_sin_pago" ? "Cobrado en la app, sin pago aprobado en Mercado Pago" : "Pago aprobado en Mercado Pago, sin cobro en la caja"} · ${Number(f.monto).toFixed(2)}
+                    {f.tipo === "cobro_sin_pago" ? "Cobrado en la app, sin pago aprobado en Mercado Pago" : "Pago aprobado en Mercado Pago, sin cobro en la caja"} · {dinero(Number(f.monto))}
                     <Antiguedad dias={dias} />
                   </p>
                   <p className="text-sm text-n-700">
@@ -232,7 +233,7 @@ export default async function ConciliacionPage() {
             <ul className="flex flex-col gap-2">
               {ajenos.map((f) => (
                 <li key={f.id} data-pago-ajeno className="flex flex-col gap-1 rounded-lg border border-border bg-card shadow-tarjeta p-3">
-                  <p className="font-semibold text-n-900">${Number(f.monto).toFixed(2)}{f.mp_pago_id ? ` · pago ${f.mp_pago_id}` : ""}</p>
+                  <p className="font-semibold text-n-900">{dinero(Number(f.monto))}{f.mp_pago_id ? ` · pago ${f.mp_pago_id}` : ""}</p>
                   <p className="text-sm text-n-700">{formatearFecha(f.ocurrio_at, zona)} {horaLocalDeInstante(f.ocurrio_at, zona)}</p>
                   {esAdmin && <DarPorRevisada id={f.id} />}
                 </li>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Field } from "@/components/ui/field";
 import { Select } from "@/components/ui/select";
 import { MOTIVOS_TARJETA_MANUAL, type DatosTarjetaManual } from "@/lib/cobro/tarjeta-manual";
@@ -12,10 +13,17 @@ import { MOTIVOS_TARJETA_MANUAL, type DatosTarjetaManual } from "@/lib/cobro/tar
 export function CamposTarjetaManual({
   valor,
   onChange,
+  conTerminal = true,
 }: {
   valor: DatosTarjetaManual;
   onChange: (cambios: Partial<DatosTarjetaManual>) => void;
+  /** QA S62: sin terminal vinculada no se pregunta por qué no se cobró con ella (motivo «sin_terminal»). */
+  conTerminal?: boolean;
 }) {
+  const motivoFijo = !conTerminal && valor.motivo !== "sin_terminal";
+  useEffect(() => {
+    if (motivoFijo) onChange({ motivo: "sin_terminal" });
+  }, [motivoFijo]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div data-tarjeta-manual className="flex w-full flex-col gap-3 rounded-md border-[1.5px] border-ambar bg-ambar-suave p-3">
       <p className="text-sm text-ambar-oscuro">
@@ -30,14 +38,14 @@ export function CamposTarjetaManual({
           onChange={(e) => onChange({ folio: e.target.value })}
           ayuda="Obligatorio, mínimo 4 caracteres. Un mismo folio no se registra dos veces."
         />
-        <Select label="¿Por qué no se cobró con la terminal vinculada?" value={valor.motivo} onChange={(e) => onChange({ motivo: e.target.value })}>
+        {conTerminal ? <Select label="¿Por qué no se cobró con la terminal vinculada?" value={valor.motivo} onChange={(e) => onChange({ motivo: e.target.value })}>
           <option value="">Elige un motivo…</option>
           {MOTIVOS_TARJETA_MANUAL.map((m) => (
             <option key={m.clave} value={m.clave}>
               {m.etiqueta}
             </option>
           ))}
-        </Select>
+        </Select> : null}
       </div>
       {valor.motivo === "otro" && (
         <Field label="Cuéntanos el motivo" value={valor.motivo_texto} maxLength={200} onChange={(e) => onChange({ motivo_texto: e.target.value })} />

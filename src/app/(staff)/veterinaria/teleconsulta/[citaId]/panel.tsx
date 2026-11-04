@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -87,7 +88,7 @@ export function PanelTeleconsulta({
 
       {requierePago && (
         <section className="flex flex-col gap-3 rounded-lg border border-border bg-card shadow-tarjeta p-5">
-          <h2 className="text-lg font-semibold text-foreground">Cobro anticipado{monto ? ` · $${Number(monto).toFixed(2)}` : ""}</h2>
+          <h2 className="text-lg font-semibold text-foreground">Cobro anticipado{monto ? ` · ${dinero(Number(monto))}` : ""}</h2>
           {pagado ? (
             <Alert variante="exito" titulo="Pagada">La sala puede abrirse.</Alert>
           ) : (

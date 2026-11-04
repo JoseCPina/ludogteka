@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -79,7 +80,7 @@ export function PedirCita({ mascotaId, nombre, negocios, negocioInicial }: { mas
           <span>{hecha.servicio} en {hecha.negocio}</span>
           <span>{hecha.dia[0].toUpperCase() + hecha.dia.slice(1)} a las {hecha.hora}</span>
           {hecha.atiende && <span data-atiende>La atiende {hecha.atiende}</span>}
-          {hecha.precio != null && <span data-precio>Precio: ${hecha.precio.toFixed(2)}</span>}
+          {hecha.precio != null && <span data-precio>Precio: {dinero(hecha.precio)}</span>}
         </div>
         <p className="apd-nota" style={{ marginTop: "0.75rem" }}>{hecha.negocio} la ve en su agenda. Si necesitas moverla o cancelarla, escríbeles por WhatsApp.</p>
         <div className="apd-fila" style={{ marginTop: "0.9rem", flexWrap: "wrap" }}>

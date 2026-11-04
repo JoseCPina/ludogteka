@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { describirEstancia } from "@/lib/formato";
 
@@ -183,7 +184,7 @@ export function EstanciaFila({
             Total:{" "}
             <span className="font-semibold text-n-900">$0.00</span>{" "}
             <span className="text-n-500">
-              (no se cobra; era <s>${(fila.precioUnitario * (porHora || !esGuarderia ? cantidad : 1)).toFixed(2)}</s>)
+              (no se cobra; era <s>{dinero((fila.precioUnitario * (porHora || !esGuarderia ? cantidad : 1)))}</s>)
             </span>
           </span>
         ) : (

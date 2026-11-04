@@ -354,8 +354,8 @@ export async function PantallaCobro({
         const ev = x.evidencia as { monto_nuevo?: number; monto?: number } | null;
         const detalle =
           x.tipo === "edicion_monto"
-            ? `de $${Number(antes?.monto ?? 0).toFixed(2)} a $${Number(ev?.monto_nuevo ?? 0).toFixed(2)}`
-            : `cobro de $${Number(ev?.monto ?? 0).toFixed(2)}`;
+            ? `de ${dinero(Number(antes?.monto ?? 0))} a ${dinero(Number(ev?.monto_nuevo ?? 0))}`
+            : `cobro de ${dinero(Number(ev?.monto ?? 0))}`;
         return { tipo: x.tipo as string, motivo: x.motivo as string, creadoEn: x.created_at as string, porNombre: nombrePorId.get(x.hecha_por as string) ?? "—", detalle };
       }),
     origen: ((c.origen as string | null) ?? "manual") as CobroHistorial["origen"],

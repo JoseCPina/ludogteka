@@ -53,12 +53,13 @@ export default async function StaffLayout({ children }: { children: React.ReactN
       marca={<LogoNegocio nombre={negocio.nombre} marca={negocio.marca} variante="barra" />}
       aviso={
         <>
-          <AvisoInstalar />
           {/* Tiempo del panel, quinta vuelta: la franja del plan y la de tickets piden lo suyo a la base; en Suspense, la
               pantalla sale sin esperarlas y ellas llegan en el mismo envío cuando terminan. */}
           <Suspense fallback={null}>
             <AvisoPlan esPersonal />
           </Suspense>
+          {/* QA S62: «Instalar la app» va DESPUÉS de la franja del plan y no sale si hay una (globals.css): no se apilan. */}
+          <AvisoInstalar />
           {avisarEsteticaApagada(zonaSesion) && (
             <p role="status" className="rounded-lg border border-ambar-oscuro/30 bg-ambar-suave px-4 py-3 text-sm text-ambar-oscuro" data-modulo-apagado-aviso>
               El módulo de Estética está apagado en este negocio. Lo enciende quien administra, en «Módulos y plan». Mientras tanto puedes usar lo que sí tienes en el menú.

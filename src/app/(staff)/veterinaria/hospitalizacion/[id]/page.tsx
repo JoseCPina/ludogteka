@@ -1,4 +1,5 @@
 import { SiPuedeAbrir } from "@/components/acceso-contexto";
+import { dinero } from "@/lib/dinero";
 import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { vetPuede } from "@/lib/veterinaria/permisos";
@@ -24,7 +25,6 @@ type Detalle = {
   consentimientos: { id: string; tipo: string; titulo: string; estado: string; procedimiento: string | null; firmado_at: string | null; firmante: string | null }[];
 };
 
-const dinero = (n: number) => n.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
 const ESTADO_DOSIS: Record<string, string> = { pendiente: "bg-n-100 text-n-700", aplicada: "bg-menta-suave text-menta-oscuro", omitida: "bg-ambar-suave text-ambar-oscuro" };
 
 function Seccion({ titulo, children, nota }: { titulo: string; children: React.ReactNode; nota?: string }) {

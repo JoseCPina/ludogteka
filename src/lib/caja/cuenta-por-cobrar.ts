@@ -22,3 +22,22 @@ export function admiteCargosNuevos(estado: string | null | undefined, cuenta: { 
 
 export const TEXTO_CUENTA_PAGADA_SIN_CARGOS =
   "La cuenta ya está pagada: no se le agregan cargos. Para cambiarla, anula el cobro o registra una devolución desde «Ver cobros».";
+
+/**
+ * QA S62 (N162): el estado de una cuenta por su saldo, en UN lugar. Con saldo negativo la cuenta NO está «pagada»: el
+ * negocio le debe al cliente («Saldo a favor: devolver $200») y aparece en Recepción y en «Necesita atención» hasta
+ * que se registre la devolución. Toda vista que diga si una cuenta está pagada usa esto (nunca su propio `saldo > 0`).
+ */
+export type EstadoSaldo = { tipo: "por_cobrar" | "pagada" | "a_favor"; monto: number; texto: string; corto: string };
+
+export function estadoDeSaldo(saldo: number | null | undefined, dinero: (n: number) => string): EstadoSaldo {
+  const s = Math.round(Number(saldo ?? 0) * 100) / 100;
+  if (s > 0.005) return { tipo: "por_cobrar", monto: s, texto: `Por cobrar: ${dinero(s)}`, corto: `Debe ${dinero(s)}` };
+  if (s < -0.005) return { tipo: "a_favor", monto: -s, texto: `Saldo a favor: devolver ${dinero(-s)}`, corto: `A favor ${dinero(-s)}` };
+  return { tipo: "pagada", monto: 0, texto: "Cuenta pagada", corto: "Pagada" };
+}
+
+/** Hay que devolverle dinero al cliente (saldo negativo). */
+export function tieneSaldoAFavor(saldo: number | null | undefined): boolean {
+  return Number(saldo ?? 0) < -0.005;
+}

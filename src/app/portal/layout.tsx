@@ -29,7 +29,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const nombre = ((cliente?.nombre as string | null | undefined) ?? sesion.nombreCompleto ?? "").trim() || null;
 
   return (
-    <PortalShell marca={<LogoNegocio nombre={negocio.nombre} marca={negocio.marca} variante="barra" />} aviso={<><AvisoAppPortal /><AvisoInstalar /><AvisoPlan esPersonal={false} /></>} nombreCompleto={nombre}>
+    <PortalShell marca={<LogoNegocio nombre={negocio.nombre} marca={negocio.marca} variante="barra" />} aviso={<><AvisoAppPortal /><AvisoPlan esPersonal={false} /><AvisoInstalar /></>} nombreCompleto={nombre}>
       <PwaNegocio usuarioId={sesion.user.id} precargar={false} />
       {children}
     </PortalShell>

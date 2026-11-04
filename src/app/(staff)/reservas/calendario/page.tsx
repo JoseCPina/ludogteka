@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { estadoDeSaldo } from "@/lib/caja/cuenta-por-cobrar";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { zonaActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
@@ -364,10 +365,10 @@ async function cuentasDe(supabase: Cliente, reservaIds: string[]): Promise<Map<s
       if (!t) return void mapa.set(id, { texto: "—", tono: "neutro" });
       const saldo = Number(t.saldo ?? 0);
       if (Number(t.total_cuenta ?? 0) <= 0.005 && movimientos) {
-        return void mapa.set(id, { texto: `Total $0.00${movimientos}${saldo < -0.005 ? ` · a favor ${dinero(saldo)}` : ""}`, tono: saldo < -0.005 ? "debe" : "neutro" });
+        return void mapa.set(id, { texto: `Total $0.00${movimientos}${saldo < -0.005 ? ` · ${estadoDeSaldo(saldo, dinero).texto.toLowerCase()}` : ""}`, tono: saldo < -0.005 ? "debe" : "neutro" });
       }
       if (saldo > 0.005) mapa.set(id, { texto: `Debe ${dinero(saldo)}`, tono: "debe" });
-      else if (saldo < -0.005) mapa.set(id, { texto: `A favor ${dinero(saldo)}`, tono: "ok" });
+      else if (saldo < -0.005) mapa.set(id, { texto: estadoDeSaldo(saldo, dinero).texto, tono: "debe" });
       else mapa.set(id, { texto: Number(t.total_cuenta ?? 0) > 0 ? "Pagada" : "Sin cargos", tono: Number(t.total_cuenta ?? 0) > 0 ? "ok" : "neutro" });
     })
   );

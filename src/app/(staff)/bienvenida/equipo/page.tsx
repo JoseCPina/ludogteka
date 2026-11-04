@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { etiquetaDePersona } from "@/lib/auth/rutas";
 import { VolverBienvenida } from "../volver";
 import { FormularioEquipo } from "./formulario-equipo";
 import { YoAtiendo } from "./yo-atiendo";
@@ -10,10 +11,12 @@ export default async function EquipoPage() {
   const sesion = await obtenerSesionConRol();
   const mods = sesion?.modulos ?? [];
   const supabase = await createSupabaseServerClient();
-  const [{ data: personal }, { data: ajustes }] = await Promise.all([
+  const [{ data: personal }, { data: ajustes }, { data: medicos }] = await Promise.all([
     supabase.rpc("listar_personal"),
     supabase.from("negocio_ajustes_operacion").select("dueno_atiende_estetica").is("deleted_at", null).maybeSingle(),
+    supabase.rpc("medicos_del_negocio"),
   ]);
+  const esMedico = new Set(((medicos ?? []) as string[]).map(String));
   const equipo = ((personal ?? []) as { id: string; nombre_completo: string | null; rol: string }[]).filter((p) => p.rol !== "cliente");
   const conEstetica = mods.includes("estetica");
   const conVet = mods.includes("veterinaria");
@@ -36,7 +39,7 @@ export default async function EquipoPage() {
           <ul className="mt-2 flex flex-col gap-1 text-sm text-n-800" data-equipo-con-cuenta>
             {equipo.map((p) => (
               <li key={p.id}>
-                {p.nombre_completo || "Sin nombre"} · {p.rol === "admin" ? "Admin" : p.rol === "estetica" ? "Estética" : "Recepción"}
+                {p.nombre_completo || "Sin nombre"} · <span data-etiqueta-rol>{etiquetaDePersona({ rol: p.rol, esMedico: esMedico.has(p.id) }, mods)}</span>
               </li>
             ))}
           </ul>

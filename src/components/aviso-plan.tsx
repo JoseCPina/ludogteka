@@ -130,7 +130,7 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
   if (negocio.plan === "prueba" && fin && prueba && !prueba.vencida && esPersonal && !cobro?.contratado) {
     const dias = prueba.dias;
     return (
-      <div role="status" className="bg-morado-suave px-4 py-1.5 text-center text-sm text-morado md:px-6">
+      <div role="status" data-aviso-plan="prueba" className="bg-morado-suave px-4 py-1.5 text-center text-sm text-morado md:px-6">
         Prueba gratis de PeluDesk: {dias === 0 ? "termina hoy" : `te quedan ${dias} ${dias === 1 ? "día" : "días"}`} (hasta el{" "}
         {formatearFecha(fin.toISOString(), zona)}).{" "}
         {esAdmin && (
@@ -170,7 +170,7 @@ export async function AvisoPlan({ esPersonal }: { esPersonal: boolean }) {
 
   if (escribible === false) {
     return (
-      <div role="status" className="bg-n-100 px-4 py-1.5 text-center text-sm text-n-700 md:px-6">
+      <div role="status" data-aviso-plan="aviso" className="bg-n-100 px-4 py-1.5 text-center text-sm text-n-700 md:px-6">
         Esta cuenta es de solo lectura: puedes consultar todo, pero no guardar cambios.
       </div>
     );

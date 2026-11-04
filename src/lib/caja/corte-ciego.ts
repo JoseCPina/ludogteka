@@ -12,9 +12,13 @@ export async function turnoAbiertoEnPeriodo(
   desde: string,
   hasta: string,
   zona: string,
+  quienMira?: { rol: string | null | undefined; usuarioId: string | null | undefined },
 ): Promise<{ abiertoAt: string } | null> {
-  const { data } = await supabase.from("turnos_caja").select("abierto_at").eq("estado", "abierto").is("deleted_at", null).limit(1).maybeSingle();
+  const { data } = await supabase.from("turnos_caja").select("abierto_at, abierto_por").eq("estado", "abierto").is("deleted_at", null).limit(1).maybeSingle();
   if (!data?.abierto_at) return null;
+  // QA S62: UNA regla (la misma que ve_esperado_turno en la base). Ciego para quien tiene el turno abierto, sea admin o
+  // no; un admin que no lo tiene sí ve los totales.
+  if (quienMira?.rol === "admin" && quienMira.usuarioId && data.abierto_por !== quienMira.usuarioId) return null;
   const abierto = fechaLocalDeInstante(data.abierto_at as string, zona);
   return abierto <= hasta && hoyNegocio(zona) >= desde ? { abiertoAt: data.abierto_at as string } : null;
 }

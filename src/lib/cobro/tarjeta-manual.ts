@@ -18,6 +18,7 @@ export type MotivoTarjetaManual = (typeof MOTIVOS_TARJETA_MANUAL)[number]["clave
 
 export function etiquetaMotivo(clave: string, texto?: string | null): string {
   if (clave === "otro" && texto) return `Otro: ${texto}`;
+  if (clave === "sin_terminal") return "Sin terminal vinculada";
   return MOTIVOS_TARJETA_MANUAL.find((m) => m.clave === clave)?.etiqueta ?? clave;
 }
 
@@ -38,7 +39,7 @@ export function datosVacios(): DatosTarjetaManual {
 export function validarTarjetaManual(d: DatosTarjetaManual): string | null {
   const folio = d.folio.trim();
   if (folio.length < 4) return "Escribe el folio o número de autorización del voucher (mínimo 4 caracteres).";
-  if (!MOTIVOS_TARJETA_MANUAL.some((m) => m.clave === d.motivo)) return "Elige por qué no se cobró con la terminal vinculada.";
+  if (d.motivo !== "sin_terminal" && !MOTIVOS_TARJETA_MANUAL.some((m) => m.clave === d.motivo)) return "Elige por qué no se cobró con la terminal vinculada.";
   if (d.motivo === "otro" && d.motivo_texto.trim().length < 3) return "Cuéntanos el motivo (escríbelo en «Otro»).";
   if (d.ultimos4.trim() && !/^[0-9]{4}$/.test(d.ultimos4.trim())) return "Los últimos dígitos son 4 números. Nunca captures la tarjeta completa.";
   return null;

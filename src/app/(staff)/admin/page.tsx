@@ -48,6 +48,7 @@ async function SeccionesAdmin() {
     // QA S16/R22 (N61): una sola dirección del negocio: negocio_perfil.direccion (la sucursal se sincroniza sola).
     perfil: supabase.from("negocio_perfil").select("direccion").is("deleted_at", null).maybeSingle(),
     personal: !esAdmin && puedePersonal ? supabase.rpc("listar_personal") : nada,
+    medicos: esAdmin || puedePersonal ? supabase.rpc("medicos_del_negocio") : nada,
     // Mismo cálculo que la matriz y la lista de Servicios (src/lib/tarifas/huecos.ts) y solo de los
     // módulos que el negocio tiene prendidos: un servicio apagado no se cobra, no es un hueco.
     huecos: cargarServiciosConHuecos(supabase, sesion?.modulos ?? []),
@@ -78,6 +79,7 @@ async function SeccionesAdmin() {
   const direccionNegocio = ((perfilDir?.direccion as string | null) ?? "").trim();
   const negocioIdActual = (await negocioActual()).id;
   const { data: personal } = await previas.personal;
+  const medicosIds = (((await previas.medicos).data ?? []) as string[]).map(String);
   const serviciosSinTarifa = await previas.huecos;
   const topeFila = Array.isArray(topeData) ? topeData[0] : topeData;
   const configVigente = (Array.isArray(configData) ? configData[0] : configData) as
@@ -160,7 +162,7 @@ async function SeccionesAdmin() {
       {!esAdmin && puedePersonal && (
         <section className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
           <h2 className="mb-4 text-lg font-semibold text-foreground">Personal</h2>
-          <ListaPersonal zona={zona} personas={(personal as PersonaStaff[] | null) ?? []} />
+          <ListaPersonal zona={zona} personas={(personal as PersonaStaff[] | null) ?? []} medicos={medicosIds} modulos={sesion?.modulos ?? []} />
         </section>
       )}
 
@@ -207,7 +209,7 @@ async function SeccionesAdmin() {
             Recarga la página. Si el problema sigue, avísale al equipo técnico.
           </Alert>
         ) : (
-          <ListaCuentas cuentas={(data as Cuenta[]) ?? []} miId={sesion?.user.id ?? null} />
+          <ListaCuentas cuentas={(data as Cuenta[]) ?? []} miId={sesion?.user.id ?? null} medicos={medicosIds} modulos={sesion?.modulos ?? []} />
         )}
       </section>
       )}

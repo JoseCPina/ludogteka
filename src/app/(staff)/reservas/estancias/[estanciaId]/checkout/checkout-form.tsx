@@ -14,6 +14,8 @@ import { alternarPertenencia, confirmarCheckout } from "../../../checkin-actions
 import { MoverFechas } from "../../../mover-fechas";
 import { textoSalidaAnticipada, type CotizacionSalida } from "@/lib/reservas/salida-anticipada";
 import { Enlace } from "@/components/ui/enlace";
+import { dinero as dineroSalida } from "@/lib/dinero";
+import { cuentaAlSalir } from "@/lib/reservas/salida-anticipada";
 
 type Pertenencia = { id: string; descripcion: string; devuelto: boolean };
 
@@ -26,6 +28,8 @@ export function CheckoutForm({
   pertenenciasIniciales,
   cobroHref,
   salidaAnticipada = null,
+  cuenta = null,
+  hoy = null,
 }: {
   estanciaId: string;
   esHotel: boolean;
@@ -38,6 +42,10 @@ export function CheckoutForm({
   cobroHref?: string;
   /** N132: qué pasa con la cuenta si sale hoy, antes de su salida prevista (se dice ANTES de confirmar). */
   salidaAnticipada?: CotizacionSalida | null;
+  /** QA S62 (N162): la cuenta de ahora (de la base), para decir ANTES de confirmar cómo queda. */
+  cuenta?: { total: number; pagado: number; saldo: number } | null;
+  /** Hoy en la zona del negocio: el aviso de extender la salida solo el día de la salida o después. */
+  hoy?: string | null;
 }) {
   const router = useRouter();
   // Cada pertenencia se confirma a mano (o todas de un toque con «Entregué todo»). Se guardan al confirmar la salida.
@@ -81,6 +89,11 @@ export function CheckoutForm({
   const [fueraHorario, setFueraHorario] = useState<string | null>(null);
   const [quedoFueraHorario, setQuedoFueraHorario] = useState<string | null>(null);
 
+  // QA S62 (N162): una salida que cambia el total (salida anticipada) o que deja saldo se confirma viendo el total
+  // nuevo, lo cobrado y el saldo que queda. La cuenta nueva es la que aplicará la base (salida_anticipada_cotizar).
+  const [revisando, setRevisando] = useState(false);
+  const efecto = cuentaAlSalir(cuenta, salidaAnticipada);
+
   async function enviarCheckout(confirmarFueraHorario = false) {
     if (!recogidoNombre.trim()) {
       setFalta("nombre");
@@ -103,6 +116,10 @@ export function CheckoutForm({
     }
 
     setError(null);
+    if (!revisando && efecto && (efecto.cambiaTotal || efecto.tipo !== "pagada")) {
+      setRevisando(true);
+      return;
+    }
     const res = await enviando.ejecutar(() => confirmarCheckout(estanciaId, {
       recogidoPorNombre: recogidoNombre,
       recogidoPorTelefono: recogidoTelefono,
@@ -140,7 +157,7 @@ export function CheckoutForm({
         )}
         {cobroHref ? (
           <Enlace href={cobroHref} data-cobrar-cuenta className="mt-2 text-sm">
-            {saldoAlSalir !== null && saldoAlSalir <= 0.005 ? "Ver cobros" : "Cobrar la cuenta"}
+            {saldoAlSalir !== null && saldoAlSalir < -0.005 ? `Devolver ${dineroSalida(-saldoAlSalir)} al cliente` : saldoAlSalir !== null && saldoAlSalir <= 0.005 ? "Ver cobros" : "Cobrar la cuenta"}
           </Enlace>
         ) : null}
       </Alert>
@@ -160,10 +177,11 @@ export function CheckoutForm({
               Extender la salida
             </Button>
           )}
-          <p className="text-sm text-n-600">
-            El dueño no llega todavía y el cupo de esta noche ya se liberó — usa este botón antes
-            de que alguien más lo tome.
-          </p>
+          {hoy && salidaActual <= hoy ? (
+            <p className="text-sm text-n-600" data-aviso-extender>
+              ¿El dueño no llega? Su salida es {salidaActual < hoy ? "de días pasados" : "hoy"}: extiéndela antes de que otra reserva tome el cupo de esta noche.
+            </p>
+          ) : null}
         </div>
       )}
       {esHotel && extendiendo && (
@@ -335,6 +353,31 @@ export function CheckoutForm({
               Todavía no
             </Button>
           </>
+        ) : revisando && efecto ? (
+          <div role="alertdialog" aria-labelledby="salida-revision-titulo" className="flex w-full flex-col gap-3 rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4" data-revision-salida={efecto.tipo}>
+            <p id="salida-revision-titulo" className="font-semibold text-n-900">Así queda la cuenta al confirmar la salida</p>
+            {efecto.cambiaTotal ? <p className="text-sm text-n-800">{textoSalidaAnticipada(salidaAnticipada)}.</p> : null}
+            <dl className="grid grid-cols-3 gap-2 text-sm">
+              <div><dt className="text-n-600">Total nuevo</dt><dd className="font-semibold tabular-nums" data-total-nuevo={efecto.total.toFixed(2)}>{dineroSalida(efecto.total)}</dd></div>
+              <div><dt className="text-n-600">Cobrado</dt><dd className="font-semibold tabular-nums" data-cobrado={efecto.pagado.toFixed(2)}>{dineroSalida(efecto.pagado)}</dd></div>
+              <div><dt className="text-n-600">{efecto.tipo === "a_favor" ? "Saldo a favor" : "Por cobrar"}</dt><dd className={`font-semibold tabular-nums ${efecto.tipo === "a_favor" ? "text-ambar-oscuro" : efecto.tipo === "por_cobrar" ? "text-coral-oscuro" : "text-menta-oscuro"}`} data-saldo-resultante={efecto.saldo.toFixed(2)}>{dineroSalida(Math.abs(efecto.saldo))}</dd></div>
+            </dl>
+            <p className="text-sm text-n-800" data-texto-saldo-resultante>
+              {efecto.tipo === "a_favor"
+                ? `Se cobró de más: la cuenta queda «Saldo a favor: devolver ${dineroSalida(-efecto.saldo)}» hasta que registres la devolución.`
+                : efecto.tipo === "por_cobrar"
+                  ? `Quedan ${dineroSalida(efecto.saldo)} por cobrar.`
+                  : "La cuenta queda pagada."}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" cargando={enviando.cargando} onClick={() => enviarCheckout()} data-confirmar-checkout>
+                {enviando.cargando ? "Guardando…" : "Confirmar salida"}
+              </Button>
+              <Button type="button" variante="secundario" disabled={enviando.cargando} onClick={() => setRevisando(false)}>
+                Volver
+              </Button>
+            </div>
+          </div>
         ) : (
           <Button type="button" cargando={enviando.cargando} onClick={() => enviarCheckout()} data-confirmar-checkout>
             {enviando.cargando ? "Guardando…" : "Confirmar salida"}

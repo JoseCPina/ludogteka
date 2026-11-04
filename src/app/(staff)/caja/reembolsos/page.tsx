@@ -1,3 +1,4 @@
+import { dinero } from "@/lib/dinero";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { formatearFecha } from "@/lib/formato";
@@ -65,9 +66,9 @@ export default async function ReembolsosPage() {
           <ul className="flex flex-col gap-1 text-sm">
             {(recientes ?? []).map((r) => (
               <li key={r.id as string} className="rounded-md border border-border bg-card px-3 py-2 text-n-700">
-                ${Number(r.monto).toFixed(2)} · {r.estado === "hecho" ? "Reembolsado" : "Rechazado por Mercado Pago"}
+                {dinero(Number(r.monto))} · {r.estado === "hecho" ? "Reembolsado" : "Rechazado por Mercado Pago"}
                 {r.origen === "proveedor" ? " (desde el panel)" : ""} · {r.motivo as string}
-                {Number(r.comision_devuelta) > 0 ? ` · comisión regresada $${Number(r.comision_devuelta).toFixed(2)}` : ""}
+                {Number(r.comision_devuelta) > 0 ? ` · comisión regresada ${dinero(Number(r.comision_devuelta))}` : ""}
                 {r.estado === "rechazado" && r.detalle_error ? ` · ${r.detalle_error as string}` : ""} ·{" "}
                 {formatearFecha((r.hecho_at ?? r.created_at) as string, zona)}
               </li>

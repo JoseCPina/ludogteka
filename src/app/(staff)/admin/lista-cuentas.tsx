@@ -4,6 +4,7 @@ import { etiquetaDeCuenta } from "@/lib/auth/identidad";
 import { useMemo, useState } from "react";
 import { Field } from "@/components/ui/field";
 import { ChipRol } from "@/components/ui/chip-rol";
+import { etiquetaDePersona } from "@/lib/auth/rutas";
 import { formatearFecha } from "@/lib/formato";
 import { useZonaNegocio } from "@/components/zona-negocio";
 import { RestablecerPasswordPersonal } from "../empleados/[id]/restablecer-password";
@@ -17,7 +18,7 @@ export type Cuenta = {
   creado_en: string;
 };
 
-export function ListaCuentas({ cuentas, miId = null }: { cuentas: Cuenta[]; miId?: string | null }) {
+export function ListaCuentas({ cuentas, miId = null, medicos = [], modulos = [] }: { cuentas: Cuenta[]; miId?: string | null; medicos?: string[]; modulos?: readonly string[] }) {
   const zona = useZonaNegocio();
   const [busqueda, setBusqueda] = useState("");
 
@@ -76,7 +77,7 @@ export function ListaCuentas({ cuentas, miId = null }: { cuentas: Cuenta[]; miId
               <tr key={cuenta.id} className="hover:bg-muted">
                 <td className="border-b border-border px-4 py-3 text-n-900">{etiquetaDeCuenta(cuenta.email)}</td>
                 <td className="border-b border-border px-4 py-3">
-                  <ChipRol rol={cuenta.rol} />
+                  <ChipRol rol={cuenta.rol} etiqueta={etiquetaDePersona({ rol: cuenta.rol, esMedico: medicos.includes(cuenta.id) }, modulos)} />
                 </td>
                 <td className="border-b border-border px-4 py-3">
                   {cuenta.rol === "cliente" ? (

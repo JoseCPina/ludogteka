@@ -10,9 +10,12 @@ import { PagarPortal } from "./pagar-portal";
  * dueño (`mis_pagos_pendientes`, `mis_abonos`); ninguna tabla con dinero. Sin saldo, no sale nada.
  */
 export async function PorPagarPortal({ supabase, zona }: { supabase: SupabaseClient; zona: string }) {
-  const { data } = await supabase.rpc("mis_pagos_pendientes");
+  const [{ data }, { data: aFavorCrudo }] = await Promise.all([supabase.rpc("mis_pagos_pendientes"), supabase.rpc("mis_saldos_a_favor")]);
   const pagos = ((data ?? []) as { reserva_id: string; descripcion: string; perros: string; fecha_actividad: string; saldo: number }[]).filter((p) => Number(p.saldo) > 0);
-  if (pagos.length === 0) return null;
+  // QA S62 (N162): lo que el negocio le tiene que devolver (se cobró de más), de la misma cuenta.
+  const aFavor = ((aFavorCrudo ?? []) as { reserva_id: string; descripcion: string; perros: string; fecha_actividad: string; a_favor: number }[]).filter((p) => Number(p.a_favor) > 0.005);
+  if (pagos.length === 0 && aFavor.length === 0) return null;
+  if (pagos.length === 0) return <SaldosAFavorPortal lista={aFavor} />;
   const abonos = await Promise.all(pagos.map(async (p) => ((await supabase.rpc("mis_abonos", { p_reserva: p.reserva_id })).data as AbonosCuenta | null) ?? null));
   return (
     <section className="flex flex-col gap-3" data-por-pagar-portal>
@@ -53,6 +56,23 @@ export async function PorPagarPortal({ supabase, zona }: { supabase: SupabaseCli
         })}
       </ul>
       <p className="text-sm text-n-600">El link cobra solo lo que te falta. También puedes pagar todo o una parte en recepción.</p>
+      {aFavor.length > 0 && <SaldosAFavorPortal lista={aFavor} />}
+    </section>
+  );
+}
+
+function SaldosAFavorPortal({ lista }: { lista: { reserva_id: string; descripcion: string; perros: string; fecha_actividad: string; a_favor: number }[] }) {
+  return (
+    <section className="flex flex-col gap-3" data-saldos-a-favor-portal>
+      <h2 className="text-lg font-semibold text-foreground">Saldo a favor</h2>
+      <ul className="flex flex-col gap-3">
+        {lista.map((p) => (
+          <li key={p.reserva_id} className="flex flex-col gap-1 rounded-lg border border-border bg-card p-4 shadow-tarjeta" data-saldo-a-favor={Number(p.a_favor).toFixed(2)}>
+            <span className="font-semibold text-n-900">{p.descripcion}</span>
+            <span className="text-sm text-n-700">Te tienen que devolver <strong>{dinero(Number(p.a_favor))}</strong>: se cobró de más. El negocio te lo devuelve; si tienes dudas, pregúntales.</span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

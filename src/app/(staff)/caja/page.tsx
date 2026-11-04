@@ -1,3 +1,4 @@
+import { dinero } from "@/lib/dinero";
 import { Cifra } from "@/components/ui/tarjeta";
 import { Receipt, Wallet } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -103,13 +104,13 @@ export default async function CajaPage() {
             <Cifra
               etiqueta="Turno abierto"
               valor="Abierto"
-              sub={<>Turno abierto desde el {formatearFecha(turno.abierto_at as string, zona)} · fondo ${Number(turno.fondo_inicial).toFixed(2)}</>}
+              sub={<>Turno abierto desde el {formatearFecha(turno.abierto_at as string, zona)} · fondo {dinero(Number(turno.fondo_inicial))}</>}
               icono={<Wallet />}
               tono="menta"
             />
           </div>
           <div className="rounded-lg border border-border bg-card p-4 shadow-tarjeta">
-            <Cifra etiqueta="Pendiente de cobrar hoy" valor={`$${totalHoy.toFixed(2)}`} icono={<Receipt />} tono="ambar" />
+            <Cifra etiqueta="Pendiente de cobrar hoy" valor={`${dinero(totalHoy)}`} icono={<Receipt />} tono="ambar" />
           </div>
         </div>
       ) : (
