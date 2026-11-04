@@ -34,7 +34,8 @@ if (!dueno) throw new Error("No hay un dueño de Huellitas con mascota en la app
 const p = await llamar("pedirCodigo", [dueno.telefono]);
 await A.from("app_entradas").update({ estado: "verificada", verificada_at: new Date().toISOString() }).eq("id", p.entrada.id);
 const { tokens } = await llamar("canjearEntrada", [p.entrada.id]);
-const P = { lat: 22.1565, lng: -100.9855 };
+const { data: unProspecto } = await A.from("prospectos").select("lat, lng").not("lat", "is", null).is("deleted_at", null).neq("etapa", "descartado").is("principal_id", null).in("giro", ["estetica", "hotel", "guarderia"]).limit(1).maybeSingle();
+const P = unProspecto ? { lat: unProspecto.lat, lng: unProspecto.lng } : { lat: 22.1565, lng: -100.9855 };
 
 const navegador = await abrirNavegador();
 const contexto = await navegador.newContext({
@@ -70,6 +71,15 @@ await tomar("15-avisos", "/avisos");
 await tomar("16-mi-cuenta", "/yo");
 await tomar("17-nueva-mascota", "/mascotas/nueva");
 await tomar("18-cerca-de-mi", "/cerca", 6000);
+await pagina.getByText("Estéticas", { exact: true }).first().click().catch(() => {});
+await pagina.waitForTimeout(5000);
+await pagina.screenshot({ path: path.join(SALIDA, "18b-cerca-esteticas.png") });
+await pagina.getByText("Hoteles con cupo hoy", { exact: true }).first().click().catch(() => {});
+await pagina.waitForTimeout(5000);
+await pagina.screenshot({ path: path.join(SALIDA, "18c-cerca-hoteles.png") });
+await pagina.locator("text=/km|m ·/").first().click().catch(() => {});
+await pagina.waitForTimeout(4000);
+await pagina.screenshot({ path: path.join(SALIDA, "18d-ficha-lugar.png") });
 // Una alerta de prueba para el mapa de alertas y su detalle.
 const foto = await (await import("sharp")).default({ create: { width: 800, height: 600, channels: 3, background: { r: 150, g: 110, b: 70 } } }).jpeg().toBuffer();
 const form = new FormData();

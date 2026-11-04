@@ -2,12 +2,11 @@ import { useEffect } from "react";
 import { Platform } from "react-native";
 import { Stack, router } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import * as Notifications from "expo-notifications";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
 import { useFonts, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { ProveedorSesion, useSesion } from "@/lib/sesion";
-import { rutaDeAviso } from "@/lib/push";
+import { rutaDeAviso, useUltimaNotificacion } from "@/lib/push";
 import { fuentes, useColores, useEsOscuro } from "@/tema";
 
 SplashScreen.preventAutoHideAsync();
@@ -22,7 +21,7 @@ function Pilas() {
   }, [cargando]);
 
   // Tocar una notificación abre la pantalla que dice el aviso.
-  const ultima = Notifications.useLastNotificationResponse();
+  const ultima = useUltimaNotificacion();
   useEffect(() => {
     if (!conSesion || !ultima) return;
     const ruta = rutaDeAviso(ultima.notification.request.content.data?.url as string | undefined);

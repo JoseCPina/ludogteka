@@ -85,7 +85,7 @@ export default function Inicio() {
 
             {pend && (pend.contratos || pend.porConfirmar || pend.cuentas) ? (
               <Grupo titulo="Te toca" style={{ paddingHorizontal: 16 }}>
-                {pend.contratos ? <Fila icono="firma" colorIcono={c.aviso} titulo={`${pend.contratos} ${pend.contratos === 1 ? "contrato por firmar" : "contratos por firmar"}`} detalle="Fírmalo con el dedo en un minuto" alTocar={() => router.push("/contratos")} ultima={!pend.porConfirmar && !pend.cuentas} /> : null}
+                {pend.contratos ? <Fila icono="firma" colorIcono={c.aviso} titulo={`${pend.contratos} ${pend.contratos === 1 ? "contrato por firmar" : "contratos por firmar"}`} detalle={pend.contratos === 1 ? "Fírmalo con el dedo en un minuto" : "Fírmalos con el dedo en un minuto"} alTocar={() => router.push("/contratos")} ultima={!pend.porConfirmar && !pend.cuentas} /> : null}
                 {pend.porConfirmar ? <Fila icono="calendario" colorIcono={c.aviso} titulo={`${pend.porConfirmar} ${pend.porConfirmar === 1 ? "visita por confirmar" : "visitas por confirmar"}`} detalle="Confírmala con un toque" alTocar={() => router.push("/visitas")} ultima={!pend.cuentas} /> : null}
                 {pend.cuentas ? <Fila icono="pago" colorIcono={c.peligro} titulo={`${pesos(pend.porPagar)} por pagar`} detalle={`${pend.cuentas} ${pend.cuentas === 1 ? "cuenta" : "cuentas"} con saldo`} alTocar={() => router.push("/pagos")} ultima /> : null}
               </Grupo>
