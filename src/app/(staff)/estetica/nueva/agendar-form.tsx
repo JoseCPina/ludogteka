@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -388,14 +389,14 @@ export function AgendarForm({
       avisoPrecio = (
         <div data-aviso-precio="ok" className="flex flex-col gap-2 rounded-md border-l-4 border-menta bg-menta-suave px-3 py-2 text-n-900">
           <p>
-            Precio: <strong className="tabular-nums">${(cot.precio ?? 0).toFixed(2)}</strong>
+            Precio: <strong className="tabular-nums">{dinero((cot.precio ?? 0))}</strong>
             {cot.maltratadoAplicado ? " (pelo maltratado)" : ""}
             {grupoDeExcepcion ? " · con excepción de grupo" : ""}
           </p>
           {cot.tarifaGuarderia && (
             <p data-tarifa-guarderia className="text-sm font-semibold text-menta-oscuro">
               Tarifa de cliente de guardería{cot.tarifaServicio ? `: el precio de «${cot.tarifaServicio}»` : ""}
-              {cot.precioNormal != null ? ` (el baño normal costaría $${cot.precioNormal.toFixed(2)})` : ""}
+              {cot.precioNormal != null ? ` (el baño normal costaría ${dinero(cot.precioNormal)})` : ""}
               {cot.tarifaOrigen === "manual" ? " · puesta a mano" : " · automática, porque tiene guardería"}. No es un descuento.
             </p>
           )}
@@ -551,7 +552,7 @@ export function AgendarForm({
                 <Enlace href={`/estetica/${a.citaId}`} enTexto>
                   {a.perroNombre} — {a.servicio}
                 </Enlace>{" "}
-                · ${a.precio.toFixed(2)}
+                · {dinero(a.precio)}
                 {a.tarifa ? " (tarifa de guardería)" : ""} · su propia cuenta
               </li>
             ))}

@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
@@ -312,7 +313,7 @@ export function MovimientosInsumo({
                 )}
                 {esAdmin && m.compra && (
                   <p className="mt-1 text-n-600">
-                    {m.compra.proveedor_nombre || "Sin proveedor"} · {m.compra.cantidad_compra} × ${m.compra.costo_unitario.toFixed(2)} = $
+                    {m.compra.proveedor_nombre || "Sin proveedor"} · {m.compra.cantidad_compra} × {dinero(m.compra.costo_unitario)} = $
                     {m.compra.costo_total.toFixed(2)}
                   </p>
                 )}

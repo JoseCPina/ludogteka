@@ -1,3 +1,4 @@
+import { dinero } from "@/lib/dinero";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { negocioActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
@@ -62,8 +63,8 @@ export default async function AjustesServicioPage() {
               </p>
               <p className="text-sm font-semibold text-n-800">
                 {f.tipo_ajuste === "cobro_adicional"
-                  ? `Falta cobrar $${Number(f.saldo).toFixed(2)} al cliente.`
-                  : `Hay $${Math.abs(Number(f.saldo)).toFixed(2)} a favor del cliente por devolver.`}
+                  ? `Falta cobrar ${dinero(Number(f.saldo))} al cliente.`
+                  : `Hay ${dinero(Math.abs(Number(f.saldo)))} a favor del cliente por devolver.`}
               </p>
               <p className="text-sm text-n-600">
                 {f.tipo_ajuste === "cobro_adicional"

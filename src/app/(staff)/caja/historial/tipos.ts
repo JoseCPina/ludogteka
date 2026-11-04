@@ -21,7 +21,7 @@ export type MovimientoCaja = {
 export const ETIQUETA_METODO: Record<string, string> = { efectivo: "Efectivo", terminal: "Terminal", transferencia: "Transferencia", tarjeta_manual: "Tarjeta (manual)" };
 
 export const TIPOS_FILTRO = [
-  { valor: "cobro", etiqueta: "Cobros y abonos" },
+  { valor: "cobro", etiqueta: "Cobros y abonos de servicios" },
   { valor: "venta_mostrador", etiqueta: "Ventas de mostrador" },
   { valor: "venta_bono", etiqueta: "Pases vendidos" },
   { valor: "devolucion", etiqueta: "Devoluciones" },

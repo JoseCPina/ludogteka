@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -40,7 +41,7 @@ function Fila({ r }: { r: ReembolsoPorAtender }) {
     <li className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="font-semibold text-n-900">
-          ${r.monto.toFixed(2)} · {r.clienteNombre}
+          {dinero(r.monto)} · {r.clienteNombre}
         </p>
         <Antiguedad dias={r.dias} prefijo={r.estado === "solicitado" ? "Esperando" : "Desde"} />
       </div>

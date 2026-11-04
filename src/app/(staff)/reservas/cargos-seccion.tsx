@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -34,7 +35,7 @@ export type Cargo = {
 export type ServicioCargo = { id: string; nombre: string; clave?: string; montoLibre?: boolean };
 
 function formatoDinero(valor: number): string {
-  return `$${valor.toFixed(2)}`;
+  return `${dinero(valor)}`;
 }
 
 // La "recogida tardía" que antes se sugería aquí ya no existe como cargo:

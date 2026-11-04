@@ -263,7 +263,7 @@ export async function crearLinkPago(reservaId: string, monto: number, concepto: 
       .eq("negocio_id", negocio.id);
 
     const mensaje =
-      `Hola ${cliente?.nombre ?? ""}, te mandamos el link para pagar ${titulo.toLowerCase()} en ${negocio.nombre}: $${monto.toFixed(2)}. ` +
+      `Hola ${cliente?.nombre ?? ""}, te mandamos el link para pagar ${titulo.toLowerCase()} en ${negocio.nombre}: ${dinero(monto)}. ` +
       `Puedes pagar con tarjeta o desde tu cuenta de ${ad.nombre} aquí: ${link.url} ` +
       `(vence en 7 días). ¡Gracias!`;
     const telefono = cliente?.telefono?.replace(/\D/g, "") ?? "";
@@ -362,7 +362,7 @@ export async function devolverConProveedor(reservaId: string, cobroId: string, m
     }
     const avisos = [
       r.sinTurno ? "Se reembolsó en Mercado Pago; como no hay turno abierto, entra a caja al abrir el siguiente." : null,
-      r.comisionDevuelta > 0 ? `Mercado Pago regresó $${r.comisionDevuelta.toFixed(2)} de comisión: se quitó de los gastos.` : null,
+      r.comisionDevuelta > 0 ? `Mercado Pago regresó ${dinero(r.comisionDevuelta)} de comisión: se quitó de los gastos.` : null,
     ].filter(Boolean);
     return { error: null, aviso: avisos.join(" ") || undefined, registros: await registrosReembolso() };
   } catch (e) {
@@ -458,9 +458,9 @@ async function validarGrupo(partes: ParteGrupo[], opciones: { revisarTerminal: b
   for (const p of partes) {
     const { data: t } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: p.reservaId });
     const saldo = Number((Array.isArray(t) ? t[0] : t)?.saldo ?? 0);
-    if (p.monto > saldo + 0.005) return { error: `Una cuenta recibiría $${p.monto.toFixed(2)} pero solo debe $${saldo.toFixed(2)}: baja el monto de esa cuenta.` };
+    if (p.monto > saldo + 0.005) return { error: `Una cuenta recibiría ${dinero(p.monto)} pero solo debe ${dinero(saldo)}: baja el monto de esa cuenta.` };
     const resto = Math.round((saldo - p.monto) * 100) / 100;
-    if (resto > 0 && resto < 1) return { error: `Con este cobro una cuenta se quedaría debiendo $${resto.toFixed(2)} (menos de un peso). Ajusta el monto de esa cuenta para saldarla o dejar al menos $1.` };
+    if (resto > 0 && resto < 1) return { error: `Con este cobro una cuenta se quedaría debiendo ${dinero(resto)} (menos de un peso). Ajusta el monto de esa cuenta para saldarla o dejar al menos $1.` };
   }
   if (opciones.revisarTerminal) {
     const { data: vivas } = await supabase.rpc("ordenes_abiertas_de_reservas", { p_reservas: ids });
@@ -583,7 +583,7 @@ export async function crearLinkPagoGrupo(partes: ParteGrupo[], concepto: string)
       .eq("id", orden.id)
       .eq("negocio_id", negocio.id);
     const mensaje =
-      `Hola ${g.cliente.nombre}, te mandamos el link para pagar ${titulo.toLowerCase()} en ${negocio.nombre}: $${g.total.toFixed(2)}. ` +
+      `Hola ${g.cliente.nombre}, te mandamos el link para pagar ${titulo.toLowerCase()} en ${negocio.nombre}: ${dinero(g.total)}. ` +
       `Puedes pagar con tarjeta o desde tu cuenta de ${ad.nombre} aquí: ${link.url} ` +
       `(vence en 7 días). ¡Gracias!`;
     const telefono = g.cliente.telefono?.replace(/\D/g, "") ?? "";

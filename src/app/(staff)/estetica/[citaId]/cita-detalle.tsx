@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useEffect, useState, useRef } from "react";
 import { useEspera } from "@/hooks/use-espera";
@@ -41,6 +42,7 @@ export function CitaDetalle({
   estado: estadoInicial,
   inicio,
   precio,
+  correccionPrecio = 0,
   recargo,
   recargoMotivo,
   puedeRecargo,
@@ -61,6 +63,8 @@ export function CitaDetalle({
   estado: string;
   inicio: string;
   precio: number;
+  /** QA S62 (N164): lo que las correcciones de precio vigentes le suman o restan (ya va dentro de `precio`). */
+  correccionPrecio?: number;
   // El recargo manual que ya trae (si trae) y si quien mira puede ponerlo.
   recargo: number;
   recargoMotivo: string | null;
@@ -273,7 +277,7 @@ export function CitaDetalle({
     }
     setQuitandoTarifa(false);
     setMotivoTarifa("");
-    setAviso({ texto: `Tarifa ${modo === "no" ? "quitada" : "aplicada"}: la cita ahora cuesta $${(res.precio ?? 0).toFixed(2)}.` });
+    setAviso({ texto: `Tarifa ${modo === "no" ? "quitada" : "aplicada"}: la cita ahora cuesta ${dinero((res.precio ?? 0))}.` });
     router.refresh();
   }
 
@@ -345,10 +349,15 @@ export function CitaDetalle({
   return (
     <div className="flex flex-col gap-4">
       <p className="text-n-700">
-        Precio: <span className="font-semibold text-n-900">${precio.toFixed(2)}</span>
+        Precio: <span className="font-semibold text-n-900" data-precio-cita={precio.toFixed(2)}>{dinero(precio)}</span>
+        {Math.abs(correccionPrecio) > 0.005 && (
+          <span data-correccion-precio className="block text-sm text-n-600">
+            Con una corrección de precio de {correccionPrecio > 0 ? "+" : "−"}{dinero(Math.abs(correccionPrecio))} (antes {dinero(precio - correccionPrecio)}).
+          </span>
+        )}
         {recargo > 0 && (
           <span data-recargo className="block text-sm text-n-600">
-            Incluye un recargo de ${recargo.toFixed(2)}{recargoMotivo ? `: ${recargoMotivo}` : ""}.
+            Incluye un recargo de {dinero(recargo)}{recargoMotivo ? `: ${recargoMotivo}` : ""}.
           </span>
         )}
       </p>

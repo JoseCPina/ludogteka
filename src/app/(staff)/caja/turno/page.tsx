@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { dinero } from "@/lib/dinero";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { Alert } from "@/components/ui/alert";
 import { TurnoAbierto, type Retiro, type EfectivoAgregado } from "./turno-abierto";
@@ -19,6 +20,8 @@ import { Enlace } from "@/components/ui/enlace";
 // una fila por cobro tardaba segundos en llegar y en dibujarse. Los totales por método salen de la base, no de la lista.
 const MOVIMIENTOS_INICIAL = 50;
 const MOVIMIENTOS_TOPE = 2000;
+
+const NOMBRE_METODO_ESPERADO: Record<string, string> = { efectivo: "Efectivo (con fondo)", terminal: "Terminal", transferencia: "Transferencia", tarjeta_manual: "Tarjeta manual", link: "Link de pago" };
 
 export default async function TurnoCajaPage({ searchParams }: { searchParams: Promise<{ mov?: string }> }) {
   const { mov } = await searchParams;
@@ -146,6 +149,21 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
     (r) => r.metodo === "tarjeta_manual" && Number(r.cobrado) + Number(r.propinas) - Number(r.devuelto) !== 0,
   );
 
+  // Corte ciego, una regla (QA S62; ve_esperado_turno en la base): quien tiene el turno abierto no ve sus esperados;
+  // un admin que NO lo tiene, sí (lo supervisa). El esperado de efectivo suma el fondo y el efectivo agregado y resta
+  // los retiros, como el corte.
+  const veEsperado = Boolean(turnoAbierto && sesion?.rol === "admin" && turnoAbierto.abierto_por !== sesion?.user.id);
+  const esperadoPorMetodo = veEsperado
+    ? ((tarjetaManualCrudo ?? []) as { metodo: string; cobrado: number; propinas: number; devuelto: number }[]).map((r) => {
+        const neto = Number(r.cobrado) + Number(r.propinas) - Number(r.devuelto);
+        const extra = r.metodo === "efectivo"
+          ? Number(turnoAbierto!.fondo_inicial) +
+            ((retirosCrudo ?? []) as { monto: number; deleted_at: string | null; tipo: string }[]).filter((m) => !m.deleted_at).reduce((a, m) => a + (m.tipo === "ingreso_efectivo" ? Number(m.monto) : -Number(m.monto)), 0)
+          : 0;
+        return { metodo: r.metodo, esperado: Math.round((neto + extra) * 100) / 100 };
+      })
+    : null;
+
   const turnosCerrados: TurnoCerrado[] = (turnosCerradosCrudo ?? []).map((t) => {
     const corte = Array.isArray(t.cortes_caja) ? t.cortes_caja[0] : t.cortes_caja;
     const metodos = (corte?.corte_metodos as { metodo: string; conteo: number; esperado: number; diferencia: number }[]) ?? [];
@@ -214,6 +232,17 @@ export default async function TurnoCajaPage({ searchParams }: { searchParams: Pr
             abiertoPorMi={turnoAbierto.abierto_por === sesion?.user.id}
             hayTarjetaManual={hayTarjetaManual}
           />
+          {esperadoPorMetodo && (
+            <section className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4 shadow-tarjeta" data-esperado-turno>
+              <h2 className="font-semibold text-n-900">Esperado por forma de pago</h2>
+              <p className="text-sm text-n-600">Lo ves porque eres admin y este turno no es tuyo: quien lo tiene abierto no lo ve hasta cerrarlo (corte ciego).</p>
+              <dl className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                {esperadoPorMetodo.map((m) => (
+                  <div key={m.metodo}><dt className="text-n-600">{NOMBRE_METODO_ESPERADO[m.metodo] ?? m.metodo}</dt><dd className="font-semibold tabular-nums" data-esperado-metodo={m.metodo}>{dinero(m.esperado)}</dd></div>
+                ))}
+              </dl>
+            </section>
+          )}
           <div className="flex flex-col gap-3 border-t border-border pt-6">
             <h2 className="text-lg font-semibold text-foreground">Movimientos de este turno</h2>
             <MovimientosTurno

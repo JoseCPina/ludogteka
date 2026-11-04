@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { dinero } from "@/lib/dinero";
 
 // QA R50 (N136): lo que cuesta una estancia sale de la base, nunca de «precio × noches» en la pantalla. Las líneas son
 // las de cuenta_lineas_reserva (de donde salen el total del encabezado, Caja y el calendario) con la estancia a la que
@@ -80,8 +81,6 @@ export async function cuentasPorEstancia(supabase: SupabaseClient, reservaId: st
   return { cuentas: agruparPorEstancia((data ?? []) as Fila[]), error: null };
 }
 
-const dinero = (n: number) =>
-  `${n < 0 ? "−" : ""}$${Math.abs(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const UNIDADES: Record<string, [string, string]> = { noche: ["noche", "noches"], dia: ["día", "días"], hora: ["hora", "horas"] };
 const conUnidad = (n: number, unidad: string | null) => {
   const [uno, varios] = UNIDADES[unidad ?? ""] ?? ["vez", "veces"];

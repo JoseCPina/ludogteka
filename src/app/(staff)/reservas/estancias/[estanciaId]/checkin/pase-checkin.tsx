@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
@@ -75,7 +76,7 @@ export function PaseCheckin({
         <div>
           <p className="font-bold text-ambar-oscuro">Tiene pases sin aplicar</p>
           <p className="text-sm text-ambar-oscuro">
-            {estado.descripcion}. Hoy quedó como día suelto (${estado.precioDia.toFixed(2)}).
+            {estado.descripcion}. Hoy quedó como día suelto ({dinero(estado.precioDia)}).
           </p>
           {error && <p className="mt-1 text-sm font-semibold text-coral-oscuro">{error}</p>}
           {puedeAjustar && estado.bono && (
@@ -93,7 +94,7 @@ export function PaseCheckin({
 
   return (
     <div className="rounded-lg border-l-4 border-n-300 bg-muted px-4 py-3">
-      <p className="font-bold text-n-900">Paga el día suelto: ${estado.precioDia.toFixed(2)}</p>
+      <p className="font-bold text-n-900">Paga el día suelto: {dinero(estado.precioDia)}</p>
       <p className="text-sm text-n-600">Este perro no tiene pases ni mensualidad vigentes (el paquete es por perro).</p>
     </div>
   );

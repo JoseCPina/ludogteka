@@ -1,3 +1,4 @@
+import { dinero } from "@/lib/dinero";
 import Link from "next/link";
 import { AppNativaInvitacion } from "@/components/app/app-nativa-invitacion";
 import { misMascotas, misNegocios, edadTexto, nombreEspecie, type Mascota } from "@/lib/app/datos";
@@ -16,7 +17,7 @@ export default async function MisMascotasPage() {
   const pendientes = [
     contratos.length > 0 && { href: "/contratos", titulo: `${contratos.length} ${contratos.length === 1 ? "contrato por firmar" : "contratos por firmar"}`, nota: "Fírmalo con el dedo en un minuto", chip: "apd-chip apd-chip-ambar", dato: "contratos" },
     porConfirmar > 0 && { href: "/visitas", titulo: `${porConfirmar} ${porConfirmar === 1 ? "visita por confirmar" : "visitas por confirmar"}`, nota: "Confírmala con un toque", chip: "apd-chip apd-chip-ambar", dato: "confirmar" },
-    pagos.length > 0 && { href: "/pagos", titulo: `$${porPagar.toFixed(2)} por pagar`, nota: `${pagos.length} ${pagos.length === 1 ? "cuenta" : "cuentas"} con saldo`, chip: "apd-chip apd-chip-coral", dato: "pagos" },
+    pagos.length > 0 && { href: "/pagos", titulo: `${dinero(porPagar)} por pagar`, nota: `${pagos.length} ${pagos.length === 1 ? "cuenta" : "cuentas"} con saldo`, chip: "apd-chip apd-chip-coral", dato: "pagos" },
   ].filter(Boolean) as { href: string; titulo: string; nota: string; chip: string; dato: string }[];
   const nombre = s?.dueno.nombre?.split(" ")[0] ?? null;
   const vivas = mascotas.filter((m) => !m.fallecido);

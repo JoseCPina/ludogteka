@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
@@ -42,7 +43,7 @@ export function DescuentoConfig({
       ) : (
         <p className="text-n-700">
           Recepción puede aplicar descuentos hasta{" "}
-          <span className="font-bold text-n-900">${topeActual.toFixed(2)}</span> sin necesitar admin
+          <span className="font-bold text-n-900">{dinero(topeActual)}</span> sin necesitar admin
           {vigenteDesde ? ` (vigente desde ${vigenteDesde})` : ""}.
         </p>
       )}

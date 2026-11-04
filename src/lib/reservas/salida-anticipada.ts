@@ -1,3 +1,4 @@
+import { dinero } from "@/lib/dinero";
 // N132 (QA S36): lo que el check-out dice de la cuenta cuando el perro sale antes de su salida prevista, con lo que
 // devuelve `salida_anticipada_cotizar` (la misma cuenta que aplica `salida_anticipada_aplicar` al confirmar).
 
@@ -13,7 +14,7 @@ export type CotizacionSalida = {
   motivo_no?: "pase" | "correccion" | "ajustada";
 };
 
-const pesos = (n: number) => `$${Number(n).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+const pesos = (n: number) => dinero(n);
 const unidades = (n: number, unidad: "noche" | "dia") => `${n} ${unidad === "noche" ? (n === 1 ? "noche" : "noches") : n === 1 ? "día" : "días"}`;
 
 /**
@@ -35,4 +36,22 @@ export function textoSalidaAnticipada(c: CotizacionSalida | null | undefined, { 
   if (c.motivo_no === "correccion") return `${antes}: la línea ya tiene una corrección de precio, la cuenta no cambia (ajústala desde la cuenta)`;
   if (c.motivo_no === "ajustada") return `${antes}: la cuenta ya está ajustada a lo que usó`;
   return null;
+}
+
+/**
+ * QA S62 (N162): cómo queda la cuenta al confirmar la salida: el total nuevo (si la salida anticipada lo baja, con la
+ * misma cotización que aplicará la base), lo cobrado (neto de devoluciones) y el saldo resultante. Negativo = saldo a
+ * favor del cliente. Null si no hay cuenta.
+ */
+export function cuentaAlSalir(
+  cuenta: { total: number; pagado: number; saldo: number } | null | undefined,
+  c: CotizacionSalida | null | undefined
+): { total: number; pagado: number; saldo: number; cambiaTotal: boolean; tipo: "por_cobrar" | "pagada" | "a_favor" } | null {
+  if (!cuenta) return null;
+  const cambia = Boolean(c?.aplica && c.politica !== "completa" && c.total_antes != null && c.total_despues != null && Math.abs(c.total_antes - c.total_despues) > 0.005);
+  const baja = cambia ? Number(c!.total_antes) - Number(c!.total_despues) : 0;
+  const total = Math.round((cuenta.total - baja) * 100) / 100;
+  const saldo = Math.round((cuenta.saldo - baja) * 100) / 100;
+  const pagado = Math.round(cuenta.pagado * 100) / 100;
+  return { total, pagado, saldo, cambiaTotal: cambia, tipo: saldo > 0.005 ? "por_cobrar" : saldo < -0.005 ? "a_favor" : "pagada" };
 }

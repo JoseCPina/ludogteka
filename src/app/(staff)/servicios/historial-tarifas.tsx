@@ -1,3 +1,4 @@
+import { dinero } from "@/lib/dinero";
 import { formatearFechaCalendario, formatearFecha } from "@/lib/formato";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 
@@ -59,7 +60,7 @@ export function HistorialTarifas({ filas, zona }: { filas: FilaHistorial[]; zona
                   .join(" · ") || "Precio único"}
               </td>
               <td className="border-b border-border px-4 py-3 tabular-nums text-n-900">
-                {f.no_aplica ? "No aplica" : `$${Number(f.precio).toFixed(2)}`}
+                {f.no_aplica ? "No aplica" : `${dinero(Number(f.precio))}`}
               </td>
               <td className="border-b border-border px-4 py-3 tabular-nums text-n-900">
                 {formatearFechaCalendario(f.vigencia_desde)}

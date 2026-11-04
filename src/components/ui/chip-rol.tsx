@@ -14,10 +14,11 @@ const ETIQUETAS_ROL: Record<string, string> = {
   cliente: "Cliente",
 };
 
-export function ChipRol({ rol }: { rol: string }) {
+/** `etiqueta`: la que da etiquetaDePersona (un médico con el rol de estética es «Médico veterinario»). */
+export function ChipRol({ rol, etiqueta }: { rol: string; etiqueta?: string }) {
   return (
     <Chip tono={TONO_ROL[rol] ?? "neutro"} punto={false}>
-      {ETIQUETAS_ROL[rol] ?? rol}
+      <span data-etiqueta-rol>{etiqueta ?? ETIQUETAS_ROL[rol] ?? rol}</span>
     </Chip>
   );
 }

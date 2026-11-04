@@ -58,6 +58,16 @@ export function etiquetaDeSesion(s: SesionDeZona): string {
   return ETIQUETAS_ROL[s.rol] ?? s.rol;
 }
 
+/**
+ * QA S62 (recurrencia de N156): la etiqueta de una persona en una LISTA de equipo (bienvenida, personal, cuentas) es la
+ * misma que la de su sesión: un médico invitado con el rol de estética es «Médico veterinario», nunca «Estética».
+ * Las listas saben quién es médico por medicos_del_negocio().
+ */
+export function etiquetaDePersona(p: { rol: string; esMedico?: boolean }, modulos: readonly string[]): string {
+  if (p.rol === "cliente") return "Cliente";
+  return etiquetaDeSesion({ rol: p.rol, modulos, esMedico: p.esMedico === true, accesoVeterinaria: p.esMedico === true });
+}
+
 /** El aviso «El módulo de Estética está apagado» es solo para quien de verdad se quedó sin su zona. */
 export function avisarEsteticaApagada(s: SesionDeZona): boolean {
   return esteticaSinModulo(s) && !trabajaEnVeterinaria(s);

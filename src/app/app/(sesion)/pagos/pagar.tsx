@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
@@ -22,7 +23,7 @@ export function Pagar({ negocioId, reservaId, saldo, linkVivo }: { negocioId: st
   return (
     <div style={{ marginTop: "0.75rem" }}>
       <button type="button" className="apd-boton apd-boton-ancho" aria-busy={envio.cargando || undefined} disabled={envio.cargando} onClick={pagar} data-pagar={reservaId}>
-        {envio.cargando ? "Preparando el pago…" : `Pagar $${saldo.toFixed(2)}`}
+        {envio.cargando ? "Preparando el pago…" : `Pagar ${dinero(saldo)}`}
       </button>
       {enlace.enlace?.bloqueado && (
         <p className="apd-aviso apd-aviso-ambar" role="status" style={{ marginTop: "0.6rem" }}>

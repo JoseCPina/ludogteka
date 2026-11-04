@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { CuentasCliente } from "./cuentas-cliente";
 import { cargarOpcionesCobroManual } from "@/lib/cobro/opciones-manual";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
@@ -451,6 +452,8 @@ export default async function EditarClientePage({
         />
       </div>
       )}
+
+      <CuentasCliente clienteId={id} zona={zonaBaja} />
 
       <DatosFiscalesCliente clienteId={id} />
 

@@ -12,7 +12,7 @@ const { CONFIRMA_FUERA_HORARIO, confirmarSiFueraDeHorario } = await import("../l
 
 const sufijo = String(Date.now()).slice(-6);
 const sumar = (f, d) => new Date(new Date(`${f}T12:00:00Z`).getTime() + d * 86400000).toISOString().slice(0, 10);
-const pesos = (n) => `$${Number(n).toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+const pesos = (n) => `$${Number(n).toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; // el formato de dinero() (QA S62)
 const nav = await abrirNavegador();
 const creadas = [];
 try {

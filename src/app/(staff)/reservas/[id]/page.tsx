@@ -1,3 +1,4 @@
+import { dinero } from "@/lib/dinero";
 import { cuentaPorCobrar } from "@/lib/caja/cuenta-por-cobrar";
 import { notFound, redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -261,15 +262,15 @@ export default async function DetalleReservaPage({
               )}
             </dl>
             <p className={`text-sm font-bold ${saldo > 0 ? "text-coral-oscuro" : "text-menta-oscuro"}`} data-saldo-reserva={saldo.toFixed(2)}>
-              Saldo: ${Math.abs(saldo).toFixed(2)}
+              Saldo: {dinero(Math.abs(saldo))}
               {saldo < 0 ? " (a favor)" : ""}
             </p>
             {todaCancelada && (
               <p className="max-w-xs text-right text-sm text-n-700" data-reserva-cancelada-cuenta>
                 {hayQueCobrar
-                  ? `Reserva cancelada, pero la cuenta todavía debe $${saldo.toFixed(2)} (de un total de $${totalCuenta.toFixed(2)}): es lo que sí se cobra.`
+                  ? `Reserva cancelada, pero la cuenta todavía debe ${dinero(saldo)} (de un total de ${dinero(totalCuenta)}): es lo que sí se cobra.`
                   : saldo < -0.005
-                    ? `Reserva cancelada: hay $${(-saldo).toFixed(2)} a favor del cliente que se devuelve desde la cuenta.`
+                    ? `Reserva cancelada: hay ${dinero((-saldo))} a favor del cliente que se devuelve desde la cuenta.`
                     : "Reserva cancelada: no hay nada por cobrar."}
               </p>
             )}
@@ -277,7 +278,7 @@ export default async function DetalleReservaPage({
               {(!todaCancelada || hayQueCobrar || saldo < -0.005) && (
                 <Enlace href={`/reservas/${id}/cobrar`} data-cobrar-reserva>
                     {/* N129: sin saldo por cobrar no se ofrece «Cobrar»: la cuenta pagada se abre para ver sus cobros. */}
-                    {todaCancelada ? (hayQueCobrar ? `Cobrar $${saldo.toFixed(2)}` : "Ver la cuenta") : hayQueCobrar ? "Cobrar" : "Ver cobros"}
+                    {todaCancelada ? (hayQueCobrar ? `Cobrar ${dinero(saldo)}` : "Ver la cuenta") : hayQueCobrar ? "Cobrar" : "Ver cobros"}
                   </Enlace>
               )}
               {cancelables > 0 && (

@@ -396,3 +396,9 @@ a[data-ui="enlace-bloque"][data-pendiente="si"] .marca-pendiente {
     opacity: 0;
   }
 }
+
+/* QA S62: el aviso «Instalar la app» no se apila sobre una franja del plan (prueba, gracia, demo, bloqueo…): si hay
+   una, el de instalar no sale (la franja va antes en el layout). */
+[data-aviso-plan] ~ [data-aviso-instalar] {
+  display: none;
+}

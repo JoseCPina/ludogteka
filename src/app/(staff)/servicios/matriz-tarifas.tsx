@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { idCliente } from "@/lib/id-cliente";
 import { useMemo, useState } from "react";
@@ -272,7 +273,7 @@ export function MatrizTarifas({
       }
     }
     setValores(nuevas);
-    setAvisoMasivo(`Listo: ${llenas} ${llenas === 1 ? "celda" : "celdas"} con $${monto.toFixed(2)}. Ajusta las que cambian y luego guarda.`);
+    setAvisoMasivo(`Listo: ${llenas} ${llenas === 1 ? "celda" : "celdas"} con ${dinero(monto)}. Ajusta las que cambian y luego guarda.`);
   }
 
   // QA R22 (N62): copia los precios vigentes de otro servicio a las celdas que coinciden (grupo, talla y pelaje;
@@ -357,7 +358,7 @@ export function MatrizTarifas({
 
           const anterior =
             base.estado === "disponible"
-              ? `$${base.precio!.toFixed(2)}`
+              ? `${dinero(base.precio!)}`
               : base.estado === "no_aplica"
                 ? "No aplica"
                 : "Sin tarifa";
@@ -480,10 +481,10 @@ export function MatrizTarifas({
                     {c.anterior}
                   </td>
                   <td className="border-b border-border px-4 py-2 tabular-nums font-semibold text-n-900">
-                    {c.no_aplica ? "No aplica" : `$${c.precio!.toFixed(2)}`}
+                    {c.no_aplica ? "No aplica" : `${dinero(c.precio!)}`}
                     {c.precio_pelo_maltratado !== null && (
                       <span className="block text-xs font-normal text-n-600">
-                        maltratado ${c.precio_pelo_maltratado.toFixed(2)}
+                        maltratado {dinero(c.precio_pelo_maltratado)}
                       </span>
                     )}
                   </td>

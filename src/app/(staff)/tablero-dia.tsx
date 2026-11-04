@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { dinero as formatoDinero } from "@/lib/dinero";
 import { negocioActual } from "@/lib/negocio/actual";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -77,7 +78,7 @@ type Cita = {
 
 // `dias` es cuánto lleva esperando (o vencido) lo que avisa; `antiguedad`,
 // cómo se dice. Con más de una semana, el aviso se resalta.
-type Atencion = { clave: string; texto: string; href: string; detalle?: string; dias?: number; antiguedad?: string };
+type Atencion = { clave: string; texto: string; href: string; detalle?: string; dias?: number; antiguedad?: string; accion?: string };
 
 // "2 contratos esperan la firma del dueño · el más viejo desde hace 3 días".
 function masViejo(fechas: string[], hoy: string, zona: string, genero: "o" | "a" = "o") {
@@ -217,7 +218,8 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // Las tres partes de «Necesita atención» salen A LA VEZ (en serie sumarían sus tiempos): la general ya salió arriba,
   // la de dinero solo para admin y la clínica solo con Veterinaria. Cada bloque de abajo espera solo la suya.
   const general: Promise<PartesAtencion> = sinSesion.general;
-  const dinero = sesion?.rol === "admin" ? grupoAtencion(supabase, "dinero") : Promise.resolve(SIN_ATENCION);
+  // Recepción también: las cuentas con saldo a favor (QA S62, N162) son de quien atiende la caja.
+  const dinero = sesion?.rol === "admin" || sesion?.rol === "recepcion" ? grupoAtencion(supabase, "dinero") : Promise.resolve(SIN_ATENCION);
   const clinica = mods.includes("veterinaria") ? grupoAtencion(supabase, "clinica") : Promise.resolve(SIN_ATENCION);
   // Ya son promesas en marcha (grupoAtencion nunca rechaza: un error de red deja la parte vacía).
   const previas = {
@@ -234,6 +236,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     tarjetas: dinero.then((d): [Dato, Dato] => [{ data: d.tarjetas ?? null }, { data: d.tarjetas_atencion ?? null }]),
     ajustes: pieza(general, "ajustes"),
     cobro: pieza(dinero, "cobro"),
+    saldosAFavor: pieza(dinero, "saldos_a_favor"),
     cfdi: pieza(general, "cfdi"),
   };
 
@@ -456,10 +459,27 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         saldos.length === 1
           ? `${saldos[0].perros || "Una cuenta"} ya se fue y su cuenta tiene saldo pendiente`
           : `${saldos.length} cuentas de perros que ya se fueron tienen saldo pendiente`,
-      detalle: `$${total.toFixed(2)} por cobrar`,
+      detalle: `${formatoDinero(total)} por cobrar`,
       href: saldos.length === 1 ? `/caja/cobrar/${saldos[0].reservaId}` : "/recepcion/saldos",
       ...masViejo(saldos.map((c) => c.salioEl), hoy, zona, "a"),
     });
+  }
+
+  // QA S62 (N162): cuentas con saldo a favor del cliente (se cobró más de lo que quedó en la cuenta). Cada una con su
+  // botón a la cuenta, donde se registra la devolución; desaparece al devolver.
+  {
+    const { data: aFavor } = await previas.saldosAFavor;
+    const lista = ((aFavor ?? []) as { reserva_id: string; cliente_nombre: string; descripcion: string; saldo: number; fecha_actividad: string }[]);
+    for (const c of lista.slice(0, 5)) {
+      atencion.push({
+        clave: `saldo-a-favor-${c.reserva_id}`,
+        texto: `Saldo a favor: devolver ${formatoDinero(-Number(c.saldo))} a ${c.cliente_nombre}`,
+        detalle: `${c.descripcion} · se cobró de más; registra la devolución en la cuenta`,
+        href: `/caja/cobrar/${c.reserva_id}`,
+        accion: "Devolver",
+      });
+    }
+    if (lista.length > 5) atencion.push({ clave: "saldos-a-favor-mas", texto: `${lista.length - 5} cuentas más con saldo a favor`, href: "/caja", detalle: "Ábrelas desde Caja" });
   }
 
   // Razas nuevas del catálogo con perros de este negocio y sin grupo de
@@ -761,7 +781,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
                 ? "Un reembolso espera la respuesta de Mercado Pago"
                 : "Un reembolso de Mercado Pago falta de registrarse en caja"
             : `${lista.length} reembolsos de Mercado Pago por revisar`,
-        detalle: `$${total.toFixed(2)}${panel.length ? " · hecho fuera de la app; ya se registró en caja" : ""}`,
+        detalle: `${formatoDinero(total)}${panel.length ? " · hecho fuera de la app; ya se registró en caja" : ""}`,
         href: "/caja/reembolsos",
         ...masViejo(lista.map((r) => r.desde), hoy, zona),
       });
@@ -782,7 +802,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
           filas.length === 1
             ? sinPago ? "Un cobro con terminal no aparece como pagado en Mercado Pago" : "Mercado Pago tiene un pago que la caja no registró"
             : `${filas.length} diferencias entre la caja y Mercado Pago`,
-        detalle: `$${filas.reduce((a, f) => a + Number(f.monto), 0).toFixed(2)} · revisa cada una`,
+        detalle: `${formatoDinero(filas.reduce((a, f) => a + Number(f.monto), 0))} · revisa cada una`,
         href: "/caja/conciliacion",
         ...masViejo(filas.map((f) => f.detectada_at), hoy, zona),
       });
@@ -804,13 +824,14 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // montos y folios); sube también la que pasó el tope y el patrón de uso.
   if (sesion?.rol === "admin") {
     const [{ data: tarjetas }, { data: aviso }] = await previas.tarjetas;
-    const lista = (tarjetas ?? []) as { monto: number; sobre_tope: boolean; registrada_at: string }[];
+    // QA S62 (N163): lo que espera revisión es el NETO de cada tarjeta (lo cobrado menos lo devuelto con esa tarjeta).
+    const lista = ((tarjetas ?? []) as { monto: number; devuelto: number | null; sobre_tope: boolean; registrada_at: string }[]).filter((t) => Number(t.monto) - Number(t.devuelto ?? 0) > 0.005);
     if (lista.length > 0) {
-      const total = lista.reduce((s2, t) => s2 + Number(t.monto), 0);
+      const total = lista.reduce((s2, t) => s2 + Number(t.monto) - Number(t.devuelto ?? 0), 0);
       atencion.push({
         clave: "tarjetas-manuales",
         texto: lista.length === 1 ? "Una tarjeta registrada a mano espera revisión" : `${lista.length} tarjetas registradas a mano esperan revisión`,
-        detalle: `$${total.toFixed(2)} sin verificar · contrástalas con el voucher en Conciliación`,
+        detalle: `${formatoDinero(total)} sin verificar · contrástalas con el voucher en Conciliación`,
         href: "/caja/conciliacion",
         ...masViejo(lista.map((t) => t.registrada_at), hoy, zona, "a"),
       });
@@ -819,7 +840,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
         atencion.push({
           clave: "tarjetas-manuales-tope",
           texto: sobre.length === 1 ? "Una tarjeta manual pasó el tope de alerta" : `${sobre.length} tarjetas manuales pasaron el tope de alerta`,
-          detalle: `$${sobre.reduce((s2, t) => s2 + Number(t.monto), 0).toFixed(2)} · se registraron igual; revisa el voucher primero`,
+          detalle: `${formatoDinero(sobre.reduce((s2, t) => s2 + Number(t.monto), 0))} · se registraron igual; revisa el voucher primero`,
           href: "/caja/conciliacion",
           ...masViejo(sobre.map((t) => t.registrada_at), hoy, zona, "a"),
         });
@@ -859,7 +880,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
             : `${lista.length} servicios corregidos con ajuste de cuenta pendiente`,
         detalle:
           lista.length === 1
-            ? `$${Math.abs(Number(lista[0].saldo)).toFixed(2)}`
+            ? `${formatoDinero(Math.abs(Number(lista[0].saldo)))}`
             : `${aFavor.length} por devolver · ${porCobrar} por cobrar`,
         href: "/caja/ajustes-servicio",
         ...masViejo(lista.map((x) => x.desde), hoy, zona),
@@ -1020,6 +1041,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
                       {a.detalle && <span className="text-xs text-n-600">{a.detalle}</span>}
                       {a.dias !== undefined && a.antiguedad && <Antiguedad dias={a.dias} texto={a.antiguedad} />}
                     </span>
+                    {a.accion ? <span className="mt-1 flex-none rounded-full bg-morado px-3 py-1 text-xs font-semibold text-white" data-accion-atencion>{a.accion}</span> : null}
                     <ChevronRight aria-hidden="true" className="mt-1.5 size-4 flex-none text-n-400" />
                   </Enlace>
                 </li>

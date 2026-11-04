@@ -205,6 +205,22 @@ export async function contratosPorFirmarApp(): Promise<ContratoPorFirmar[]> {
 export type PagoPendiente = { negocioId: string; negocioNombre: string; reservaId: string; descripcion: string; perros: string; fechaActividad: string; saldo: number; link: { url: string; monto: number; expiraAt: string | null } | null };
 export type PaseApp = { negocioId: string; negocioNombre: string; id: string; servicioNombre: string; servicioIncluidoNombre: string | null; perroId: string | null; perroNombre: string | null; mascotaId: string | null; cantidadTotal: number; cantidadDisponible: number; ilimitado: boolean; fechaCompra: string; fechaVencimiento: string | null; estado: string };
 
+/** QA S62 (N162): lo que cada negocio le tiene que devolver al dueño (saldo a favor), de la misma cuenta que Caja. */
+export type SaldoAFavor = { negocioId: string; negocioNombre: string; reservaId: string; descripcion: string; perros: string; fechaActividad: string; aFavor: number };
+export async function saldosAFavorApp(): Promise<SaldoAFavor[]> {
+  const vinculos = await vinculosApp();
+  const porNegocio = await Promise.all(
+    negociosDe(vinculos).map(async (n) => {
+      const supabase = await supabaseAppEnNegocio(n.negocioId);
+      const { data } = await supabase.rpc("mis_saldos_a_favor");
+      return ((data ?? []) as { reserva_id: string; descripcion: string; perros: string; fecha_actividad: string; a_favor: number }[]).map((p) => ({
+        negocioId: n.negocioId, negocioNombre: n.negocioNombre, reservaId: p.reserva_id, descripcion: p.descripcion, perros: p.perros, fechaActividad: p.fecha_actividad, aFavor: Number(p.a_favor),
+      }));
+    })
+  );
+  return porNegocio.flat().filter((p) => p.aFavor > 0.005);
+}
+
 export async function pagosPendientesApp(): Promise<PagoPendiente[]> {
   const vinculos = await vinculosApp();
   const porNegocio = await Promise.all(

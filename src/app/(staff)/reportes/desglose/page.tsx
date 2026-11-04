@@ -1,3 +1,4 @@
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -58,7 +59,7 @@ export default async function DesglosePage({
 
   const supabase = await createSupabaseServerClient();
   // Corte ciego: el dinero de caja por método de un periodo con el turno abierto no se lista (ni se pide).
-  if (esTarjetaDeCaja(tarjeta) && (await turnoAbiertoEnPeriodo(supabase, desde, hasta, zona))) {
+  if (esTarjetaDeCaja(tarjeta) && (await turnoAbiertoEnPeriodo(supabase, desde, hasta, zona, await obtenerSesionConRol().then((q) => ({ rol: q?.rol, usuarioId: q?.user.id }))))) {
     return (
       <div className="flex flex-col gap-4">
         <Alert variante="info" titulo="Caja por método: al cerrar el turno">

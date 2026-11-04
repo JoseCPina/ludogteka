@@ -1,3 +1,5 @@
+import { dinero } from "@/lib/dinero";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -30,13 +32,12 @@ export default async function ReportesPage({
   const zona = await zonaActual();
   const params = await searchParams;
   const hoy = hoyNegocio(zona);
-  // Por omisión, el ÚLTIMO MES COMPLETO: a mitad de mes los gastos fijos
-  // salen prorrateados a los días transcurridos y la utilidad se ve mejor
-  // de lo que va a ser.
+  // QA S62: por omisión, el MES EN CURSO (del 1 a hoy), que es lo que se busca al abrir; el aviso de periodo parcial
+  // dice que los gastos fijos van prorrateados. El mes completo anterior queda a un toque.
   const ultimoMes = rangoMes(mesAnterior(hoy.slice(0, 7)));
   const mesEnCurso = { desde: `${hoy.slice(0, 7)}-01`, hasta: hoy };
-  const desde = params.desde || ultimoMes.desde;
-  const hasta = params.hasta || (params.desde ? hoy : ultimoMes.hasta);
+  const desde = params.desde || mesEnCurso.desde;
+  const hasta = params.hasta || (params.desde ? hoy : mesEnCurso.hasta);
   // El rango llega a hoy o después: todavía no termina.
   const parcial = hasta >= hoy;
   const esMesCompleto = desde === rangoMes(desde.slice(0, 7)).desde && hasta === rangoMes(desde.slice(0, 7)).hasta;
@@ -77,7 +78,8 @@ export default async function ReportesPage({
     supabase.rpc("reporte_servicios_extra_periodo", { p_desde: desde, p_hasta: hasta }),
   ]);
   // Corte ciego: con un turno abierto en el periodo, el dinero de caja por método no sale de este servidor.
-  const turnoCiego = await turnoAbiertoEnPeriodo(supabase, desde, hasta, zona);
+  const quien = await obtenerSesionConRol();
+  const turnoCiego = await turnoAbiertoEnPeriodo(supabase, desde, hasta, zona, { rol: quien?.rol, usuarioId: quien?.user.id });
   // Servicios extra de Hotel y guardería: ingreso por servicio y por empleado.
   const extras = ((extrasData ?? []) as { agrupacion: string; clave: string; nombre: string; veces: number; cantidad: number; ingreso: number; cubierto_paquete: number }[]).map((r) => ({
     ...r,
@@ -758,8 +760,8 @@ export default async function ReportesPage({
                         <td data-label="" className="px-3 py-2 font-semibold text-n-900">{r.nombre}</td>
                         <td data-label="Veces" className="px-3 py-2 text-right tabular-nums">{r.veces}</td>
                         <td data-label="Cantidad" className="px-3 py-2 text-right tabular-nums">{r.cantidad}</td>
-                        <td data-label="Ingreso" className="px-3 py-2 text-right tabular-nums">${r.ingreso.toFixed(2)}</td>
-                        <td data-label="Cubierto con paquete" className="px-3 py-2 text-right tabular-nums">${r.cubierto_paquete.toFixed(2)}</td>
+                        <td data-label="Ingreso" className="px-3 py-2 text-right tabular-nums">{dinero(r.ingreso)}</td>
+                        <td data-label="Cubierto con paquete" className="px-3 py-2 text-right tabular-nums">{dinero(r.cubierto_paquete)}</td>
                       </tr>
                     ))}
                   </tbody>

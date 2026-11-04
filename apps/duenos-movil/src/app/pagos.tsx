@@ -6,11 +6,12 @@ import { Pantalla } from "@/componentes/pantalla";
 import { Boton, Mensaje, Texto, Vacio } from "@/componentes/ui";
 import { radio, useColores } from "@/tema";
 
+type AFavor = { negocioNombre: string; reservaId: string; descripcion: string; aFavor: number };
 type Pago = { negocioId: string; negocioNombre: string; reservaId: string; descripcion: string; perros: string; fechaActividad: string; saldo: number };
 
 /** Por pagar (referencia app-pagar: el monto va en el botón). El link de Mercado Pago se abre en el navegador seguro. */
 export default function Pagos() {
-  const p = usePantalla<{ pagos: Pago[] }>("pagos");
+  const p = usePantalla<{ pagos: Pago[]; aFavor?: AFavor[] }>("pagos");
   const total = (p.datos?.pagos ?? []).reduce((t, x) => t + x.saldo, 0);
   return (
     <Pantalla cargando={p.cargando} error={p.error} refrescando={p.refrescando} alRefrescar={p.refrescar} alReintentar={p.refrescar}>

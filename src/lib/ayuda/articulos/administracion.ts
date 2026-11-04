@@ -328,7 +328,7 @@ El gasto se queda tachado con su motivo y ya no cuenta en la utilidad. Nada se b
     cuerpo: `Los reportes te dicen cuánto entró, cuánto costó y cuánto te quedó. Los ve admin o quien tenga el permiso «Reportes financieros».
 
 1. Entra a [Reportes](/reportes).
-2. Escoge **Desde** y **Hasta** y aprieta **Actualizar**, o usa **Último mes completo** o **Mes en curso**.
+2. Abre en el **Mes en curso**. Escoge **Desde** y **Hasta** y aprieta **Actualizar**, o usa **Último mes completo** o **Mes en curso**.
 
 ## Qué dice cada parte
 

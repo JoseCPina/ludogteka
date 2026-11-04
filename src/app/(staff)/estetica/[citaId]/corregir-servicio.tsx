@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +12,6 @@ import { corregirServicioCita, cotizarCorreccionServicio } from "../correccion-s
 import { AvisoVersion, useControlVersion } from "@/components/concurrencia/use-control-version";
 import type { CotizacionCorreccion, ResultadoCorreccion } from "../correccion-servicio-tipos";
 
-const dinero = (n: number) => `$${Math.abs(n).toFixed(2)}`;
 const conSigno = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${dinero(n)}`;
 
 /**

@@ -57,7 +57,7 @@ export async function registrarCobro(
   // N28: la revisión corre SIEMPRE en el servidor (también si la pantalla no mandó lo que veía).
   const [{ data: totales }, aviso] = await Promise.all([
     supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId }),
-    contexto ? avisoCobroReciente(supabase, [reservaId], control, contexto) : Promise.resolve(null),
+    contexto ? avisoCobroReciente(supabase, [reservaId], control, contexto, { monto: metodos.reduce((s, m) => s + m.monto, 0), metodos: metodos.map((m) => m.metodo) }) : Promise.resolve(null),
   ]);
   if (aviso) return { error: null, confirmar: aviso, registros: await registrosDe(supabase, [{ t: "reservas", i: reservaId }]) };
   const saldoAntes = Number((Array.isArray(totales) ? totales[0] : totales)?.saldo ?? 0);

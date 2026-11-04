@@ -14,7 +14,7 @@ import { abrirTurno } from "../../turno-actions";
 import { useCuentaViva, textoSaldoCambio } from "@/hooks/use-cuenta-viva";
 import { registrarCobro, registrarDevolucion, type MetodoPago } from "../../cobro-actions";
 import { CobroIntegrado, type OrdenCobroFila } from "./cobro-integrado";
-import { cuentaPorCobrar } from "@/lib/caja/cuenta-por-cobrar";
+import { cuentaPorCobrar, estadoDeSaldo, tieneSaldoAFavor } from "@/lib/caja/cuenta-por-cobrar";
 import { DevolucionIntegrada } from "./devolucion-integrada";
 import { CancelarRenglonVenta } from "./cancelar-renglon-venta";
 import { MarcarNoRecibido } from "./marcar-no-recibido";
@@ -339,7 +339,7 @@ export function CuentaCobro({
     }
     if (pasaTope && !puedeSinTope) {
       setError(
-        `Este descuento ($${montoEstimadoDescuento.toFixed(2)}) pasa el tope de recepción ($${topeRecepcion.toFixed(2)}). Pide a un admin que lo aplique.`
+        `Este descuento (${dinero(montoEstimadoDescuento)}) pasa el tope de recepción (${dinero(topeRecepcion)}). Pide a un admin que lo aplique.`
       );
       return;
     }
@@ -964,13 +964,18 @@ export function CuentaCobro({
         )}
       </div>
 
-      {!porCobrar ? (
+      {!porCobrar && tieneSaldoAFavor(totales.saldo) ? (
+        <div className="flex flex-col gap-1 rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4" data-cuenta-saldo-a-favor={(-totales.saldo).toFixed(2)}>
+          <p className="font-semibold text-ambar-oscuro">{estadoDeSaldo(totales.saldo, dinero).texto}</p>
+          <p className="text-sm text-ambar-oscuro">
+            {exitoCobro ? `${exitoCobro} ` : ""}
+            Se cobró más de lo que quedó en la cuenta. Devuélvelo con «Registrar devolución» en el cobro, en la lista de cobros de esta cuenta.
+          </p>
+        </div>
+      ) : !porCobrar ? (
         <div className="flex flex-col gap-1 rounded-lg border border-menta-oscuro/30 bg-menta-suave p-4" data-cuenta-pagada>
           <p className="font-semibold text-menta-oscuro">Cuenta pagada</p>
-          <p className="text-sm text-n-700">
-            {exitoCobro ?? "No hay saldo por cobrar."}
-            {totales.saldo < -0.005 ? ` Hay ${dinero(-totales.saldo)} a favor del cliente: se devuelve con «Registrar devolución».` : ""}
-          </p>
+          <p className="text-sm text-n-700">{exitoCobro ?? "No hay saldo por cobrar."}</p>
         </div>
       ) : !turnoAbierto ? (
         <div className="rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4">
@@ -1072,7 +1077,7 @@ export function CuentaCobro({
                 </Button>
               )}
               {m.metodo === "tarjeta_manual" && (
-                <CamposTarjetaManual valor={m.tarjeta} onChange={(cambios) => actualizarMetodo(i, { tarjeta: { ...m.tarjeta, ...cambios } })} />
+                <CamposTarjetaManual valor={m.tarjeta} conTerminal={mp.terminalManualBloqueada} onChange={(cambios) => actualizarMetodo(i, { tarjeta: { ...m.tarjeta, ...cambios } })} />
               )}
             </div>
           ))}

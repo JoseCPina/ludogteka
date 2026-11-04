@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -36,7 +37,7 @@ export function DevolucionIntegrada({
   async function devolver() {
     const m = Number(monto);
     if (!Number.isFinite(m) || m <= 0) return setError("El monto a devolver debe ser mayor a cero.");
-    if (m > disponible + 0.001) return setError(`Lo más que se puede devolver de este cobro es $${disponible.toFixed(2)}.`);
+    if (m > disponible + 0.001) return setError(`Lo más que se puede devolver de este cobro es ${dinero(disponible)}.`);
     if (!motivo.trim()) return setError("Escribe el motivo de la devolución.");
     setError(null);
     setExito(null);
@@ -57,7 +58,7 @@ export function DevolucionIntegrada({
         <div className="w-40">
           <Field label="Monto a devolver" type="number" min="0" step="0.01" value={monto} onChange={(e) => setMonto(e.target.value)} />
         </div>
-        <p className="pb-2 text-xs text-n-500">Queda por devolver: ${disponible.toFixed(2)}</p>
+        <p className="pb-2 text-xs text-n-500">Queda por devolver: {dinero(disponible)}</p>
       </div>
       <Field label="Motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} placeholder="ej. Se canceló una noche ya cobrada" />
       <AccionesFormulario error={error} exito={exito}>

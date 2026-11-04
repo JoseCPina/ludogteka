@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
@@ -230,7 +231,7 @@ export function BonosCliente({
                   </div>
                   <p className="text-sm text-n-700">{describirBono(b)}</p>
                   <p className="text-sm text-n-600">
-                    {b.servicio_incluido_nombre ?? "—"} · pagado ${b.precio_pagado.toFixed(2)}
+                    {b.servicio_incluido_nombre ?? "—"} · pagado {dinero(b.precio_pagado)}
                   </p>
                   <p className="text-xs text-n-500">
                     Comprado {formatearFechaCalendario(b.fecha_compra)}
@@ -333,7 +334,7 @@ export function BonosCliente({
                 </Button>
               )}
               {m.metodo === "tarjeta_manual" && (
-                <CamposTarjetaManual valor={m.tarjeta} onChange={(cambios) => actualizarMetodo(i, { tarjeta: { ...m.tarjeta, ...cambios } })} />
+                <CamposTarjetaManual valor={m.tarjeta} conTerminal={opcionesCobro.terminalManualBloqueada} onChange={(cambios) => actualizarMetodo(i, { tarjeta: { ...m.tarjeta, ...cambios } })} />
               )}
             </div>
           ))}

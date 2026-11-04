@@ -1,3 +1,4 @@
+import { dinero } from "@/lib/dinero";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Antiguedad } from "@/components/ui/antiguedad";
 import { formatearFecha, hoyNegocio } from "@/lib/formato";
@@ -36,7 +37,7 @@ export default async function SaldosPendientesPage() {
       ) : (
         <>
           <p className="text-sm text-n-700">
-            {saldos.length} {saldos.length === 1 ? "cuenta" : "cuentas"} · <strong>${total.toFixed(2)}</strong> por cobrar
+            {saldos.length} {saldos.length === 1 ? "cuenta" : "cuentas"} · <strong>{dinero(total)}</strong> por cobrar
           </p>
           <ul className="divide-y divide-border rounded-lg border border-border bg-card shadow-tarjeta">
             {saldos.map((s) => (
@@ -51,7 +52,7 @@ export default async function SaldosPendientesPage() {
                   <Antiguedad dias={s.dias} texto={`Sin cobrar desde que salió, ${haceCuanto(s.dias)}`} />
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-bold tabular-nums text-n-900">${s.saldo.toFixed(2)}</span>
+                  <span className="font-bold tabular-nums text-n-900">{dinero(s.saldo)}</span>
                   <Enlace href={`/caja/cobrar/${s.reservaId}`} className="text-sm">
                     Cobrar
                   </Enlace>

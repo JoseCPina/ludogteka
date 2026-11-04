@@ -1,4 +1,5 @@
 "use client";
+import { dinero } from "@/lib/dinero";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -43,7 +44,7 @@ export function MarcarNoRecibido({ reservaId, cobroId, monto, cuentasDelGrupo = 
   return (
     <div data-no-recibido className="flex flex-col gap-3 rounded-md border-[1.5px] border-ambar bg-ambar-suave p-3">
       <p className="text-sm font-semibold text-ambar-oscuro">
-        ¿Este cobro de ${monto.toFixed(2)} con terminal no se recibió? Antes de marcarlo se revisa con Mercado Pago: si hay un pago aprobado que pueda ser
+        ¿Este cobro de {dinero(monto)} con terminal no se recibió? Antes de marcarlo se revisa con Mercado Pago: si hay un pago aprobado que pueda ser
         suyo, no se deja.
         {cuentasDelGrupo > 1 ? ` Este cobro se hizo junto con otras ${cuentasDelGrupo - 1}: se deshace el cobro completo, en todas sus cuentas.` : ""}
       </p>
