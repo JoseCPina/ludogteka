@@ -499,7 +499,7 @@ Aprieta **Registrar retiro**, escribe **Monto** y **Motivo** y aprieta **Confirm
 
 ## Hacer el corte
 
-1. Aprieta **Cerrar turno**.
+1. Aprieta **Cerrar turno** (en [Turno](/caja/turno) o en el inicio de [Caja](/caja), junto a «Turno abierto»). Antes de empezar pregunta **¿Cerrar el turno ahora?**: **Sí, empezar el cierre** o **Todavía no**.
 2. Cuenta el efectivo y saca el reporte del lote de la terminal antes de seguir: la app no te enseña lo esperado hasta que mandas tu conteo.
 3. Captura **Efectivo contado**, **Terminal (reporte del lote)** y **Transferencia** (0 si no hubo).
 4. Aprieta **Enviar conteo**. Si cuadra, el turno se cierra y sale **Turno cerrado** al momento.
@@ -968,7 +968,7 @@ Para cuando el dinero que se recibió fue otro (se tecleó $300 y eran $400): **
 
 ## Corregir precio
 
-Para cuando el precio de **una línea de la cuenta** estaba mal. En la línea, **Corregir precio**: escribe el **Precio correcto de la línea** y el motivo y aprieta **Guardar precio**. El cuadro se queda abierto con el precio vigente arriba («hoy $…»), el motivo vacío, y el botón se vuelve a activar en cuanto cambias el precio o el motivo.
+Para cuando el precio de **una línea de la cuenta** estaba mal. En la línea, **Corregir precio** (en una cita de estética, también desde el detalle de la cita, junto a **Precio**; el precio de la cita es siempre el de su cuenta): escribe el **Precio correcto de la línea** y el motivo y aprieta **Guardar precio**. El cuadro se queda abierto con el precio vigente arriba («hoy $…»), el motivo vacío, y el botón se vuelve a activar en cuanto cambias el precio o el motivo.
 
 **Corregir monto** y **Corregir precio** (igual que los descuentos) solo salen mientras la cuenta tiene saldo por cobrar. En una **Cuenta pagada** (saldo $0 o a favor) quedan **Anular cobro** y **Registrar devolución**: anula o devuelve primero y, con el saldo otra vez arriba de $0, vuelven a salir.
 
@@ -1043,7 +1043,7 @@ Una cita **ya cobrada** no se reprograma: primero se anula el cobro (mira [Cómo
 
 Son dos cosas distintas:
 
-- **Cancelar cita:** la clienta avisó que no viene. Pide motivo; el horario queda libre.
+- **Cancelar cita:** la clienta avisó que no viene. El cuadro pide el **Motivo de la cancelación (obligatorio)** desde que se abre, y si falta lo dice junto al campo; el horario queda libre.
 - **No se presentó:** nadie avisó y no llegó. Queda como «no llegó». Se puede marcar a partir de la hora de la cita: antes, el botón se ve apagado y dice «Disponible a partir de las 09:00» (con la hora de esa cita).
 
 En los dos casos la cita no se borra y queda el historial. Si ya tenía cobro, se anula primero.

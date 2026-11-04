@@ -131,6 +131,9 @@ export function PerroForm({
   // Tamaño y pelaje: la raza del catálogo los sugiere (Labrador: grande, corto) cuando aún están vacíos; nunca borra lo capturado (N126).
   const [tamanoId, setTamanoId] = useState(valoresIniciales?.tamano_id ?? "");
   const [pelajeId, setPelajeId] = useState(valoresIniciales?.pelaje_id ?? "");
+  // QA S63: talla y pelaje obligatorios se revisan al guardar y el error sale junto a su campo (no solo el globo del
+  // navegador, que en el celular casi no se ve).
+  const [faltaTallaPelaje, setFaltaTallaPelaje] = useState(false);
   // El aviso del último intento de guardar se esconde en cuanto se cambia lo que decía que faltaba.
   const [errorDescartado, setErrorDescartado] = useState<string | null>(null);
   // QA S16 (N80): la raza vacía se avisa junto al campo, antes de ir al servidor.
@@ -174,6 +177,11 @@ export function PerroForm({
         if (pideRaza && !razaElegida.raza_id && !razaElegida.raza.trim()) {
           setFaltaRaza(true);
           e.currentTarget.querySelector<HTMLElement>("[data-selector-raza] input")?.focus();
+          return;
+        }
+        if (pideTallaYPelaje && (!tamanoId || !pelajeId)) {
+          setFaltaTallaPelaje(true);
+          e.currentTarget.querySelector<HTMLElement>(!tamanoId ? 'select[name="tamano_id"]' : 'select[name="pelaje_id"]')?.focus();
           return;
         }
         const datos = new FormData(e.currentTarget);
@@ -349,7 +357,7 @@ export function PerroForm({
         <Select
           label={pideTallaYPelaje ? "Tamaño (obligatorio)" : "Tamaño"}
           name="tamano_id"
-          required={pideTallaYPelaje}
+          error={faltaTallaPelaje && pideTallaYPelaje && !tamanoId ? "Elige el tamaño: sin él no hay precio." : undefined}
           disabled={deshabilitado}
           value={tamanoId}
           onChange={(e) => {
@@ -367,7 +375,7 @@ export function PerroForm({
         <Select
           label={pideTallaYPelaje ? "Pelaje (obligatorio)" : "Pelaje"}
           name="pelaje_id"
-          required={pideTallaYPelaje}
+          error={faltaTallaPelaje && pideTallaYPelaje && !pelajeId ? "Elige el pelaje: sin él no hay precio de estética." : undefined}
           disabled={deshabilitado}
           value={pelajeId}
           onChange={(e) => {

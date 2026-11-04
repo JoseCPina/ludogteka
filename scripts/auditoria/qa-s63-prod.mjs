@@ -147,7 +147,9 @@ try {
         const texto = limpio(await p.locator("main").innerText());
         revisa(ciego === 1, "el Historial dice «Corte ciego» para quien tiene el turno abierto");
         revisa(conMonto.length === 0, `las filas «turno abierto» no traen monto (${conMonto.join(", ") || "ninguna con monto"})`);
-        revisa(!/Efectivo[^\n]{0,40}\$100\.00/.test(texto), "el resumen de efectivo no enseña los $100.00 del turno abierto");
+        const fuga = texto.match(/.{0,70}\$100\.00.{0,70}/g) ?? [];
+        ver(`apariciones de $100.00 en la pantalla (turnos cerrados las enseñan a propósito): ${fuga.length ? fuga.join(" ‖ ") : "ninguna"}`);
+        revisa((await p.locator("[data-totales-historial]").count()) === 0, "el Historial no pinta el resumen por forma de pago mientras el turno sigue abierto");
         const { data: h } = await api.rpc("caja_movimientos", { p_desde: (await api.rpc("fecha_negocio")).data, p_hasta: (await api.rpc("fecha_negocio")).data, p_turno: turno.id });
         revisa(h?.ciego === true && h?.totales_por_metodo == null && (h?.movimientos ?? []).every((m) => m.monto == null), "la respuesta de la base viene ciega (sin totales ni montos)");
         await p.context().close();
@@ -192,10 +194,87 @@ try {
     await p.goto(`${HOT.base}/reportes`, { waitUntil: "networkidle" });
     const desde = await p.locator('input[name="desde"]').first().inputValue().catch(() => null);
     revisa(desde === `${hoy.slice(0, 7)}-01`, `Reportes abre desde ${desde} (mes en curso: ${hoy.slice(0, 7)}-01)`);
-    const { data: cli } = await HOT.N.from("reservas").select("cliente_id").eq("negocio_id", HOT.negocio.id).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).single();
+    // Un cliente con alguna cuenta con monto (la sección no sale para quien no tiene cuentas).
+    const { data: rs } = await HOT.N.from("reservas").select("id, cliente_id").eq("negocio_id", HOT.negocio.id).is("deleted_at", null).order("created_at", { ascending: false }).limit(60);
+    let cli = null;
+    for (const r of rs ?? []) { const { data: t } = await api.rpc("cuenta_totales_reserva", { p_reserva_id: r.id }); if (Number(t?.[0]?.total_cuenta) > 0) { cli = r; break; } }
     await p.goto(`${HOT.base}/clientes/${cli.cliente_id}`, { waitUntil: "networkidle" });
     revisa((await p.locator("[data-cuentas-cliente]").count()) === 1 && (await p.locator("[data-saldo-cliente]").count()) === 1, "la ficha del cliente enseña su saldo y sus cuentas");
+    // La ficha de la mascota también (QA S63), de la misma reserva.
+    const { data: est } = await HOT.N.from("estancias").select("perro_id").eq("reserva_id", cli.id).limit(1).maybeSingle();
+    if (est?.perro_id) {
+      await p.goto(`${HOT.base}/perros/${est.perro_id}`, { waitUntil: "networkidle" });
+      revisa((await p.locator("[data-cuentas-cliente]").count()) === 1, "la ficha de la mascota enseña su saldo y sus cuentas");
+    }
+    // «Cerrar turno» en el inicio de Caja (si hay turno abierto) y «Salir» activo en el HTML del servidor.
+    await p.goto(`${HOT.base}/caja`, { waitUntil: "networkidle" });
+    const hayTurno = (await p.locator("[data-turno-abierto]").count()) > 0;
+    if (hayTurno) revisa((await p.locator("[data-cerrar-turno-inicio]").count()) === 1, "«Cerrar turno» está en el inicio de Caja");
+    else ver("sin turno abierto en hotel S62: «Cerrar turno» del inicio no se revisa");
+    const html = await (await fetch(`${HOT.base}/caja`, { headers: { cookie: sesion.cookies.map((k) => `${k.name}=${k.value}`).join("; ") } })).text();
+    const salir = html.match(/<button[^>]*aria-label="Salir"[^>]*>/)?.[0] ?? "";
+    revisa(Boolean(salir) && !/\sdisabled(=|\s|>)/.test(salir), "«Salir» llega activo antes de hidratar");
     await p.context().close();
+  }
+
+  // ───────────────────────────── N170 ─────────────────────────────
+  if (toca("n170") && ESCRIBIR) {
+    console.log("\nN170 · hotel S62: cancelar una reserva, el encabezado cambia al momento");
+    const sesion = await HOT.sesion("admin");
+    const api = comoPersona(sesion.token, HOT.negocio.id);
+    const hoy = (await api.rpc("fecha_negocio")).data;
+    const { data: base } = await HOT.N.from("estancias").select("perro_id, servicio_id, reservas(cliente_id)").eq("negocio_id", HOT.negocio.id).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).single();
+    const sumar = (f, d) => new Date(new Date(`${f}T12:00:00Z`).getTime() + d * 86400000).toISOString().slice(0, 10);
+    let entrada = sumar(hoy, 12);
+    for (let i = 0; i < 10 && (await api.rpc("negocio_abre", { p_fecha: entrada })).data !== true; i++) entrada = sumar(entrada, 1);
+    const cliente = (Array.isArray(base.reservas) ? base.reservas[0] : base.reservas).cliente_id;
+    const r = (await api.from("reservas").insert({ cliente_id: cliente, notas: "Verificación QA S63 (N170)" }).select("id").single()).data;
+    const e = await api.from("estancias").insert({ reserva_id: r.id, perro_id: base.perro_id, servicio_id: base.servicio_id, fecha_entrada: entrada, fecha_salida: sumar(entrada, 1), dia_cerrado_confirmado: "confirmado", bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "QA S63", bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "QA S63" }).select("id").single();
+    if (e.error) mal(`no se pudo armar la reserva de prueba: ${e.error.message}`);
+    else {
+      const p = await pagina(sesion);
+      await p.goto(`${HOT.base}/reservas/${r.id}`, { waitUntil: "networkidle" });
+      const antes = await p.locator("[data-saldo-reserva]").getAttribute("data-saldo-reserva");
+      await p.getByRole("button", { name: "Cancelar toda la reserva" }).click();
+      await p.getByRole("button", { name: /Sí, cancelar todo/ }).click();
+      await p.waitForTimeout(2500);
+      const saldo = await p.locator("[data-saldo-reserva]").getAttribute("data-saldo-reserva");
+      const cobrar = limpio(await p.locator("[data-cobrar-reserva]").innerText().catch(() => ""));
+      revisa(Number(antes) > 0 && saldo === "0.00" && !/^Cobrar/.test(cobrar), `el encabezado pasó de saldo ${antes} a ${saldo} y «${cobrar || "sin enlace"}», sin recargar`);
+      await p.context().close();
+    }
+  }
+
+  // ───────────────────────────── N169 ─────────────────────────────
+  if (toca("n169") && ESCRIBIR) {
+    console.log("\nN169 · vet S62: «Reprogramar» con la misma fecha y hora y otro médico");
+    const V = await negocioPrueba("prueba-qa-vet-s62");
+    const sesion = await V.sesion("admin");
+    const api = comoPersona(sesion.token, V.negocio.id);
+    const { data: meds } = await V.N.from("medicos_veterinarios").select("id").eq("negocio_id", V.negocio.id).is("deleted_at", null);
+    const { data: perro } = await V.N.from("perros").select("id").eq("negocio_id", V.negocio.id).is("deleted_at", null).not("cliente_id", "is", null).limit(1).single();
+    if ((meds ?? []).length < 2) ver("vet S62 tiene un solo médico: no se puede cambiar de médico");
+    else {
+      const cuando = new Date(Date.now() + 5 * 86400000); cuando.setUTCHours(18, 0, 0, 0);
+      const c = await api.rpc("vet_agendar_cita", { p_perro: perro.id, p_tipo: "consulta", p_medico: meds[0].id, p_inicia: cuando.toISOString(), p_duracion_min: 30, p_motivo: "Verificación QA S63 (N169)" });
+      const id = c.data?.id;
+      try {
+        const p = await pagina(sesion);
+        await p.goto(`${V.base}/veterinaria/agenda?fecha=${cuando.toISOString().slice(0, 10)}`, { waitUntil: "networkidle" });
+        const fila = p.locator("article, li").filter({ hasText: "Verificación QA S63 (N169)" }).first();
+        await fila.getByRole("button", { name: "Reprogramar" }).click();
+        const hora = await fila.locator('input[name="hora"]').inputValue();
+        revisa(/^\d{2}:\d{2}$/.test(hora), `«Hora» viene con la hora de la cita (${hora || "vacío"})`);
+        await fila.locator('select[name="medico_id"]').selectOption(meds[1].id);
+        await fila.getByRole("button", { name: "Mover la cita" }).click();
+        const aviso = await p.locator(`[data-aviso-cita-movida="${id}"]`).waitFor({ timeout: 30000 }).then(() => true).catch(() => false);
+        const d = (await V.N.from("vet_citas").select("medico_id").eq("id", id).single()).data;
+        revisa(d?.medico_id === meds[1].id && aviso, `la cita cambió de médico y la agenda dice «Cita movida» (${d?.medico_id === meds[1].id ? "cambió" : "no cambió"}, aviso ${aviso ? "sí" : "no"})`);
+        await p.context().close();
+      } finally {
+        if (id) await api.rpc("vet_cita_estado", { p_id: id, p_estado: "cancelada", p_motivo: "Verificación QA S63: cita de prueba" });
+      }
+    }
   }
 } finally {
   await nav.close();

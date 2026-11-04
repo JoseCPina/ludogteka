@@ -1,4 +1,4 @@
-import { formatearDiaSemana, formatearFechaCalendario, horaLocalDeInstante, formatearFecha } from "@/lib/formato";
+import { formatearDiaSemana, formatearFechaCalendario, horaLocalDeInstante, horaLocalParaInput, formatearFecha } from "@/lib/formato";
 import { Field } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { ESTADOS_DIA, ORIGEN_REGISTRO, TIPOS_AUSENCIA, hora, minutos } from "@/lib/empleados/textos";
@@ -101,8 +101,8 @@ export function TablaAsistencia({
                 <Desplegable texto={d.asistencia_id ? "Corregir" : "Capturar asistencia"}>
                   <FormularioAccion accion={corregirAsistencia.bind(null, empleadoId, d.fecha)} textoBoton="Guardar corrección">
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <Field label="Entrada" name="entrada" type="time" defaultValue={d.entrada_at ? h(d.entrada_at) : ""} ayuda="Vacía para anular el registro del día." />
-                      <Field label="Salida" name="salida" type="time" defaultValue={d.salida_at ? h(d.salida_at) : ""} />
+                      <Field label="Entrada" name="entrada" type="time" defaultValue={d.entrada_at ? horaLocalParaInput(d.entrada_at, zona).slice(11, 16) : ""} ayuda="Vacía para anular el registro del día." />
+                      <Field label="Salida" name="salida" type="time" defaultValue={d.salida_at ? horaLocalParaInput(d.salida_at, zona).slice(11, 16) : ""} />
                     </div>
                     <Textarea label="Motivo (queda en el registro)" name="motivo" rows={2} required />
                   </FormularioAccion>

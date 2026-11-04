@@ -39,6 +39,9 @@ export function useControlVersion<E = string>(tabla: string, id: string | null |
   ): boolean => {
     if (res?.conflicto) {
       setExito(null);
+      // QA S63 (N161): lo que se muestra del registro fuera del formulario (encabezado, hora, estado) se pinta con el
+      // registro vigente que trae el conflicto; el formulario conserva lo que la persona escribió.
+      publicarRegistros(res.registros);
       setPendiente({ c: res.conflicto, reintentar });
       return true;
     }

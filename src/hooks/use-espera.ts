@@ -40,7 +40,7 @@ export function useEspera(opciones: { tope?: number } = {}) {
       setCargando(true);
       try {
         const res = await esperarConTope(fn, tope);
-        if (!res?.error && !(res as { conflicto?: unknown }).conflicto) publicarRegistros((res as { registros?: RegistroFinal[] }).registros);
+        if (!res?.error) publicarRegistros((res as { registros?: RegistroFinal[] }).registros); // QA S63 (N161): también con conflicto: es el registro vigente
         return res;
       } finally {
         if (montado.current) setCargando(false);
@@ -83,7 +83,7 @@ export function useAccionConTope<S extends ConError, P extends unknown[]>(
     // QA S41: también aquí lo que devuelve la acción se pinta con la respuesta.
     return async (...args: P) => {
       const res = await conTopeYa(...args);
-      if (!res?.error && !(res as { conflicto?: unknown }).conflicto) publicarRegistros((res as { registros?: RegistroFinal[] }).registros);
+      if (!res?.error) publicarRegistros((res as { registros?: RegistroFinal[] }).registros); // QA S63 (N161): también con conflicto: es el registro vigente
       return res;
     };
   }, [accion, tope]);

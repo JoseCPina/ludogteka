@@ -108,6 +108,10 @@ export default async function CajaPage() {
               icono={<Wallet />}
               tono="menta"
             />
+            {/* QA S63: «Cerrar turno» también desde el inicio de Caja (abre el turno con la confirmación a la vista). */}
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Enlace href="/caja/turno?cerrar=1" data-cerrar-turno-inicio>Cerrar turno</Enlace>
+            </div>
           </div>
           <div className="rounded-lg border border-border bg-card p-4 shadow-tarjeta">
             <Cifra etiqueta="Pendiente de cobrar hoy" valor={`${dinero(totalHoy)}`} icono={<Receipt />} tono="ambar" />

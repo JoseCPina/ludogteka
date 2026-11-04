@@ -2,7 +2,7 @@ import { fechaParaAgendar } from "@/lib/estetica/proponer-hora";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { describirCita, fechaLocalDeInstante, formatearDiaDeInstante, formatearDiaSemana, formatearFechaCalendario, formatearHoraNegocio, horaLocalDeInstante, hoyNegocio, inicioSemana, sumarDiasFecha } from "@/lib/formato";
+import { describirCita, fechaLocalDeInstante, formatearDiaDeInstante, formatearDiaSemana, formatearFechaCalendario, formatearHoraNegocio, horaLocalDeInstante, horaLocalParaInput, hoyNegocio, inicioSemana, sumarDiasFecha } from "@/lib/formato";
 import { unirFrases } from "@/lib/texto/frases";
 import { negocioActual, zonaActual } from "@/lib/negocio/actual";
 import { AvisosWhatsApp } from "@/components/avisos-whatsapp";
@@ -15,9 +15,9 @@ import { estadoDeRecordatorio } from "@/lib/recordatorios/estado";
 import { Enlace } from "@/components/ui/enlace";
 import { EnlacePestana } from "@/components/ui/enlace-pestana";
 
-export default async function AgendaVeterinaria({ searchParams }: { searchParams: Promise<{ vista?: string; fecha?: string; medico?: string; aviso?: string; hora?: string }> }) {
+export default async function AgendaVeterinaria({ searchParams }: { searchParams: Promise<{ vista?: string; fecha?: string; medico?: string; aviso?: string; hora?: string; cita?: string }> }) {
   const zona = await zonaActual();
-  const { vista: vistaParam, fecha: fechaParam, medico, aviso, hora: horaAgendada } = await searchParams;
+  const { vista: vistaParam, fecha: fechaParam, medico, aviso, hora: horaAgendada, cita: citaMovida } = await searchParams;
   const supabase = await createSupabaseServerClient();
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
@@ -86,6 +86,18 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
 
       {aviso === "descartado" && <Alert variante="exito" titulo="Borrador descartado" data-aviso-descartado>La cita volvió a quedar sin consulta: puedes iniciarla de nuevo.</Alert>}
       {aviso === "urgencia" && <Alert variante="advertencia" titulo="Urgencia agendada">Se empalma con otra cita de ese médico: avísale.</Alert>}
+      {aviso === "movida" && (() => {
+        // QA S63 (N169): qué cita se movió, a qué hora y con qué médico (de la agenda que ya se cargó: la base, no el formulario).
+        const m = citas.find((x) => x.id === citaMovida);
+        const med = m ? medicos.find((x) => x.id === m.medico_id) : null;
+        return (
+          <div data-aviso-cita-movida={citaMovida ?? ""}>
+            <Alert variante="exito" titulo="Cita movida">
+              {m ? `${describirCita(m.tipo, m.mascota, m.inicia_at, zona)}${med ? `, con ${med.nombre}` : ""}.` : "Quedó en la agenda con su nueva hora."}
+            </Alert>
+          </div>
+        );
+      })()}
       {aviso === "agendada" && (
         <Alert variante="exito" titulo="Cita agendada" data-aviso-agendada>
           {`Quedó en la agenda${fechaParam ? ` del ${formatearFechaCalendario(fechaParam)}` : ""}${horaAgendada && /^\d{2}:\d{2}$/.test(horaAgendada) ? ` a las ${horaAgendada}` : ""}.`}
@@ -168,7 +180,7 @@ export default async function AgendaVeterinaria({ searchParams }: { searchParams
                                 medicos={medicos}
                                 medicoId={c.medico_id}
                                 fecha={fechaLocalDeInstante(c.inicia_at, zona)}
-                                hora={horaLocalDeInstante(c.inicia_at, zona)}
+                                hora={horaLocalParaInput(c.inicia_at, zona).slice(11, 16)}
                                 version={c.updated_at ?? null}
                                 descripcion={describirCita(c.tipo, c.mascota, c.inicia_at, zona)}
                               />

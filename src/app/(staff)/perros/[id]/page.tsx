@@ -1,4 +1,5 @@
 import { puedeEditarFichaClinica } from "@/lib/veterinaria/ficha-permiso";
+import { CuentasCliente } from "../../clientes/[id]/cuentas-cliente";
 import { cargarPendientesEstancia } from "@/lib/perros/pendientes-estancia";
 import { PendientesEstancia } from "../pendientes-estancia";
 import { notFound } from "next/navigation";
@@ -655,6 +656,9 @@ export default async function PerroPage({
           />
         </div>
       )}
+
+      {/* QA S63: su saldo pendiente y el historial de sus cuentas (admin y recepción; el componente lo decide). */}
+      <CuentasCliente perroId={id} zona={zona} />
 
       {/* Los pases son de guardería (con bonos): no aplican a una clínica ni a un gato. */}
       {!soloLectura && perro.cliente_id && estanciasAplican && (

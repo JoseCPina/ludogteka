@@ -1,5 +1,6 @@
 "use server";
 
+import { totalesDeFila, type TotalesCuenta } from "@/lib/cobro/totales";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -314,7 +315,7 @@ export async function registrarPagosMpPendientes(): Promise<{ error: string | nu
   return { error: null, registrados, registros: await registrosDe(supabase, (pendientes ?? []).map((p) => ({ t: "mp_ordenes", i: p.id as string }))) };
 }
 
-export type ResultadoDevolucionIntegrada = { error: string | null; aviso?: string; registros?: RegistroFinal[] };
+export type ResultadoDevolucionIntegrada = { error: string | null; aviso?: string; totales?: TotalesCuenta; registros?: RegistroFinal[] };
 
 /**
  * Devolver un cobro que entró por Mercado Pago: el reembolso se hace en
@@ -364,7 +365,10 @@ export async function devolverConProveedor(reservaId: string, cobroId: string, m
       r.sinTurno ? "Se reembolsó en Mercado Pago; como no hay turno abierto, entra a caja al abrir el siguiente." : null,
       r.comisionDevuelta > 0 ? `Mercado Pago regresó ${dinero(r.comisionDevuelta)} de comisión: se quitó de los gastos.` : null,
     ].filter(Boolean);
-    return { error: null, aviso: avisos.join(" ") || undefined, registros: await registrosReembolso() };
+    // QA S63 (N168): la cuenta nueva (Devuelto y Saldo) va en la respuesta y la pantalla la pinta al recibirla.
+    const { data: tot } = await supabase.rpc("cuenta_totales_reserva", { p_reserva_id: reservaId });
+    const fila = Array.isArray(tot) ? tot[0] : tot;
+    return { error: null, aviso: avisos.join(" ") || undefined, totales: fila ? totalesDeFila(fila) : undefined, registros: await registrosReembolso() };
   } catch (e) {
     // Mercado Pago ya lo hizo pero no se pudo registrar: queda en el aire y
     // lo termina «Consultar» en Caja → Reembolsos (o el webhook).

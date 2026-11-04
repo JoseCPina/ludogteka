@@ -10,13 +10,17 @@ type CuentaCliente = { reserva_id: string; creada: string; nombre: string; cance
 
 /**
  * QA S62 (UX): en la ficha del cliente, su saldo pendiente (lo que debe y lo que hay a su favor) y el historial de sus
- * cuentas, de la misma cuenta que Caja (`cuentas_de_cliente`). Solo admin y recepción.
+ * cuentas, de la misma cuenta que Caja (`cuentas_de_cliente`; en la ficha de la mascota, `cuentas_de_mascota`). Solo admin y
+ * recepción.
  */
-export async function CuentasCliente({ clienteId, zona }: { clienteId: string; zona: string }) {
+export async function CuentasCliente({ clienteId, perroId, zona }: { clienteId?: string; perroId?: string; zona: string }) {
   const sesion = await obtenerSesionConRol();
   if (sesion?.rol !== "admin" && sesion?.rol !== "recepcion") return null;
   const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.rpc("cuentas_de_cliente", { p_cliente: clienteId, p_limite: 30 });
+  // QA S63: la ficha de la mascota usa la misma sección con sus cuentas (cuentas_de_mascota).
+  const { data } = perroId
+    ? await supabase.rpc("cuentas_de_mascota", { p_perro: perroId, p_limite: 30 })
+    : await supabase.rpc("cuentas_de_cliente", { p_cliente: clienteId, p_limite: 30 });
   const cuentas = ((data ?? []) as CuentaCliente[]).filter((c) => !c.cancelada);
   if (cuentas.length === 0) return null;
   const debe = cuentas.reduce((s, c) => s + Math.max(Number(c.saldo), 0), 0);

@@ -119,12 +119,18 @@ try {
     const { data: lista } = await api.rpc("cuentas_saldo_a_favor", { p_dias: 90 });
     comprobar((lista ?? []).some((c) => c.reserva_id === e.reserva), "cuentas_saldo_a_favor la trae");
     const devolver = `Saldo a favor: devolver ${miles(-saldoEsperado)}`;
+    // «Necesita atención» enseña 5 y dice cuántas más: la cuenta tiene que estar en el tablero de la base y la pantalla
+    // enseñarla o contarla (Huellitas acumula cuentas a favor de otras auditorías).
+    const { data: tab } = await api.rpc("tablero_atencion", { p_grupo: "dinero" });
+    const enTablero = JSON.stringify(tab ?? {}).includes(e.reserva);
     await pa.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
-    comprobar((await textoDe(pa)).includes(devolver), `«Necesita atención» del admin: «${devolver}» con «Devolver»`);
+    const tAdmin = await textoDe(pa);
+    comprobar(enTablero && (tAdmin.includes(devolver) || /cuentas? más con saldo a favor/.test(tAdmin)), `«Necesita atención» del admin: la base la trae y la pantalla dice «${devolver}» o la cuenta entre las demás`);
     if (recepcion) {
       const { p: pr } = await abrirComo(nav, recepcion, B);
       await pr.goto(`${BASE}/recepcion`, { waitUntil: "networkidle" });
-      comprobar((await textoDe(pr)).includes(devolver), "y en el inicio de recepción");
+      const tRec = await textoDe(pr);
+      comprobar(tRec.includes(devolver) || /cuentas? más con saldo a favor/.test(tRec), "y en el inicio de recepción");
       await pr.context().close();
     }
     if (datos.cuentaSoloB) {

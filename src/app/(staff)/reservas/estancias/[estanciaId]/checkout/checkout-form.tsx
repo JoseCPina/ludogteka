@@ -30,6 +30,7 @@ export function CheckoutForm({
   salidaAnticipada = null,
   cuenta = null,
   hoy = null,
+  pasoElCierre = false,
 }: {
   estanciaId: string;
   esHotel: boolean;
@@ -46,6 +47,8 @@ export function CheckoutForm({
   cuenta?: { total: number; pagado: number; saldo: number } | null;
   /** Hoy en la zona del negocio: el aviso de extender la salida solo el día de la salida o después. */
   hoy?: string | null;
+  /** QA S63: la salida es hoy y ya pasó la hora de cierre del negocio. */
+  pasoElCierre?: boolean;
 }) {
   const router = useRouter();
   // Cada pertenencia se confirma a mano (o todas de un toque con «Entregué todo»). Se guardan al confirmar la salida.
@@ -177,9 +180,9 @@ export function CheckoutForm({
               Extender la salida
             </Button>
           )}
-          {hoy && salidaActual <= hoy ? (
+          {hoy && (salidaActual < hoy || (salidaActual === hoy && pasoElCierre)) ? (
             <p className="text-sm text-n-600" data-aviso-extender>
-              ¿El dueño no llega? Su salida es {salidaActual < hoy ? "de días pasados" : "hoy"}: extiéndela antes de que otra reserva tome el cupo de esta noche.
+              ¿El dueño no llega? Su salida es {salidaActual < hoy ? "de días pasados" : "hoy y ya pasó la hora de cierre"}: extiéndela antes de que otra reserva tome el cupo de esta noche.
             </p>
           ) : null}
         </div>

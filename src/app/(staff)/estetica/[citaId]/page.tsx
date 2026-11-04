@@ -53,7 +53,7 @@ export default async function CitaDetallePage({
   const { data: cita, error } = await supabase
     .from("citas_estetica")
     .select(
-      "id, perro_id, servicio_id, tamano_id, empleado_id, estancia_id, inicio, fin, estado, precio, updated_at, recargo, recargo_motivo, fuera_de_horario, entregado_por_nombre, recogido_por_nombre, recogido_por_es_dueno, tarifa_guarderia, tarifa_guarderia_modo, tarifa_guarderia_servicio_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)"
+      "id, reserva_id, perro_id, servicio_id, tamano_id, empleado_id, estancia_id, inicio, fin, estado, precio, updated_at, recargo, recargo_motivo, fuera_de_horario, entregado_por_nombre, recogido_por_nombre, recogido_por_es_dueno, tarifa_guarderia, tarifa_guarderia_modo, tarifa_guarderia_servicio_id, perros(nombre), servicio_nombre, servicios!citas_estetica_servicio_id_fkey(nombre)"
     )
     .eq("id", citaId)
     .is("deleted_at", null)
@@ -265,6 +265,7 @@ export default async function CitaDetallePage({
               estado={cita.estado}
               inicio={cita.inicio}
               precio={Number(cita.precio) + correccionPrecio}
+              corregirPrecio={cita.reserva_id && cita.estado !== "cancelada" && tienePermiso(sesion, "editar_monto_cobros") ? { reservaId: cita.reserva_id as string } : null}
               correccionPrecio={correccionPrecio}
               recargo={Number(cita.recargo ?? 0)}
               recargoMotivo={(cita.recargo_motivo as string | null) ?? null}
