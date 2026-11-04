@@ -44,10 +44,10 @@ export async function CuentasCliente({ clienteId, zona }: { clienteId: string; z
             return (
               <tr key={c.reserva_id} className="border-t border-border" data-cuenta-cliente={c.reserva_id}>
                 <td className="px-3 py-2"><Enlace href={`/caja/cobrar/${c.reserva_id}`}>{c.nombre}</Enlace></td>
-                <td className="px-3 py-2">{formatearFecha(c.creada, zona)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{dinero(c.total)}</td>
-                <td className="px-3 py-2 text-right tabular-nums">{dinero(c.pagado)}</td>
-                <td className={`px-3 py-2 ${e.tipo === "por_cobrar" ? "text-coral-oscuro" : e.tipo === "a_favor" ? "text-ambar-oscuro" : "text-menta-oscuro"}`}>{e.corto}</td>
+                <td className="px-3 py-2" data-label="Fecha">{formatearFecha(c.creada, zona)}</td>
+                <td className="px-3 py-2 text-right tabular-nums" data-label="Total">{dinero(c.total)}</td>
+                <td className="px-3 py-2 text-right tabular-nums" data-label="Pagado">{dinero(c.pagado)}</td>
+                <td data-label="Estado" className={`px-3 py-2 ${e.tipo === "por_cobrar" ? "text-coral-oscuro" : e.tipo === "a_favor" ? "text-ambar-oscuro" : "text-menta-oscuro"}`}>{e.corto}</td>
               </tr>
             );
           })}

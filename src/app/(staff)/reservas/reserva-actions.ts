@@ -181,6 +181,8 @@ async function conflictoDeEstancia(supabase: Supa, error: Parameters<typeof conf
 
 export type VistaPreviaFechas = {
   error: string | null;
+  /** QA S63 (N167): el código de la regla que lo impide («dia_cerrado» se puede confirmar en la pantalla). */
+  codigo?: string | null;
   totalAntes?: number;
   saldoAntes?: number;
   totalDespues?: number;
@@ -188,11 +190,12 @@ export type VistaPreviaFechas = {
 };
 
 /** Cuánto queda la cuenta con otras fechas, sin guardar nada (la persona lo ve antes de «Guardar fechas»). */
-export async function cotizarFechas(estanciaId: string, fechaEntrada: string, fechaSalida: string): Promise<VistaPreviaFechas> {
+export async function cotizarFechas(estanciaId: string, fechaEntrada: string, fechaSalida: string, diaCerradoConfirmado = false): Promise<VistaPreviaFechas> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("estancia_cotizar_fechas", { p_estancia_id: estanciaId, p_entrada: fechaEntrada, p_salida: fechaSalida });
+  const { data, error } = await supabase.rpc("estancia_cotizar_fechas", { p_estancia_id: estanciaId, p_entrada: fechaEntrada, p_salida: fechaSalida, p_dia_cerrado_confirmado: diaCerradoConfirmado });
   if (error) return { error: traducirError(error, { fecha: fechaEntrada }) };
-  const d = data as { error: string | null; total_antes: number; saldo_antes: number; total_despues: number | null; saldo_despues: number | null };
+  const d = data as { error: string | null; codigo: string | null; total_antes: number; saldo_antes: number; total_despues: number | null; saldo_despues: number | null };
+  if (d.error && d.codigo === "dia_cerrado") return { error: d.error, codigo: "dia_cerrado" };
   if (d.error) {
     if (/traslap|exclu|23P01/i.test(d.error)) {
       const { data: est } = await supabase.from("estancias").select("perro_id").eq("id", estanciaId).maybeSingle();
@@ -300,12 +303,12 @@ export async function moverFechas(
   estanciaId: string,
   fechaEntrada: string,
   fechaSalida: string,
-  control: ControlVersion & { totalVisto: number }
+  control: ControlVersion & { totalVisto: number; diaCerradoConfirmado?: boolean }
 ): Promise<EstadoAccionEstancia> {
   const supabase = await createSupabaseServerClient();
   despacharAvisosAlTerminar();
   const { data, error } = await conControl(
-    supabase.rpc("estancia_mover_fechas", { p_estancia_id: estanciaId, p_entrada: fechaEntrada, p_salida: fechaSalida, p_total_visto: control.totalVisto }),
+    supabase.rpc("estancia_mover_fechas", { p_estancia_id: estanciaId, p_entrada: fechaEntrada, p_salida: fechaSalida, p_total_visto: control.totalVisto, p_dia_cerrado_confirmado: control.diaCerradoConfirmado === true }),
     control
   );
 

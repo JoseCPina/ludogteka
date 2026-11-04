@@ -47,8 +47,10 @@ export function MoverFechas({
   const [vista, setVista] = useState<(VistaPreviaFechas & { clave: string }) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [conflicto, setConflicto] = useState<Conflicto | null>(null);
+  // QA S63 (N167): un día que el negocio no abre se dice y se puede confirmar, como en la reserva nueva.
+  const [cerradoConfirmado, setCerradoConfirmado] = useState(false);
   const salidaFinal = esGuarderia ? sumarDiasFecha(nuevaEntrada, 1) : nuevaSalida;
-  const clave = `${nuevaEntrada}|${salidaFinal}`;
+  const clave = `${nuevaEntrada}|${salidaFinal}|${cerradoConfirmado ? "c" : ""}`;
   const pedida = useRef("");
 
   useEffect(() => {
@@ -57,11 +59,11 @@ export function MoverFechas({
     pedida.current = clave;
     const t = setTimeout(async () => {
       // QA S41: con tope, para que el total no se quede calculando si el servidor no contesta.
-      const r = await conTope(cotizarFechas(estanciaId, nuevaEntrada, salidaFinal)).catch(() => ({ error: "No pudimos calcular el total. Intenta de nuevo." }) as VistaPreviaFechas);
+      const r = await conTope(cotizarFechas(estanciaId, nuevaEntrada, salidaFinal, cerradoConfirmado)).catch(() => ({ error: "No pudimos calcular el total. Intenta de nuevo." }) as VistaPreviaFechas);
       if (pedida.current === clave) setVista({ ...r, clave });
     }, 350);
     return () => clearTimeout(t);
-  }, [clave, estanciaId, nuevaEntrada, salidaFinal]);
+  }, [clave, estanciaId, nuevaEntrada, salidaFinal, cerradoConfirmado]);
 
   const vistaVigente = vista && vista.clave === clave ? vista : null;
   const sinCambio = nuevaEntrada === entrada && salidaFinal === salida;
@@ -73,6 +75,7 @@ export function MoverFechas({
     const res = await envio.ejecutar(() =>
       moverFechas(estanciaId, nuevaEntrada, salidaFinal, {
         totalVisto: vistaVigente.totalDespues ?? 0,
+        diaCerradoConfirmado: cerradoConfirmado,
         versiones: versionLeida ? [{ t: "estancias", i: estanciaId, v: versionLeida }] : [],
         forzar,
       })
@@ -87,10 +90,10 @@ export function MoverFechas({
     <div className="flex flex-col gap-3 rounded-md border border-border bg-muted p-3" data-mover-fechas>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {!soloSalida && (
-          <Field label={esGuarderia ? "Nueva fecha" : "Nueva entrada"} type="date" value={nuevaEntrada} onChange={(e) => setNuevaEntrada(e.target.value)} />
+          <Field label={esGuarderia ? "Nueva fecha" : "Nueva entrada"} type="date" value={nuevaEntrada} onChange={(e) => { setNuevaEntrada(e.target.value); setCerradoConfirmado(false); }} />
         )}
         {!esGuarderia && (
-          <Field label={soloSalida ? "Nueva salida" : "Nueva salida"} type="date" value={nuevaSalida} min={nuevaEntrada} onChange={(e) => setNuevaSalida(e.target.value)} />
+          <Field label={soloSalida ? "Nueva salida" : "Nueva salida"} type="date" value={nuevaSalida} min={nuevaEntrada} onChange={(e) => { setNuevaSalida(e.target.value); setCerradoConfirmado(false); }} />
         )}
       </div>
       <div data-vista-previa-fechas className="text-sm text-n-700" aria-live="polite">
@@ -99,7 +102,7 @@ export function MoverFechas({
         ) : !vistaVigente ? (
           <span>Calculando el total…</span>
         ) : vistaVigente.error ? (
-          <span className="text-coral-oscuro">{vistaVigente.error}</span>
+          <span className="text-coral-oscuro" data-error-fechas={vistaVigente.codigo ?? ""}>{vistaVigente.error}</span>
         ) : (
           <span>
             Total de la cuenta: <b>{dinero(vistaVigente.totalAntes ?? 0)}</b> → <b data-total-despues={vistaVigente.totalDespues}>{dinero(vistaVigente.totalDespues ?? 0)}</b>
@@ -107,6 +110,18 @@ export function MoverFechas({
           </span>
         )}
       </div>
+      {(vistaVigente?.codigo === "dia_cerrado" || cerradoConfirmado) && (
+        <label className="flex items-start gap-2 rounded-md border-[1.5px] border-ambar bg-ambar-suave px-3 py-2 text-sm text-ambar-oscuro">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-5 w-5"
+            checked={cerradoConfirmado}
+            onChange={(e) => setCerradoConfirmado(e.target.checked)}
+            data-confirmar-dia-cerrado
+          />
+          <span>El negocio está cerrado ese día; moverla de todos modos. Queda anotado en la bitácora de la estancia.</span>
+        </label>
+      )}
       {conflicto && (
         <AvisoConflicto
           conflicto={conflicto}
