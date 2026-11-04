@@ -20,5 +20,8 @@ export function traducirError(error: { code?: string; message: string }, context
   if (error.code === "P0001" || error.code === "42501" || error.code === "53400") {
     return error.message;
   }
-  return "No pudimos guardar esto. Intenta de nuevo.";
+  // QA S63 (N167): un error que la base no explicó nunca se calla. Sale con su código (para buscarlo en los logs) y el
+  // texto real va a console.error, que es lo que leen los logs de Vercel.
+  console.error("[reservas] error sin traducir", error.code ?? "", error.message);
+  return `No pudimos guardar esto (código ${error.code ?? "desconocido"}). Intenta de nuevo; si se repite, avísanos con ese código.`;
 }
