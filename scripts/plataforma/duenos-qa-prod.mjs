@@ -92,13 +92,13 @@ for (const [k, slug] of SLUGS.entries()) {
       const cat = activos.has("hotel") ? "hotel" : "guarderia";
       const { data: serv } = await SN.from("servicios").select("id").eq("negocio_id", neg.id).eq("categoria", cat).is("deleted_at", null).limit(1).single();
       const { data: r } = await A.from("reservas").insert({ cliente_id: cli.id }).select("id").single();
-      const entrada = restar(hoy, cat === "hotel" ? 2 : 1);
+      const entrada = restar(hoy, 1);
       const e = await A.from("estancias").insert({
         reserva_id: r.id, perro_id: perro.id, servicio_id: serv.id, fecha_entrada: entrada, fecha_salida: cat === "hotel" ? hoy : restar(hoy, 0),
         dia_cerrado_confirmado: "confirmado", bloqueo_sanitario_superado: true, motivo_excepcion_sanitaria: "Cuenta de QA",
         bloqueo_comportamiento_superado: true, motivo_excepcion_comportamiento: "Cuenta de QA",
       }).select("id").single();
-      if (e.error) console.log(`  ✘ estancia: ${e.error.message}`);
+      if (e.error) visitas.push(`estancia: ${e.error.message}`);
       else {
         const u1 = await A.from("estancias").update({ estado: "en_curso", entregado_por_nombre: "PRUEBA Dueño App S63", hora_entrada_real: new Date(Date.now() - 26 * 3600_000).toISOString(), checkin_fuera_horario: "confirmado" }).eq("id", e.data.id);
         const u2 = await A.from("estancias").update({ estado: "finalizada", recogido_por_nombre: "PRUEBA Dueño App S63", recogido_por_es_dueno: true, checkout_fuera_horario: "confirmado" }).eq("id", e.data.id);
@@ -128,7 +128,7 @@ for (const [k, slug] of SLUGS.entries()) {
       }
     }
   }
-  console.log(`  visitas: ${visitas.join(" · ") || "ninguna (el negocio no tiene guardería, hotel ni estética)"}`);
+  console.log(`  visitas: ${visitas.join(" · ") || "ninguna (el negocio no tiene guardería, hotel ni estética: las reseñas son de esas visitas)"}`);
   resultado.push({ negocio: slug, telefono, clave, visitas });
 }
 
