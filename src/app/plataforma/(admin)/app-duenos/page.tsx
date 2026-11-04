@@ -20,6 +20,8 @@ export default async function AppDuenosPlataforma() {
   await exigirPlataforma();
   const db = createSupabaseAdminClient();
   const hace30 = haceDias(30);
+  const { data: alertas } = await db.rpc("app_alertas_metricas");
+  const al = (alertas ?? {}) as { total?: number; activas?: number; rescatados?: number; reunidos?: number; caducadas?: number; escondidas?: number; ultimos_30_dias?: number };
   const [escaneos, escaneos30, sinRegistro, atenciones30, { count: duenos }, { count: mascotas }, filas] = await Promise.all([
     db.from("app_qr_escaneos").select("id", { count: "exact", head: true }).is("deleted_at", null),
     db.from("app_qr_escaneos").select("id", { count: "exact", head: true }).is("deleted_at", null).gte("created_at", hace30),
@@ -79,6 +81,15 @@ export default async function AppDuenosPlataforma() {
         {tarjeta("Dueños en la app", duenos ?? 0, `${mascotas ?? 0} mascotas`)}
         {tarjeta("Negocios que registraron", tabla.length)}
       </div>
+      <section className="flex flex-col gap-3" data-metricas-alertas>
+        <h2 className="text-lg font-bold text-n-900">Alertas de la calle</h2>
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {tarjeta("Alertas", al.total ?? 0, `${al.ultimos_30_dias ?? 0} en 30 días · ${al.activas ?? 0} activas`)}
+          {tarjeta("Rescatados", al.rescatados ?? 0)}
+          {tarjeta("Reunidos con su familia", al.reunidos ?? 0)}
+          {tarjeta("Escondidas", al.escondidas ?? 0, `${al.caducadas ?? 0} caducaron sin actividad`)}
+        </div>
+      </section>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4" data-embudo-qr>
         {(["por_reclamar", "reclamado", "en_prueba", "pagando"] as Etapa[]).map((e) => (
           <div key={e} className="rounded-lg border border-n-200 bg-white p-4" data-etapa={e}>

@@ -16,6 +16,8 @@ const eslintConfig = defineConfig([
     "scripts/videos/node_modules/**",
     "scripts/videos/.build/**",
     "scripts/videos/grabaciones/**",
+    // App nativa para dueños (Expo): tiene su propio TypeScript y lint.
+    "apps/**",
   ]),
 ]);
 

@@ -125,26 +125,33 @@ async function cuentaDelTelefono(tel: string): Promise<{ email: string; nueva: b
   return creado.user ? { email, nueva: true } : null;
 }
 
-/** Abre la sesión en la cookie del portal (la de la app) con un enlace mágico canjeado en el servidor. */
-async function abrirSesionPorEmail(email: string): Promise<boolean> {
+export type TokensSesion = { accessToken: string; refreshToken: string; expiraAt: number };
+
+/**
+ * Abre la sesión con un enlace mágico canjeado en el servidor. La web la deja en la cookie del portal (la de la app);
+ * la app nativa (destino "tokens") recibe los tokens y los guarda en el almacén seguro del celular.
+ */
+async function abrirSesionPorEmail(email: string, destino: "cookie" | "tokens" = "cookie"): Promise<TokensSesion | null> {
   const admin = createSupabaseAdminClient();
   const { data: link, error } = await admin.auth.admin.generateLink({ type: "magiclink", email });
   if (error || !link.properties?.hashed_token) {
     console.error("[app] generateLink", error?.message);
-    return false;
+    return null;
   }
   const { data: canje, error: e2 } = await clienteSinSesion().auth.verifyOtp({ type: "magiclink", token_hash: link.properties.hashed_token });
   if (e2 || !canje.session) {
     console.error("[app] verifyOtp", e2?.message);
-    return false;
+    return null;
   }
+  const tokens = { accessToken: canje.session.access_token, refreshToken: canje.session.refresh_token, expiraAt: canje.session.expires_at ?? 0 };
+  if (destino === "tokens") return tokens;
   const servidor = await createSupabaseServerClient("portal");
   await servidor.auth.setSession({ access_token: canje.session.access_token, refresh_token: canje.session.refresh_token });
-  return true;
+  return tokens;
 }
 
 /** La pantalla, al ver la entrada verificada: la marca usada y abre la sesión. */
-export async function canjearEntrada(id: string): Promise<{ error: string | null; nueva?: boolean }> {
+export async function canjearEntrada(id: string, destino: "cookie" | "tokens" = "cookie"): Promise<{ error: string | null; nueva?: boolean; tokens?: TokensSesion }> {
   if (!/^[0-9a-f-]{36}$/.test(id)) return { error: "No encontramos esa entrada." };
   const db = createSupabaseAdminClient();
   const { data: fila } = await db.from("app_entradas").select("id, telefono, estado, verificada_at").eq("id", id).eq("estado", "verificada").maybeSingle();
@@ -158,12 +165,13 @@ export async function canjearEntrada(id: string): Promise<{ error: string | null
   if (!marcada) return { error: "Esa entrada ya se usó. Pide un código nuevo." };
   const cuenta = await cuentaDelTelefono(fila.telefono as string);
   if (!cuenta) return { error: "No pudimos abrir tu cuenta. Intenta de nuevo en un momento." };
-  if (!(await abrirSesionPorEmail(cuenta.email))) return { error: "No pudimos abrir tu sesión. Intenta de nuevo." };
-  return { error: null, nueva: cuenta.nueva };
+  const tokens = await abrirSesionPorEmail(cuenta.email, destino);
+  if (!tokens) return { error: "No pudimos abrir tu sesión. Intenta de nuevo." };
+  return { error: null, nueva: cuenta.nueva, ...(destino === "tokens" ? { tokens } : {}) };
 }
 
 /** Quien ya tiene contraseña (clientes de un negocio) puede entrar con ella; es el camino secundario. */
-export async function entrarConContrasena(o: { telefono: string; password: string }): Promise<{ error: string | null }> {
+export async function entrarConContrasena(o: { telefono: string; password: string }, destino: "cookie" | "tokens" = "cookie"): Promise<{ error: string | null; tokens?: TokensSesion }> {
   const tel = normalizarTelefono(o.telefono);
   if (!tel) return { error: "Escribe tu número de WhatsApp a diez dígitos." };
   if (!o.password) return { error: "Escribe tu contraseña." };
@@ -172,7 +180,16 @@ export async function entrarConContrasena(o: { telefono: string; password: strin
   if (typeof email !== "string" || !email) return { error: "No encontramos una cuenta con contraseña para ese número. Entra con el código por WhatsApp." };
   const { data, error } = await clienteSinSesion().auth.signInWithPassword({ email, password: o.password });
   if (error || !data.session) return { error: "La contraseña no coincide. Si no la recuerdas, entra con el código por WhatsApp." };
+  if (destino === "tokens") return { error: null, tokens: { accessToken: data.session.access_token, refreshToken: data.session.refresh_token, expiraAt: data.session.expires_at ?? 0 } };
   const servidor = await createSupabaseServerClient("portal");
   await servidor.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
   return { error: null };
+}
+
+/** La app nativa renueva su sesión con el refresh token que guardó (Supabase lo rota: el viejo deja de servir). */
+export async function renovarSesionMovil(refreshToken: string): Promise<{ error: string | null; tokens?: TokensSesion }> {
+  if (!refreshToken || refreshToken.length > 512) return { error: "Tu sesión se cerró. Vuelve a entrar." };
+  const { data, error } = await clienteSinSesion().auth.refreshSession({ refresh_token: refreshToken });
+  if (error || !data.session) return { error: "Tu sesión se cerró. Vuelve a entrar." };
+  return { error: null, tokens: { accessToken: data.session.access_token, refreshToken: data.session.refresh_token, expiraAt: data.session.expires_at ?? 0 } };
 }

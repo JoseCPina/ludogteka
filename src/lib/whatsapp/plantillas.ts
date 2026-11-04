@@ -8,6 +8,7 @@ import carnet from "@/lib/carnet/plantilla-recordatorio.json";
 import teleconsulta from "@/lib/telemedicina/plantilla-teleconsulta.json";
 import perdida from "@/lib/app/plantilla-perdida.json";
 import citaSugerida from "@/lib/app/plantilla-cita-sugerida.json";
+import alertaCalle from "@/lib/app/plantilla-alerta-calle.json";
 
 /**
  * El catálogo ÚNICO de las plantillas de WhatsApp de PeluDesk (las que el bot y las tareas mandan desde el número de
@@ -76,6 +77,14 @@ export const PLANTILLAS_PELUDESK: PlantillaPeluDesk[] = [
     uso: "App para dueños: aviso a los negocios PeluDesk de la zona cuando un dueño marca a su mascota como perdida (docs/app-duenos/FASE-1.md).",
     fuente: "src/lib/app/plantilla-perdida.json",
     componentes: [cuerpo(perdida.cuerpo, perdida.ejemplos)],
+  },
+  {
+    nombre: alertaCalle.nombre,
+    idioma: alertaCalle.idioma,
+    categoria: "UTILITY",
+    uso: "App para dueños (Fase 5): aviso a los negocios PeluDesk a 3 km cuando alguien sube una alerta de un perro o gato en la calle (docs/app-duenos/FASE-5.md). Mientras no esté aprobada, no se manda.",
+    fuente: "src/lib/app/plantilla-alerta-calle.json",
+    componentes: [cuerpo(alertaCalle.cuerpo, alertaCalle.ejemplos)],
   },
   {
     nombre: citaSugerida.nombre,

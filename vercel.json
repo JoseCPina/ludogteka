@@ -80,6 +80,10 @@
     {
       "path": "/api/cron/plantillas-whatsapp",
       "schedule": "29 10 * * *"
+    },
+    {
+      "path": "/api/cron/alertas",
+      "schedule": "27 * * * *"
     }
   ]
 }
