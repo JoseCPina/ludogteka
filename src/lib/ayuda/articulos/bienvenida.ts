@@ -61,7 +61,7 @@ Los recordatorios de citas, llegadas y vacunas pueden salir solos, el día anter
 
 1. Entra a [Requisitos para hospedar](/bienvenida/requisitos) (también desde la bienvenida).
 2. **Evaluación de comportamiento**: prendida, un perro sin evaluación no se puede reservar (un admin, o quien tenga «Excepciones al reservar», puede autorizar una excepción con motivo). Apagada, se reserva sin ella; la puedes seguir registrando en su expediente.
-3. **Vacunas y desparasitación**: las prendidas tienen que estar vigentes para reservar. En **Vigencia** pon cuántos meses dura cada aplicación (de 1 a 60).
+3. **Vacunas y desparasitación**: las prendidas tienen que estar vigentes para reservar. En **Vigencia** pon cuántos meses dura cada aplicación (de 1 a 60). Si cambias la vigencia de una vacuna, el vencimiento de las cartillas ya registradas se recalcula con la vigencia nueva (fecha de aplicación más vigencia) y la pantalla te dice cuántas cambiaron.
 4. Aprieta **Confirmar requisitos** (o **Guardar cambios**).
 
 Se aplican desde la siguiente reserva. El expediente del perro dice lo mismo que la reserva: si dice **Nada bloquea una reserva de guardería u hotel.**, la reserva entra; si algo falta, lo lista.

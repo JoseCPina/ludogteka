@@ -136,7 +136,8 @@ try {
         if (p) await p.close().catch(() => {});
         p = await ctx.newPage();
         p.on("dialog", (d) => d.dismiss().catch(() => {}));
-        const resp = await p.goto(BASE + ruta, { waitUntil: "load" });
+        // Huellitas acumula cientos de cuentas abiertas de un cliente: «Cobrar junto» con todas pasa del tope de la URL (431). La pantalla se revisa con 5.
+        const resp = await p.goto(BASE + ruta.replace(/(cuentas=(?:[^,&]+,){4}[^,&]+)[^&]*/, "$1"), { waitUntil: "load" });
         await p.waitForLoadState("networkidle", { timeout: 6000 }).catch(() => {});
         await p.waitForTimeout(250);
         if (!resp || resp.status() >= 500 || !(await p.locator("header").count())) throw new Error(`no cargó (${resp?.status() ?? "sin respuesta"})`);
