@@ -18,6 +18,7 @@ import { revisarCobroConProveedor } from "@/lib/pagos/no-recibido";
 import { dinero } from "@/lib/dinero";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 // El cobro integrado desde la cuenta: terminal y link de pago, con el
 // proveedor que el negocio haya conectado (src/lib/pagos). Nada de aquí sabe
@@ -166,7 +167,7 @@ export async function cancelarCobroTerminal(ordenId: string, motivo: string): Pr
   if (orden.estado === "por_confirmar") {
     // Por confirmar puede ser dinero real: solo un admin la cancela, y después de volver a preguntarle al proveedor.
     const sesionCancela = await obtenerSesionConRol();
-    if (sesionCancela?.rol !== "admin") return { error: "Este cobro está por confirmar: revísalo con Mercado Pago. Solo un admin lo cancela si de verdad no se pagó." };
+    if (!tienePermiso(sesionCancela, "devoluciones")) return { error: "Este cobro está por confirmar: revísalo con Mercado Pago. Solo un admin lo cancela si de verdad no se pagó." };
     if (orden.tipo === "point") {
       try {
         const r = await sincronizarTerminal(admin, acceso.cx, orden);
@@ -418,7 +419,7 @@ export type ResultadoNoRecibido = { error: string | null; aviso?: string };
  */
 export async function marcarCobroNoRecibido(reservaId: string, cobroId: string, motivo: string): Promise<ResultadoNoRecibido> {
   const sesion = await obtenerSesionConRol();
-  if (sesion?.rol !== "admin") return { error: "Solo un admin marca un cobro como no recibido." };
+  if (!sesion || !tienePermiso(sesion, "devoluciones")) return { error: "Solo un admin, o quien tenga el permiso «Registrar devoluciones», marca un cobro como no recibido." };
   if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO };
   if (motivo.trim().length < 5) return { error: "Escribe el motivo: qué pasó con este cobro." };
   const negocio = await negocioActual();

@@ -15,6 +15,7 @@ import { Suspense } from "react";
 import { TableroDia } from "../tablero-dia";
 import { EsqueletoSeccionesAdmin, EsqueletoTableroDia } from "../tablero-esqueleto";
 import { ExtrasTablero } from "@/components/extras/extras-tablero";
+import { RevisarAlertasSeccion } from "./revisar-alertas-seccion";
 import { RecordatorioPago } from "./recordatorio-pago";
 import { AvanceWeb } from "@/components/avance-web";
 import { VideosInicio } from "@/components/ayuda/videos-inicio";
@@ -118,6 +119,8 @@ async function SeccionesAdmin() {
           </Enlace>
         </section>
       )}
+
+      {(esAdmin || tienePermiso(sesion, "revisar_alertas")) && <RevisarAlertasSeccion />}
 
       {puedeConfig && (
         <section id="configuracion" className="scroll-mt-20 rounded-lg border border-border bg-card shadow-tarjeta p-5">

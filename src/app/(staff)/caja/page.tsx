@@ -87,7 +87,7 @@ export default async function CajaPage() {
           <Enlace href="/caja/venta">Venta rápida</Enlace>
           <Enlace href="/caja/turno">Turno y arqueo</Enlace>
           <Enlace href="/caja/historial" data-ir-historial>Historial</Enlace>
-          {sesion?.rol === "admin" && (
+          {(sesion?.rol === "admin" || tienePermiso(sesion, "conciliacion") || tienePermiso(sesion, "revisar_tarjetas_manuales")) && (
             <Enlace href="/caja/conciliacion">Conciliación</Enlace>
           )}
           {/* QA R54 (N145): la ayuda y los avisos dicen «Caja → Reembolsos»; antes solo se llegaba desde el aviso del tablero. */}
@@ -132,7 +132,7 @@ export default async function CajaPage() {
           Recarga la página. Si el problema sigue, avísale al equipo técnico.
         </Alert>
       ) : (
-        <MostradorCaja clientes={clientes} cuentas={cuentas} hoy={hoy} turnoAbierto={Boolean(turno)} pendientesMp={pendientesMp} publicoGeneralId={(publicoGeneral?.id as string | undefined) ?? null} puedeCancelar={tienePermiso(sesion, "cancelar_cuentas")} esAdmin={sesion?.rol === "admin"} />
+        <MostradorCaja clientes={clientes} cuentas={cuentas} hoy={hoy} turnoAbierto={Boolean(turno)} pendientesMp={pendientesMp} publicoGeneralId={(publicoGeneral?.id as string | undefined) ?? null} puedeCancelar={tienePermiso(sesion, "cancelar_cuentas")} esAdmin={tienePermiso(sesion, "cortesias")} />
       )}
     </div>
   );

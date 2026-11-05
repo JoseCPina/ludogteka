@@ -108,7 +108,7 @@ export default async function PasesCajaPage({ searchParams }: { searchParams: Pr
             perroInicial={perroInicial ?? null}
             opcionesCobro={await cargarOpcionesCobroManual()}
             puedeAjustar={tienePermiso(sesion, "ajustar_pases")}
-            esAdmin={sesion?.rol === "admin"}
+            esAdmin={tienePermiso(sesion, "extender_pases")}
           />
         </div>
       )}

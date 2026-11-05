@@ -22,6 +22,7 @@ export default async function AusenciasPage() {
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
   const esAdmin = sesion?.rol === "admin";
+  const puedeAsistencia = tienePermiso(sesion, "asistencia_ausencias");
   const puedeNomina = tienePermiso(sesion, "nomina");
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
@@ -47,7 +48,7 @@ export default async function AusenciasPage() {
   const estilistas = ((asignables ?? []) as { id: string; nombre: string }[]).map((e) => ({ id: e.id, nombre: e.nombre }));
   // Recepción pide por quien no tiene cuenta; admin, por cualquiera.
   const porQuienPuedePedir = (empleados ?? []).filter(
-    (e) => (!e.fecha_baja || e.fecha_baja >= hoy) && (esAdmin || (sesion?.rol === "recepcion" && !e.profile_id))
+    (e) => (!e.fecha_baja || e.fecha_baja >= hoy) && (puedeAsistencia || (sesion?.rol === "recepcion" && !e.profile_id))
   );
 
   return (
@@ -62,7 +63,7 @@ export default async function AusenciasPage() {
         <h2 className="text-lg font-semibold text-foreground">Por aprobar</h2>
         <ListaAusencias zona={zona}
           ausencias={(porAprobar ?? []) as unknown as Ausencia[]}
-          esAdmin={esAdmin}
+          esAdmin={puedeAsistencia}
           puedeCancelarSolicitadas={false}
           mostrarNombre
           vacio="No hay solicitudes pendientes."
@@ -73,7 +74,7 @@ export default async function AusenciasPage() {
         <section className="flex flex-col gap-3 border-t border-border pt-6">
           <h2 className="text-lg font-semibold text-foreground">Pedir una ausencia por alguien</h2>
           <p className="text-sm text-n-600">
-            {esAdmin ? "Para cualquier empleado." : "Para quien no tiene cuenta en la app; quien sí la tiene la pide desde Mi asistencia."}
+            {puedeAsistencia ? "Para cualquier empleado." : "Para quien no tiene cuenta en la app; quien sí la tiene la pide desde Mi asistencia."}
           </p>
           <FormularioAccion accion={solicitarAusenciaPor} textoBoton="Pedir ausencia" textoExito="Solicitud registrada: queda por aprobar" reiniciar>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -110,7 +111,7 @@ export default async function AusenciasPage() {
           ausencias={(resto ?? []) as unknown as Ausencia[]}
           citasPorAusencia={citasPorAusencia}
           estilistas={estilistas}
-          esAdmin={esAdmin}
+          esAdmin={puedeAsistencia}
           puedeCancelarSolicitadas={false}
           mostrarNombre
           vacio="Todavía no hay ausencias resueltas."

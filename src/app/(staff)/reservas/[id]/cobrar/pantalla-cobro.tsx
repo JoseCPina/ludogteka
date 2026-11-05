@@ -445,6 +445,9 @@ export async function PantallaCobro({
           descuentos={descuentos}
           topeRecepcion={topeRecepcion}
           esAdmin={sesion?.rol === "admin"}
+          puedeCortesias={tienePermiso(sesion, "cortesias")}
+          puedeDevoluciones={tienePermiso(sesion, "devoluciones")}
+          puedeTarjetas={tienePermiso(sesion, "revisar_tarjetas_manuales")}
           puedeSinTope={tienePermiso(sesion, "descuentos_sin_tope")}
           puedeTarjetaManual={tienePermiso(sesion, "tarjeta_manual")}
           puedeAnular={tienePermiso(sesion, "anular_cobros")}

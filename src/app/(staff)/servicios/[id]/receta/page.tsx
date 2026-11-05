@@ -4,12 +4,13 @@ import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { RecetaConsumo, type LineaReceta } from "./receta-consumo";
 import { leerTodo } from "@/lib/supabase/paginar";
 import { Enlace } from "@/components/ui/enlace";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 export default async function RecetaServicioPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
-  const esAdmin = sesion?.rol === "admin";
+  const esAdmin = tienePermiso(sesion, "servicios");
 
   const { data: servicio } = await supabase
     .from("servicios")

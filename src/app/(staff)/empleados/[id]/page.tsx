@@ -62,6 +62,7 @@ export default async function EmpleadoPage({
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
   const esAdmin = sesion?.rol === "admin";
+  const puedeAsistencia = tienePermiso(sesion, "asistencia_ausencias");
   const puedeNomina = tienePermiso(sesion, "nomina");
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
@@ -77,7 +78,7 @@ export default async function EmpleadoPage({
       ?.updated_at as string | undefined) ?? "-infinity";
   const [versionHorario, versionEsquemas] = await Promise.all([ultimaVersion("empleados_horario"), ultimaVersion("esquemas_pago")]);
   const esSuyo = e.profile_id && e.profile_id === sesion?.user.id;
-  const puedePedirPorEl = esAdmin || esSuyo || (sesion?.rol === "recepcion" && !e.profile_id);
+  const puedePedirPorEl = puedeAsistencia || esSuyo || (sesion?.rol === "recepcion" && !e.profile_id);
 
   const [{ data: dias, error: errorDias }, { data: horario }, { data: ausencias }, { data: saldo }] = await Promise.all([
     supabase.rpc("asistencia_periodo", { p_desde: desde, p_hasta: hasta, p_empleado_id: id }),
@@ -156,8 +157,8 @@ export default async function EmpleadoPage({
         ) : (
           <>
             <ResumenAsistencia dias={diasAsistencia} />
-            <TablaAsistencia zona={zona} dias={diasAsistencia} empleadoId={id} puedeCorregir={esAdmin} correcciones={(correcciones ?? []) as Correccion[]} />
-            {esAdmin && <p className="text-xs text-n-500">Solo admin corrige, y cada corrección guarda el registro original y el motivo.</p>}
+            <TablaAsistencia zona={zona} dias={diasAsistencia} empleadoId={id} puedeCorregir={puedeAsistencia} correcciones={(correcciones ?? []) as Correccion[]} />
+            {puedeAsistencia && <p className="text-xs text-n-500">Solo admin, o quien tenga el permiso «Asistencia, ausencias y vacaciones», corrige, y cada corrección guarda el registro original y el motivo.</p>}
           </>
         )}
       </Seccion>
@@ -195,7 +196,7 @@ export default async function EmpleadoPage({
             Saldo de vacaciones: <strong>{Number(saldo)} {Number(saldo) === 1 ? "día" : "días"}</strong>
           </p>
         )}
-        {esAdmin && (
+        {puedeAsistencia && (
           <Desplegable texto="Asignar o ajustar días de vacaciones">
             <FormularioAccion accion={ajustarVacaciones.bind(null, id)} textoBoton="Guardar" reiniciar>
               <div className="grid gap-3 sm:grid-cols-3">
@@ -222,7 +223,7 @@ export default async function EmpleadoPage({
             </ul>
           </details>
         )}
-        <ListaAusencias zona={zona} ausencias={(ausencias ?? []) as unknown as Ausencia[]} esAdmin={esAdmin} puedeCancelarSolicitadas={Boolean(puedePedirPorEl)} vacio="Sin ausencias registradas." />
+        <ListaAusencias zona={zona} ausencias={(ausencias ?? []) as unknown as Ausencia[]} esAdmin={puedeAsistencia} puedeCancelarSolicitadas={Boolean(puedePedirPorEl)} vacio="Sin ausencias registradas." />
         {puedePedirPorEl && !dadoDeBaja && (
           <Desplegable texto={esSuyo ? "Pedir una ausencia" : "Pedir una ausencia por esta persona"}>
             <FormularioSolicitarAusencia empleadoId={id} hoy={hoy} />

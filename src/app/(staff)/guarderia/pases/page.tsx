@@ -125,7 +125,7 @@ export default async function PasesGuarderiaPage({
             perroInicial={perroInicial ?? null}
             opcionesCobro={await cargarOpcionesCobroManual()}
             puedeAjustar={tienePermiso(sesion, "ajustar_pases")}
-            esAdmin={sesion?.rol === "admin"}
+            esAdmin={tienePermiso(sesion, "extender_pases")}
           />
         </div>
       )}

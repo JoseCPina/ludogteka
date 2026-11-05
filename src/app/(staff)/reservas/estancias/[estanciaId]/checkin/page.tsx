@@ -188,7 +188,7 @@ export default async function CheckinEstanciaPage({
         perroNombre={perro.nombre}
         enCurso={estancia.estado === "en_curso"}
         puedeAjustar={tienePermiso(sesion, "ajustar_pases")}
-        esAdmin={sesion?.rol === "admin"}
+        esAdmin={tienePermiso(sesion, "extender_pases")}
       />
 
       <AlertaCriticaBanner alertas={alertasActivas} alergiasGraves={alergiasGraves} tamano="grande" />

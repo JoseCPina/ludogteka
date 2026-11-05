@@ -20,6 +20,7 @@ import { adjuntarComprobante, cancelarGasto, corregirGasto, pagarGastoEsperado, 
 import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 import { Enlace } from "@/components/ui/enlace";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 type PorAtender = { id: string; concepto: string; categoria: string; monto_estimado: number | null; vencimiento: string; dias: number; vencido: boolean };
 
@@ -32,7 +33,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
   const zona = await zonaActual();
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
-  const esAdmin = sesion?.rol === "admin";
+  const esAdmin = tienePermiso(sesion, "categorias_gasto");
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
   const sp = await searchParams;

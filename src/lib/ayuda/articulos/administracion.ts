@@ -436,10 +436,11 @@ No se usa para tu propia cuenta (la tuya la cambias tú, o te la restablece otro
     cuerpo: `Recepción de entrada no ve números del negocio. Si alguien de confianza te ayuda a administrar, le das solo lo que necesita, persona por persona.
 
 1. Entra a [Permisos](/admin/permisos) (también desde **Administrar permisos →** en el panel de admin).
-2. Busca a la persona: cada quien de recepción tiene su tarjeta.
-3. Marca la casilla del permiso. Se guarda en ese momento; para quitarlo, desmárcala.
+2. Busca a la persona: cada quien de recepción tiene su tarjeta, con cuántos permisos tiene activos.
+3. Los permisos van por grupos (Recepción y agenda, Hotel y guardería, Estética, Veterinaria, Clientes y mascotas, Caja y cobros, Inventario y gastos, Reportes, Equipo, Configuración). Abre el grupo y prende el interruptor del permiso; se guarda en ese momento. Para quitarlo, apágalo.
+4. **Buscar un permiso** filtra por nombre o por lo que hace; **Activar todo el grupo** prende todos los de ese grupo de un paso (y **Quitar todo el grupo** los apaga).
 
-Cada casilla dice qué incluye. Por ejemplo:
+Cada permiso dice qué incluye. Por ejemplo:
 
 - **Nómina**: empleados, sueldos, adelantos y pagar la nómina.
 - **Gastos del local**: registrar y pagar gastos.
@@ -457,7 +458,9 @@ Todo cambio queda en la **Bitácora** de abajo.
 
 Cada persona ve solo los botones, enlaces y tarjetas de lo que puede abrir: si no tiene el permiso de una pantalla, el botón que lleva ahí no aparece (por ejemplo, «Calcular y pagar un periodo» sin **Nómina**). Al darle el permiso, el botón aparece la próxima vez que abra la pantalla.
 
-> Dar o quitar permisos, crear admins, el tope de descuentos y las devoluciones siguen siendo solo tuyos.
+Lo que antes era solo de admin y ya tiene su permiso: **Extender la vigencia de pases**, **Plantilla del reporte de guardería**, **Designar médicos veterinarios**, **Ver quién abrió un expediente**, **Quitar una evaluación de comportamiento**, **Registrar devoluciones**, **Revisar tarjetas manuales**, **Conciliación con el proveedor de cobro**, **Cortesías sobre servicios realizados**, **Categorías de gastos** y **Áreas de inventario** (estos dos vienen prendidos para toda la recepción), **Asistencia, ausencias y vacaciones**, **Crear y editar servicios** y **Dar por revisadas alertas en lote** (el botón **Dar por revisadas todas las anteriores a…** del panel de admin, que cierra con una nota las tarjetas manuales por revisar, los contratos sin firmar, las llegadas atrasadas, los links de pago sin resolver y la conciliación anteriores a una fecha; las cuentas con saldo y los comprobantes sanitarios no se cierran solos).
+
+> Dar o quitar permisos, crear admins y cambiar roles, el tope de descuentos, con qué cobra el negocio, el plan y las sucursales, restablecer contraseñas y ver el efectivo esperado del turno de otra persona siguen siendo solo tuyos.
 
 Un permiso de un módulo apagado no hace nada hasta que lo prendas.
 

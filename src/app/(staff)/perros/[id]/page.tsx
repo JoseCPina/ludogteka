@@ -584,7 +584,7 @@ export default async function PerroPage({
           bloqueos={pendientesEstancia.filter((p) => p.bloquea && (p.grupo === "bloquea" || p.grupo === "condicion")).map((p) => p.etiqueta)}
           evaluacionExigida={evaluacionExigida}
           soloLectura={soloLectura}
-          esAdmin={sesion.rol === "admin"}
+          esAdmin={tienePermiso(sesion, "quitar_evaluacion")}
         />
       </div>
 
@@ -694,7 +694,7 @@ export default async function PerroPage({
                   </span>
                   </div>
                   {tienePermiso(sesion, "ajustar_pases") && (
-                    <AjustarDiasPase pase={{ ...b, perro_nombre: perro.nombre }} esAdmin={sesion.rol === "admin"} />
+                    <AjustarDiasPase pase={{ ...b, perro_nombre: perro.nombre }} esAdmin={tienePermiso(sesion, "extender_pases")} />
                   )}
                   <HistorialPase bonoId={b.id} />
                 </li>

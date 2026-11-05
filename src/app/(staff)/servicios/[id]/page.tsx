@@ -9,6 +9,7 @@ import { BajaServicioBoton } from "../baja-servicio-boton";
 import { actualizarServicio, darDeBajaServicio } from "../actions";
 import { ComoSeCobra } from "./tarifas/como-se-cobra";
 import { Enlace } from "@/components/ui/enlace";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 export default async function EditarServicioPage({
   params,
@@ -20,7 +21,7 @@ export default async function EditarServicioPage({
   // Crear y editar servicios es de admin. Quien entra por el permiso de
   // tarifas va directo a la matriz de precios de este servicio.
   const sesionServicio = await obtenerSesionConRol();
-  if (sesionServicio?.rol !== "admin") redirect(`/servicios/${(await params).id}/tarifas`);
+  if (!tienePermiso(sesionServicio, "servicios")) redirect(`/servicios/${(await params).id}/tarifas`);
 
   const { id } = await params;
   const { creado } = await searchParams;

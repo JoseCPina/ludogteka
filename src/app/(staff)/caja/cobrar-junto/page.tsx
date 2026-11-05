@@ -126,7 +126,7 @@ export default async function CobrarJuntoPage({ searchParams }: { searchParams: 
         turnoAbierto={Boolean(turno)}
         puedeTarjetaManual={tienePermiso(sesion, "tarjeta_manual")}
         terminalManualBloqueada={Boolean(terminalManualBloqueada)}
-        esAdmin={sesion?.rol === "admin"}
+        esAdmin={tienePermiso(sesion, "devoluciones")}
         mp={{ disponible: mpDisponible, ordenes }}
       />
     </div>

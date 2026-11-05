@@ -822,7 +822,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // Tarjetas registradas a mano («Tarjeta (registro manual)»): cuentan como
   // pagadas pero nadie las ha verificado. Solo el admin las revisa (trae
   // montos y folios); sube también la que pasó el tope y el patrón de uso.
-  if (sesion?.rol === "admin") {
+  if (sesion?.rol === "admin" || tienePermiso(sesion, "revisar_tarjetas_manuales")) {
     const [{ data: tarjetas }, { data: aviso }] = await previas.tarjetas;
     // QA S62 (N163): lo que espera revisión es el NETO de cada tarjeta (lo cobrado menos lo devuelto con esa tarjeta).
     const lista = ((tarjetas ?? []) as { monto: number; devuelto: number | null; sobre_tope: boolean; registrada_at: string }[]).filter((t) => Number(t.monto) - Number(t.devuelto ?? 0) > 0.005);

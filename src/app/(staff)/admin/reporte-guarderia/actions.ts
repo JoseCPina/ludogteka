@@ -11,6 +11,7 @@ import { datosDeTarjeta, renderizarTarjetaJpeg } from "@/lib/reporte/tarjeta-ser
 import type { ConfigEditable, ResultadoEditor, SeccionEditable, SeccionNueva } from "./tipos";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
 import type { ConRegistros } from "@/lib/concurrencia/tipos";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 // La plantilla la edita SOLO admin: la base lo exige (políticas con is_admin()).
 
@@ -29,7 +30,7 @@ function clave(texto: string): string {
 
 async function exigirAdmin(): Promise<string | null> {
   const sesion = await obtenerSesionConRol();
-  return sesion?.rol === "admin" ? null : "Solo un admin cambia la plantilla del reporte.";
+  return tienePermiso(sesion, "plantilla_reporte_guarderia") ? null : "Solo un admin, o quien tenga el permiso «Plantilla del reporte de guardería», cambia la plantilla del reporte.";
 }
 
 function limpiar(v: string | null | undefined, max: number): string | null {

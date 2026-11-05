@@ -448,7 +448,7 @@ export default async function EditarClientePage({
           perros={(perros ?? []).filter((p) => !p.fallecido).map((p) => ({ id: p.id as string, nombre: p.nombre as string }))}
           opcionesCobro={await cargarOpcionesCobroManual()}
           puedeAjustar={tienePermiso(sesionActual, "ajustar_pases")}
-          esAdmin={sesionActual?.rol === "admin"}
+          esAdmin={tienePermiso(sesionActual, "extender_pases")}
         />
       </div>
       )}

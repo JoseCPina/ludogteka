@@ -23,7 +23,7 @@ export default async function InventarioPage({
   const sesion = await obtenerSesionConRol();
   const puedeAlta = puedeDarDeAlta(sesion?.rol);
   const puedeCostos = tienePermiso(sesion, "inventario_costos");
-  const esAdmin = sesion?.rol === "admin";
+  const esAdmin = tienePermiso(sesion, "areas_inventario");
 
   const [areas, { data: insumos, error: errorInsumos }, { data: existencias }, { data: caducidades }, { data: equipos, error: errorEquipos }] =
     await Promise.all([
