@@ -35,6 +35,15 @@ o su compilación en EAS. El porqué está en `PLAN.md` («La app es nativa»); 
   cookie. La app los guarda en el almacén seguro del sistema (`expo-secure-store`: Keychain / Keystore) y los renueva cinco
   minutos antes de vencer (`renovarSesion`; Supabase rota el refresh token). Un 401 renueva una vez; si no se puede, sale.
 
+## Que la app no se cierre (5 de noviembre de 2026)
+- **R8 apagado** (`expo-build-properties`, `enableMinifyInReleaseBuilds: false`): con R8, todo Android se cerraba al abrir, antes de pintar nada (`Failed to create an instance of class androidx.work.impl.WorkDatabase`: la base de WorkManager que trae `expo-notifications`). Reproducido en emulador con el APK del 4 de noviembre. Solo se ve en compilación de producción; un build de depuración no pasa por R8.
+- **`predictiveBackGestureEnabled: false`**: con el gesto predictivo, el botón «atrás» de Android sacaba de la app en vez de regresar una pantalla.
+- **Archivos en una petición**: el `fetch` global de Expo no acepta `{ uri, name, type }` en un `FormData` (truena antes de salir y parecía «No hay conexión»). Se manda un `File` de `expo-file-system` (`llamar`, `src/lib/api.ts`).
+- **Límites de error** (`src/componentes/limite-error.tsx`): `export { ErrorBoundary }` en la raíz y en cada pestaña, `FallaGlobal` para un error de JavaScript fuera de React y `LimiteDeParte` alrededor del mapa. Una pantalla nueva dentro de una pestaña ya queda cubierta.
+- **Lo que falta no cierra**: sin llave de Maps, lista; sin `google-services.json` (`extra.hayPushAndroid`), no se toca FCM; permisos, cámara y fotos con `try` y aviso. Las pestañas nativas se montan todas al abrir: nada en una pestaña pide permisos al montarse, solo al enfocarse (`useFocusEffect`).
+- **Reporte de errores** (`src/lib/errores.ts`, Sentry): apagado mientras `EXPO_PUBLIC_SENTRY_DSN` no exista en el entorno de EAS. Sin datos personales: sin persona, sin capturas, sin toques ni consola, y sin ids, correos, teléfonos ni tokens en los textos. `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` en EAS suben los mapas de JavaScript. Un cierre antes de que arranque JavaScript (como el de R8) puede no llegar: falta probar el inicio nativo temprano.
+- **Compilar en la laptop**: `C:\android` (JDK 17, SDK, emulador `peludesk`) y una copia de la app en `C:\pd`; rutas largas: `buildStagingDirectory` corto y `CMAKE_OBJECT_PATH_MAX=128` en `android/app/build.gradle` de la copia. El recorrido con la app de producción, en el emulador. El perfil `preview` de EAS compila solo `arm64-v8a`.
+
 ## Notificaciones nativas
 - `expo-notifications` pide permiso, crea los canales de Android («Avisos de tus mascotas» y «Alertas de animales cerca») y
   saca el token de Expo; `registrarDispositivo` lo guarda en **`app_push_dispositivos`** (migración `20261203002500`, tabla de

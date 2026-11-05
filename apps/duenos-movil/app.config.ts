@@ -8,6 +8,10 @@ import type { ExpoConfig } from "expo/config";
  */
 const llaveMapaAndroid = process.env.GOOGLE_MAPS_ANDROID_KEY ?? "";
 const PAQUETE = "mx.peludesk.app";
+// Reporte de errores (src/lib/errores.ts). El DSN no es secreto; el token que sube los mapas de JavaScript sí, y solo
+// vive en EAS (SENTRY_AUTH_TOKEN). Sin token, la compilación no sube nada ni falla por eso.
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN ?? "";
+const sentrySubeMapas = Boolean(process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG);
 
 const config: ExpoConfig = {
   name: "PeluDesk",
@@ -37,7 +41,8 @@ const config: ExpoConfig = {
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
-    predictiveBackGestureEnabled: true,
+    // Con el gesto predictivo prendido, el botón «atrás» de Android sacaba de la app en vez de regresar una pantalla.
+    predictiveBackGestureEnabled: false,
     // Push nativo en Android (FCM): el google-services.json del proyecto de Firebase de PeluDesk vive en EAS como
     // variable de tipo archivo (GOOGLE_SERVICES_JSON); nunca en el repo. Sin él, la app compila sin push nativo.
     ...(process.env.GOOGLE_SERVICES_JSON ? { googleServicesFile: process.env.GOOGLE_SERVICES_JSON } : {}),
@@ -47,6 +52,11 @@ const config: ExpoConfig = {
   web: { favicon: "./assets/images/favicon.png" },
   plugins: [
     "expo-router",
+    // R8 rompe en compilación de producción la base de WorkManager que trae expo-notifications: la app se cerraba al abrir
+    // en todo Android («Failed to create an instance of class androidx.work.impl.WorkDatabase»). Sin R8, además, los cierres
+    // nativos llegan legibles al reporte de errores.
+    ["expo-build-properties", { android: { enableMinifyInReleaseBuilds: false, enableShrinkResourcesInReleaseBuilds: false } }],
+    ...(sentrySubeMapas ? [["@sentry/react-native/expo", { organization: process.env.SENTRY_ORG, project: "peludesk-duenos" }] as [string, unknown]] : []),
     "expo-secure-store",
     "expo-sharing",
     ["expo-splash-screen", { backgroundColor: "#4B3F72", image: "./assets/images/splash-icon.png", imageWidth: 120 }],
@@ -60,6 +70,8 @@ const config: ExpoConfig = {
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? "https://app.peludesk.mx",
     hayMapaAndroid: Boolean(llaveMapaAndroid),
+    hayPushAndroid: Boolean(process.env.GOOGLE_SERVICES_JSON),
+    sentryDsn,
     eas: { projectId: "ba752b19-16a4-4a08-8f01-86ef13f6c1f9" },
   },
 };
