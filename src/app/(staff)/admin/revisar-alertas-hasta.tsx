@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearFechaCalendario } from "@/lib/formato";
-import { contarAlertasHasta, darPorRevisadasAlertasHasta, type ConteoAlertas } from "./alertas-actions";
+import { contarAlertasHasta, darPorRevisadasAlertasHasta, type ConteoAlertas, type ConteoPrevio } from "./alertas-actions";
 
 const ETIQUETAS: { clave: keyof ConteoAlertas; una: string; varias: string }[] = [
   { clave: "tarjetas", una: "tarjeta manual por revisar", varias: "tarjetas manuales por revisar" },
@@ -15,6 +15,7 @@ const ETIQUETAS: { clave: keyof ConteoAlertas; una: string; varias: string }[] =
   { clave: "llegadas", una: "llegada atrasada", varias: "llegadas atrasadas" },
   { clave: "links", una: "link de pago sin resolver", varias: "links de pago sin resolver" },
   { clave: "conciliacion", una: "diferencia de conciliación", varias: "diferencias de conciliación" },
+  { clave: "citas", una: "cita como no se presentó", varias: "citas como no se presentó" },
 ];
 
 function describir(c: ConteoAlertas): string {
@@ -35,7 +36,8 @@ export function RevisarAlertasHasta({ hoy }: { hoy: string }) {
   const [abierto, setAbierto] = useState(false);
   const [hasta, setHasta] = useState(hoy);
   const [nota, setNota] = useState("");
-  const [conteo, setConteo] = useState<ConteoAlertas | null>(null);
+  const [cerrarCitas, setCerrarCitas] = useState(false);
+  const [conteo, setConteo] = useState<ConteoPrevio | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
 
@@ -51,7 +53,9 @@ export function RevisarAlertasHasta({ hoy }: { hoy: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto, hasta]);
 
-  const total = conteo ? Object.values(conteo).reduce((s, n) => s + Number(n), 0) : 0;
+  // Las citas solo cuentan con su casilla prendida; las que tienen un cobro nunca se cierran.
+  const sinCitas = conteo ? { ...conteo, citas: 0 } : null;
+  const total = conteo ? conteo.tarjetas + conteo.contratos + conteo.llegadas + conteo.links + conteo.conciliacion + (cerrarCitas ? conteo.citas : 0) : 0;
 
   if (!abierto) {
     return (
@@ -79,8 +83,22 @@ export function RevisarAlertasHasta({ hoy }: { hoy: string }) {
             ? "Contando…"
             : total === 0
               ? `No hay alertas anteriores al ${formatearFechaCalendario(hasta)}.`
-              : `Anteriores al ${formatearFechaCalendario(hasta)}: ${describir(conteo)}.`}
+              : `Anteriores al ${formatearFechaCalendario(hasta)}: ${describir(cerrarCitas ? conteo : sinCitas!)}.`}
       </p>
+      <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm text-n-800" data-revisar-alertas-citas>
+        <input type="checkbox" className="mt-0.5 h-5 w-5 shrink-0" checked={cerrarCitas} onChange={(e) => setCerrarCitas(e.target.checked)} />
+        <span>
+          <span className="font-semibold">También cerrar citas pasadas sin cerrar como no se presentó</span>
+          <span className="block text-n-600" data-revisar-alertas-citas-conteo>
+            {!conteo
+              ? "Contando…"
+              : conteo.citas === 0
+                ? "No hay citas pasadas sin cerrar anteriores a esa fecha."
+                : `${conteo.citas === 1 ? "Es 1 cita" : `Son ${conteo.citas} citas`} de estética o veterinaria.`}
+            {conteo && conteo.citas_con_cobro > 0 ? ` ${conteo.citas_con_cobro === 1 ? "1 cita con cobro no se cierra" : `${conteo.citas_con_cobro} citas con cobro no se cierran`}: se resuelven en su cuenta.` : ""}
+          </span>
+        </span>
+      </label>
       <AccionesFormulario error={error}>
         <Button
           type="button"
@@ -88,15 +106,17 @@ export function RevisarAlertasHasta({ hoy }: { hoy: string }) {
           disabled={!hasta || total === 0 || nota.trim().length < 5}
           onClick={async () => {
             setError(null);
-            const r = await envio.ejecutar(() => darPorRevisadasAlertasHasta(hasta, nota));
+            const r = await envio.ejecutar(() => darPorRevisadasAlertasHasta(hasta, nota, cerrarCitas));
             if (r.error) return setError(r.error);
-            const pend = r.pendientes ?? { cuentas_con_saldo: 0, comprobantes: 0 };
+            const pend = r.pendientes ?? { cuentas_con_saldo: 0, comprobantes: 0, citas_con_cobro: 0 };
             const colas: string[] = [];
             if (pend.cuentas_con_saldo > 0) colas.push(`${pend.cuentas_con_saldo} ${pend.cuentas_con_saldo === 1 ? "cuenta con saldo pendiente" : "cuentas con saldo pendiente"} (se cobran o se cancelan una por una)`);
             if (pend.comprobantes > 0) colas.push(`${pend.comprobantes} ${pend.comprobantes === 1 ? "comprobante sanitario por revisar" : "comprobantes sanitarios por revisar"}`);
+            if (pend.citas_con_cobro > 0) colas.push(`${pend.citas_con_cobro} ${pend.citas_con_cobro === 1 ? "cita con cobro" : "citas con cobro"} (se resuelven en su cuenta)`);
             setExito(`Listo: ${r.total === 0 ? "no había nada que cerrar" : `se cerraron ${describir(r.cerradas!)}`}.${colas.length ? ` Quedan: ${colas.join("; ")}.` : ""}`);
             setAbierto(false);
             setNota("");
+            setCerrarCitas(false);
             setConteo(null);
             router.refresh();
           }}

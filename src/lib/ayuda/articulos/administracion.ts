@@ -462,6 +462,12 @@ Lo que antes era solo de admin y ya tiene su permiso: **Extender la vigencia de 
 
 > Dar o quitar permisos, crear admins y cambiar roles, el tope de descuentos, con qué cobra el negocio, el plan y las sucursales, restablecer contraseñas y ver el efectivo esperado del turno de otra persona siguen siendo solo tuyos.
 
+## Alertas atrasadas
+
+En tu panel, en la sección «Alertas atrasadas», **Dar por revisadas todas las anteriores a…** cierra de un paso, con una nota, lo que «Necesita atención» arrastra de antes de una fecha: tarjetas manuales por revisar, contratos pendientes de firma, llegadas atrasadas, links de pago sin resolver y la conciliación. Antes de apretar te dice cuántas son. Las cuentas con saldo, los saldos a favor y los comprobantes sanitarios no se cierran solos.
+
+La casilla **También cerrar citas pasadas sin cerrar como no se presentó** viene apagada y te dice cuántas son: cierra las citas de estética y veterinaria que ya pasaron y nadie cerró. Una cita con cobro o una en curso no se toca.
+
 Un permiso de un módulo apagado no hace nada hasta que lo prendas.
 
 ## Si algo no sale
