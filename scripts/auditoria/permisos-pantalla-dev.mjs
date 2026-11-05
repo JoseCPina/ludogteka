@@ -452,7 +452,12 @@ async function recorrer(rol) {
       if (!f.texto.test(franja)) reportarEscritura(ruta, `la franja no dice lo que le toca («${franja.slice(0, 120)}»)`);
       else if (f.boton && !(await pagina.locator("[data-aviso-plan] a", { hasText: f.boton }).count())) reportarEscritura(ruta, "la franja no trae «Contratar»");
     }
-    const { activos, exentos, lecturasBloqueadas } = await pagina.evaluate(controlesDeEscritura);
+    let { activos, exentos, lecturasBloqueadas } = await pagina.evaluate(controlesDeEscritura);
+    // En una pantalla pesada (el catálogo de razas: cientos de opciones) el marcado termina después de pintar: se da tiempo antes de reportar.
+    if (activos.length) {
+      await pagina.waitForTimeout(4000);
+      ({ activos, exentos, lecturasBloqueadas } = await pagina.evaluate(controlesDeEscritura));
+    }
     exentosEscritura += exentos;
     for (const a of activos) reportarEscritura(ruta, `${a.tipo} activo: «${a.texto}»`);
     for (const l of lecturasBloqueadas) reportarEscritura(ruta, `buscador o filtro bloqueado (leer tiene que seguir): «${l.texto}»`);
