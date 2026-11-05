@@ -59,3 +59,9 @@ scripts/tutoriales/diferencias/
 
 # capturas crudas de la demo para los anuncios de Meta (scripts/anuncios/creativos.mjs)
 scripts/anuncios/capturas/
+
+# Credenciales de Firebase y cuentas de servicio: viven en EAS, nunca en el repo.
+google-services.json
+GoogleService-Info.plist
+*firebase-adminsdk*.json
+fcm-*.json

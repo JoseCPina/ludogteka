@@ -138,6 +138,24 @@ async function crearHotel(desfase) {
   creadas.push(e.id);
   return e;
 }
+const citasCreadas = [];
+/**
+ * QA S63: una cita de estética propia de la prueba, con datos vigentes (servicio y estilista activos, el perro de la
+ * prueba, un día que el negocio abre). Antes tomaba la primera «reservada» de Huellitas, que podía traer una tarifa de
+ * cliente de guardería que ya no aplica y la base rechazaba cualquier cambio. Se da de baja al terminar.
+ */
+async function crearCita() {
+  const { data: base } = await SB.from("citas_estetica").select("servicio_id, empleado_id").eq("negocio_id", B).not("empleado_id", "is", null).is("deleted_at", null).order("created_at", { ascending: false }).limit(1).single();
+  const { data: reservaId, error: er } = await uno.rpc("crear_reserva_para_cita", { p_perro_id: datos.perroSoloB });
+  if (er) throw new Error(`reserva de la cita: ${er.message}`);
+  let d = new Date(Date.now() + (150 + (Number(sufijo) % 60)) * 86400000);
+  d.setUTCHours(17, 0, 0, 0);
+  for (let i = 0; i < 7 && (await uno.rpc("negocio_abre", { p_fecha: d.toISOString().slice(0, 10) })).data !== true; i++) d = new Date(d.getTime() + 86400000);
+  const { data: c, error } = await uno.from("citas_estetica").insert({ reserva_id: reservaId, perro_id: datos.perroSoloB, servicio_id: base.servicio_id, empleado_id: base.empleado_id, inicio: d.toISOString(), notas: `Prueba concurrencia ${sufijo}` }).select("id").single();
+  if (error) throw new Error(`cita: ${error.message}`);
+  citasCreadas.push(c.id);
+  return c;
+}
 const uno1 = async (tabla, sel, f = (q) => q) => (await f(SB.from(tabla).select(sel).eq("negocio_id", B)).limit(1).maybeSingle()).data;
 
 try {
@@ -147,7 +165,7 @@ try {
     await caso({ nombre: "Estancia", tabla: "estancias", id: estancia.id, campo: "notas", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
     await caso({ nombre: "Reserva", tabla: "reservas", id: estancia.reserva_id, campo: "notas", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
   } else hallazgo("No hay una estancia reservada en Huellitas para probar.");
-  const cita = await uno1("citas_estetica", "id", (q) => q.eq("estado", "reservada").is("deleted_at", null));
+  const cita = await crearCita().catch((e) => { hallazgo(`No se pudo crear la cita de la prueba (${e.message})`); return null; });
   if (cita) await caso({ nombre: "Cita de estética", tabla: "citas_estetica", id: cita.id, campo: "notas", valor1: `Uno ${sufijo}`, valor2: `Dos ${sufijo}` });
   let medicosVivos = ((await SB.from("medicos_veterinarios").select("id").eq("negocio_id", B).is("deleted_at", null)).data ?? []).map((m) => m.id);
   if (!medicosVivos.length) {
@@ -417,6 +435,7 @@ try {
   // Baja lógica (cancelar exige un rol y con la llave de servicio fallaba callado: se acumulaban reservas vivas del
   // mismo perro y la fecha al azar terminaba chocando con estancias_perro_sin_traslape).
   if (creadas.length) await SB.from("estancias").update({ deleted_at: new Date().toISOString() }).in("id", creadas).is("deleted_at", null);
+  if (citasCreadas.length) await SB.from("citas_estetica").update({ deleted_at: new Date().toISOString() }).in("id", citasCreadas).is("deleted_at", null);
   if (medicoTemporal) await SB.from("medicos_veterinarios").update({ deleted_at: new Date().toISOString() }).eq("id", medicoTemporal);
   console.log(hallazgos.length ? `\n✘ ${hallazgos.length} hallazgo(s).` : "\n✔ Sin hallazgos.");
   process.exitCode = hallazgos.length ? 1 : 0;

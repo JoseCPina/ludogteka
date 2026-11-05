@@ -2,6 +2,11 @@
   "nombre": "peludesk_alerta_calle_v1",
   "idioma": "es_MX",
   "categoria": "UTILITY",
-  "cuerpo": "Hola {{1}}. Alguien de la app PeluDesk vio {{2}} cerca de tu negocio ({{3}}). Si puedes ayudar o lo reconoces, aquí está la alerta con su foto y ubicación: {{4}}",
-  "ejemplos": ["Ludogteka", "un perro herido", "a 800 m", "https://app.peludesk.mx/alertas/0b7c6a5e-1f1e-4a40-9c39-8f1a2b3c4d5e"]
+  "cuerpo": "Hola {{1}}. Alguien de la app PeluDesk vio {{2}} cerca de tu negocio ({{3}}). Si puedes ayudar o lo reconoces, aquí está la alerta con su foto y ubicación: {{4}} Gracias por echar la mano.",
+  "ejemplos": [
+    "Ludogteka",
+    "un perro herido",
+    "a 800 m",
+    "https://app.peludesk.mx/alertas/0b7c6a5e-1f1e-4a40-9c39-8f1a2b3c4d5e"
+  ]
 }
