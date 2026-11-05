@@ -99,15 +99,15 @@ export function GruposPermisos({ profileId, activos }: { profileId: string; acti
             <li key={grupo} className="rounded-lg border border-border bg-white" data-grupo-permisos={grupo}>
               <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:px-4">
                 <Alternar
-                  className="flex flex-1 items-center gap-2 text-left"
+                  className="flex min-w-full flex-1 items-center gap-2 text-left sm:min-w-0"
                   aria-expanded={abierto}
                   aria-controls={idPanel}
                   onClick={() => setAbiertos((a) => ({ ...a, [grupo]: !abierto }))}
                   data-sin-bloqueo
                 >
                   <ChevronDown className={`h-5 w-5 shrink-0 text-n-600 transition-transform ${abierto ? "rotate-180" : ""}`} aria-hidden />
-                  <span className="font-semibold text-n-900">{grupo}</span>
-                  <Chip tono={activosDelGrupo === 0 ? "neutro" : todos ? "exito" : "info"} punto={false}>
+                  <span className="min-w-0 font-semibold text-n-900">{grupo}</span>
+                  <Chip tono={activosDelGrupo === 0 ? "neutro" : todos ? "exito" : "info"} punto={false} className="shrink-0 whitespace-nowrap">
                     {activosDelGrupo} de {permisos.length}
                   </Chip>
                 </Alternar>
@@ -133,13 +133,21 @@ export function GruposPermisos({ profileId, activos }: { profileId: string; acti
                     return (
                       <li key={p.clave} className={`flex items-start gap-3 px-3 py-3 sm:px-4 ${activo ? "bg-morado-suave/40" : ""}`} data-permiso={p.clave}>
                         <Alternar
-                          activo={activo}
+                          role="switch"
+                          aria-checked={activo}
                           cargando={cargando}
                           disabled={guardando.cargando && !cargando}
                           onClick={() => alternar(p.clave, !activo)}
                           aria-labelledby={idTexto}
-                          className="mt-0.5 shrink-0"
-                        />
+                          className="mt-0.5 flex shrink-0 items-center"
+                          data-interruptor={activo ? "prendido" : "apagado"}
+                        >
+                          {!cargando && (
+                            <span aria-hidden="true" className={`relative inline-block h-7 w-12 rounded-full transition-colors ${activo ? "bg-morado" : "bg-n-300"}`}>
+                              <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${activo ? "left-[1.375rem]" : "left-0.5"}`} />
+                            </span>
+                          )}
+                        </Alternar>
                         <div className="min-w-0 flex-1">
                           <p id={idTexto} className="font-semibold text-n-900">
                             {p.etiqueta}
