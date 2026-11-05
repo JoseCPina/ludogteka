@@ -98,9 +98,8 @@ export function GruposPermisos({ profileId, activos }: { profileId: string; acti
           return (
             <li key={grupo} className="rounded-lg border border-border bg-white" data-grupo-permisos={grupo}>
               <div className="flex flex-wrap items-center gap-2 px-3 py-2 sm:px-4">
-                <button
-                  type="button"
-                  className="flex min-h-[44px] flex-1 items-center gap-2 text-left"
+                <Alternar
+                  className="flex flex-1 items-center gap-2 text-left"
                   aria-expanded={abierto}
                   aria-controls={idPanel}
                   onClick={() => setAbiertos((a) => ({ ...a, [grupo]: !abierto }))}
@@ -111,7 +110,7 @@ export function GruposPermisos({ profileId, activos }: { profileId: string; acti
                   <Chip tono={activosDelGrupo === 0 ? "neutro" : todos ? "exito" : "info"} punto={false}>
                     {activosDelGrupo} de {permisos.length}
                   </Chip>
-                </button>
+                </Alternar>
                 <Button
                   type="button"
                   variante="secundario"
