@@ -96,6 +96,8 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Ayuda", href: "/ayuda", grupo: "ayuda", roles: ["admin", "recepcion"] },
   // Servicios extra cobrables de Hotel y guardería (carril B).
   { etiqueta: "Servicios extra", href: "/extras", grupo: "dia", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
+  // La ruta del día de la camioneta: lo que hay que recoger, a qué hora y dónde (migración 20261203004100).
+  { etiqueta: "Recolecciones", href: "/recolecciones", grupo: "dia", roles: ["admin", "recepcion"] },
 ];
 
 // Vacío por ahora — Fase 2/6/9 agregan aquí Mis perros, Mis reservas,

@@ -14,7 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { TextoConEnlaces } from "@/components/ui/texto-con-enlaces";
-import { sumarDiasFecha } from "@/lib/formato";
+import { formatearFechaCalendario, sumarDiasFecha } from "@/lib/formato";
 import { AvisoFueraDeHorario } from "@/components/aviso-fuera-de-horario";
 import type { HorarioSemana } from "@/lib/estetica/aviso-horario";
 import { describirBonoAplicado } from "@/lib/bonos/descripcion";
@@ -37,6 +37,8 @@ import {
   type ResultadoLinea,
 } from "../reserva-actions";
 import { Enlace } from "@/components/ui/enlace";
+import { IncluirRecoleccion, SIN_RECOLECCION, type ValorRecoleccion } from "@/components/recoleccion/incluir-recoleccion";
+import { guardarRecoleccion } from "@/app/(staff)/recolecciones/actions";
 
 type Perro = { id: string; cliente_id: string; nombre: string; evaluado: boolean };
 type Servicio = ServicioOfrecible;
@@ -136,6 +138,9 @@ export function NuevaReservaForm({
   const [resultados, setResultados] = useState<ResultadoLinea[] | null>(null);
   const router = useRouter();
   const [reservaId, setReservaId] = useState<string | null>(null);
+  // «Incluir recolección»: se cotiza antes de crear y se guarda junto con la reserva (ligada a su primera estancia).
+  const [recoleccion, setRecoleccion] = useState<ValorRecoleccion>(SIN_RECOLECCION);
+  const [avisoRecoleccion, setAvisoRecoleccion] = useState<string | null>(null);
   const enviando = useEspera();
   const [reintentando, setReintentando] = useState<Record<string, boolean>>({});
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
@@ -294,6 +299,17 @@ export function NuevaReservaForm({
     if (res.error) {
       setErrorGeneral(res.error);
       return;
+    }
+    // Recolección (si se incluyó y se cotizó): ligada a la reserva y a su primera estancia; el cargo entra a la cuenta.
+    if (recoleccion.activa && recoleccion.pedido && res.reservaId) {
+      const primera = (res.resultados ?? []).find((r) => r.exito && r.estanciaId);
+      const rec = await conTope(guardarRecoleccion({ reservaId: res.reservaId, estanciaId: primera?.estanciaId ?? null }, recoleccion.pedido));
+      if (rec.error) {
+        setAvisoRecoleccion(`La reserva se creó, pero la recolección no: ${rec.error}`);
+        setResultados(res.resultados ?? []);
+        setReservaId(res.reservaId);
+        return;
+      }
     }
     // QA S53: con todo guardado, la pantalla va al detalle de la reserva creada (el destino que manda la acción), no se
     // queda en un formulario. Si alguna línea no se pudo, se queda en la lista para reintentarla o autorizar la excepción.
@@ -709,6 +725,19 @@ export function NuevaReservaForm({
         placeholder="Cualquier detalle de esta visita"
       />
 
+      <IncluirRecoleccion
+        clienteId={clienteId}
+        fechaTexto={lineas[0]?.fechaEntrada ? `la entrada del ${formatearFechaCalendario(lineas[0].fechaEntrada)}` : "la entrada"}
+        valor={recoleccion}
+        onChange={setRecoleccion}
+      />
+      {recoleccion.activa && !recoleccion.cotizada && <p className="text-sm text-n-600" data-motivo-recoleccion>Cotiza la recolección antes de crear la reserva.</p>}
+      {avisoRecoleccion && (
+        <Alert variante="advertencia" titulo="Recolección">
+          {avisoRecoleccion}
+        </Alert>
+      )}
+
       {errorGeneral && (
         <Alert variante="error" titulo="No pudimos crear la reserva">
           {errorGeneral}
@@ -717,7 +746,7 @@ export function NuevaReservaForm({
 
       <Button
         type="button"
-        disabled={lineas.length === 0 || enviando.cargando || sinPrecio.length > 0 || sinEvaluacionPendiente || sinVacunasPendiente || conChoque || conDiaCerrado}
+        disabled={lineas.length === 0 || enviando.cargando || sinPrecio.length > 0 || sinEvaluacionPendiente || sinVacunasPendiente || conChoque || conDiaCerrado || (recoleccion.activa && !recoleccion.cotizada)}
         onClick={enviar}
         className="self-start"
       >

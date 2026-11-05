@@ -16,6 +16,7 @@ import { TableroDia } from "../tablero-dia";
 import { EsqueletoSeccionesAdmin, EsqueletoTableroDia } from "../tablero-esqueleto";
 import { ExtrasTablero } from "@/components/extras/extras-tablero";
 import { RevisarAlertasSeccion } from "./revisar-alertas-seccion";
+import { RecoleccionesTablero } from "@/components/recoleccion/recolecciones-tablero";
 import { RecordatorioPago } from "./recordatorio-pago";
 import { AvanceWeb } from "@/components/avance-web";
 import { VideosInicio } from "@/components/ayuda/videos-inicio";
@@ -255,6 +256,7 @@ export default async function AdminPage() {
         <Suspense fallback={<EsqueletoTableroDia />}>
           <TableroDia compacto />
           <ExtrasTablero />
+          <RecoleccionesTablero />
         </Suspense>
       </section>
 

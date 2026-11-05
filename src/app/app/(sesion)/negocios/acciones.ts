@@ -83,30 +83,53 @@ export async function cupoApp(negocioId: string, servicioId: string, entrada: st
 }
 
 // ── Pedir cita de estética ───────────────────────────────────────────────────────────────────────────────────────
-export async function pedirCitaApp(negocioId: string, mascotaId: string, servicioId: string, inicioIso: string): Promise<ResultadoApp> {
+// Recolección a domicilio pedida desde la app (migración 20261203004100): lo que devolvió cotizarRecoleccionApp.
+export type RecoleccionApp = { direccion: string; lat: number | null; lng: number | null; punto: "negocio" | "base"; km: number; hora: string | null; notas?: string | null };
+
+export async function pedirCitaApp(negocioId: string, mascotaId: string, servicioId: string, inicioIso: string, recoleccion?: RecoleccionApp | null): Promise<ResultadoApp> {
   const falta = await negocioMio(negocioId);
   if (falta) return { error: falta };
   const v = await vinculoDe(mascotaId, negocioId);
   if (!v) return { error: "Esa mascota no tiene expediente en este negocio." };
   if (!UUID.test(servicioId) || Number.isNaN(Date.parse(inicioIso))) return { error: "Escoge el servicio y la hora." };
   const supabase = await supabaseAppEnNegocio(negocioId);
-  const { data, error } = await supabase.rpc("portal_pedir_cita", { p_perro: v.perroId, p_servicio: servicioId, p_inicio: new Date(inicioIso).toISOString() });
+  const { data, error } = recoleccion
+    ? await supabase.rpc("portal_pedir_cita_con_recoleccion", { p_perro: v.perroId, p_servicio: servicioId, p_inicio: new Date(inicioIso).toISOString(), p_recoleccion: recoleccion })
+    : await supabase.rpc("portal_pedir_cita", { p_perro: v.perroId, p_servicio: servicioId, p_inicio: new Date(inicioIso).toISOString() });
   if (error) return { error: rechazoDeLaBase(error) };
-  const d = data as { cita_id: string; reserva_id: string; estado: string; updated_at: string };
-  return { error: null, datos: d, registros: await registrosDe(supabase, [{ t: "citas_estetica", i: d.cita_id, datos: d }]) };
+  const d = data as { cita_id: string; reserva_id: string; estado: string; updated_at: string; recoleccion?: { id: string } | null };
+  return { error: null, datos: d, registros: await registrosDe(supabase, [{ t: "citas_estetica", i: d.cita_id, datos: d }, ...(d.recoleccion?.id ? [{ t: "recolecciones", i: d.recoleccion.id, datos: d.recoleccion }] : [])]) };
+}
+
+/** Cotiza la recolección para una mascota del dueño (su dirección guardada o una nueva ya ubicada); el precio sale de la tarifa del negocio. */
+// registro-final: solo cotiza; no cambia nada.
+export async function cotizarRecoleccionApp(negocioId: string, mascotaId: string, direccion: string, lat: number | null, lng: number | null, punto: "negocio" | "base" = "negocio") {
+  const falta = await negocioMio(negocioId);
+  if (falta) return { error: falta };
+  const v = await vinculoDe(mascotaId, negocioId);
+  if (!v) return { error: "Esa mascota no tiene expediente en este negocio." };
+  const supabase = await supabaseAppEnNegocio(negocioId);
+  const { data: perro } = await supabase.from("perros").select("cliente_id").eq("id", v.perroId).maybeSingle();
+  if (!perro?.cliente_id) return { error: "No encontramos tu cuenta en este negocio." };
+  const { data, error } = await supabase.rpc("recoleccion_cotizar", { p_cliente: perro.cliente_id, p_direccion: direccion.trim(), p_lat: lat, p_lng: lng, p_punto: punto });
+  if (error) return { error: rechazoDeLaBase(error) };
+  return { error: null, datos: data as Record<string, unknown> };
 }
 
 // ── Reservar guardería u hotel (la base valida cupo, requisitos y traslapes; el contrato de alta sale en el mismo flujo) ──
-export async function reservarApp(negocioId: string, mascotaId: string, servicioId: string, entrada: string, salida: string, horas: number | null): Promise<ResultadoApp> {
+export async function reservarApp(negocioId: string, mascotaId: string, servicioId: string, entrada: string, salida: string, horas: number | null, recoleccion?: RecoleccionApp | null): Promise<ResultadoApp> {
   const falta = await negocioMio(negocioId);
   if (falta) return { error: falta };
   const v = await vinculoDe(mascotaId, negocioId);
   if (!v) return { error: "Esa mascota no tiene expediente en este negocio." };
   if (!UUID.test(servicioId) || !/^\d{4}-\d{2}-\d{2}$/.test(entrada) || !/^\d{4}-\d{2}-\d{2}$/.test(salida)) return { error: "Escoge el servicio y las fechas." };
   const supabase = await supabaseAppEnNegocio(negocioId);
-  const { data, error } = await supabase.rpc("portal_reservar", { p_perro: v.perroId, p_servicio: servicioId, p_entrada: entrada, p_salida: salida, p_horas: horas && horas > 0 ? Math.round(horas) : null });
+  const p_horas = horas && horas > 0 ? Math.round(horas) : null;
+  const { data, error } = recoleccion
+    ? await supabase.rpc("portal_reservar_con_recoleccion", { p_perro: v.perroId, p_servicio: servicioId, p_entrada: entrada, p_salida: salida, p_horas, p_recoleccion: recoleccion })
+    : await supabase.rpc("portal_reservar", { p_perro: v.perroId, p_servicio: servicioId, p_entrada: entrada, p_salida: salida, p_horas });
   if (error) return { error: rechazoDeLaBase(error) };
-  const d = data as { reserva_id: string; estancia_id: string; estado: string; updated_at: string; contratos_por_firmar: { id: string; tipo_nombre: string }[] };
+  const d = data as { reserva_id: string; estancia_id: string; estado: string; updated_at: string; contratos_por_firmar: { id: string; tipo_nombre: string }[]; recoleccion?: { id: string } | null };
   return {
     error: null,
     datos: d,

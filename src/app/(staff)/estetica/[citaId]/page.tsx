@@ -20,6 +20,8 @@ import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { puedeAbrirEnServidor } from "@/lib/auth/acceso-servidor";
 import { Enlace } from "@/components/ui/enlace";
+import { RecoleccionSeccion } from "@/components/recoleccion/recoleccion-seccion";
+import { recoleccionDeCita, puntosDePartida } from "@/lib/recoleccion/servidor";
 
 const ESTADO_HISTORIAL: Record<string, string> = {
   reservada: "antes de empezar",
@@ -73,6 +75,8 @@ export default async function CitaDetallePage({
   }
   // QA S62 (N164): el precio de la cita es el de su cuenta (con sus correcciones vigentes).
   const correccionPrecio = await correccionVigenteDeLinea(supabase, "estetica", cita.id as string);
+  // Recolección a domicilio ligada a esta cita (y su punto de partida, para «Cómo llegar»).
+  const [recoleccionCita, puntosRec] = await Promise.all([recoleccionDeCita(supabase, cita.id as string), puntosDePartida(supabase)]);
 
   const perro = Array.isArray(cita.perros) ? cita.perros[0] : cita.perros;
   const servicio = Array.isArray(cita.servicios) ? cita.servicios[0] : cita.servicios;
@@ -296,6 +300,10 @@ export default async function CitaDetallePage({
                   : null
               }
             />
+          )}
+
+          {recoleccionCita && (
+            <RecoleccionSeccion inicial={recoleccionCita} puntoDireccion={(recoleccionCita.punto_partida === "base" ? puntosRec.base : puntosRec.negocio)?.direccion ?? null} puedeEditar={puedeEditar} />
           )}
 
           {puedeCorregirServicio && (
