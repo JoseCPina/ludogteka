@@ -13,6 +13,7 @@ const ajustesAntes = (await SB.from("negocio_ajustes_operacion").select("exige_e
 try {
   await fijarModulo("veterinaria", true);
   await quitar(P.admin, P.recConId, "registrar_vacunas");
+  await quitar(P.admin, P.recSinId, "configuracion_negocio"); // residuo de otras auditorías en Huellitas
   await quitar(P.admin, P.recSinId, "registrar_vacunas");
   const hoyB = await hoy(P.admin);
   const perro = (await SB.from("perros").insert({ negocio_id: B, cliente_id: datos.clienteSoloB, nombre: `Reqsan ${MARCA}` }).select("id").single()).data.id;
@@ -45,7 +46,8 @@ try {
   comprobar(ok.ok, `admin corrige la fecha (${ok.mensaje})`);
   const fila = (await SB.from("requisitos_sanitarios_aplicados").select("*").eq("id", idA).single()).data;
   comprobar(fila.fecha_aplicacion === sumaDias(hoyB, -2) && fila.detalle === "Dra. X", "la fecha y el detalle quedan corregidos");
-  comprobar(Array.isArray(fila.historial) && fila.historial.length === 1 && fila.historial[0].antes.fecha_aplicacion === hoyB, "el historial guarda lo que decía antes");
+  const internaA = (await SB.from("requisitos_sanitarios_internos").select("historial").eq("requisito_id", idA).single()).data;
+  comprobar(Array.isArray(internaA?.historial) && internaA.historial.length === 1 && internaA.historial[0].antes.fecha_aplicacion === hoyB, "el historial guarda lo que decía antes");
   await dar(P.admin, P.recConId, "registrar_vacunas");
   comprobar((await corregir(P.recCon, idA, sumaDias(hoyB, -3))).ok, "recepción CON «Registrar vacunas» también corrige");
 
@@ -59,8 +61,8 @@ try {
   comprobar(!(await anular(P.admin, idB, "no")).ok, "el motivo es obligatorio (5 caracteres)");
   const an = await anular(P.recCon, idB);
   comprobar(an.ok, `anula quien tiene el permiso (${an.mensaje})`);
-  const filaB = (await SB.from("requisitos_sanitarios_aplicados").select("deleted_at, anulado_motivo, anulado_por, historial").eq("id", idB).single()).data;
-  comprobar(filaB.deleted_at && filaB.anulado_motivo === "Registro capturado por error" && filaB.anulado_por === P.recConId, "queda anulado con motivo y quién (no se borra)");
+  const filaB = { ...(await SB.from("requisitos_sanitarios_aplicados").select("deleted_at, anulado_at").eq("id", idB).single()).data, ...(await SB.from("requisitos_sanitarios_internos").select("anulado_motivo, anulado_por, historial").eq("requisito_id", idB).single()).data };
+  comprobar((filaB.deleted_at || filaB.anulado_at) && filaB.anulado_motivo === "Registro capturado por error" && filaB.anulado_por === P.recConId, "queda anulado con motivo y quién (no se borra)");
   comprobar(!(await anular(P.admin, idB)).ok, "no se anula dos veces");
   comprobar(!(await corregir(P.admin, idB, sumaDias(hoyB, -10))).ok, "un anulado no se corrige");
   const reuso = await nuevo(sumaDias(hoyB, -30));
@@ -155,6 +157,21 @@ try {
   comprobar(Boolean(ajuste.requisitos_revisados_at && ajuste.requisitos_revisados_por), "queda anotado cuándo y quién revisó los requisitos");
   await SB.from("estancias").update({ estado: "cancelada" }).eq("reserva_id", reserva3.cuerpo[0].id);
   await SB.from("reservas").delete().eq("id", reserva2.cuerpo[0].id);
+
+  seccion("Cambiar la vigencia recalcula las cartillas ya registradas (migración 20261203003700)");
+  const tipoVig = tiposAntes.find((t) => t.id === tipo);
+  const vigNueva = tipoVig.vigencia_meses >= 60 ? 48 : tipoVig.vigencia_meses + 1;
+  const fechaVig = sumaDias(hoyB, -400 - Math.floor(Math.random() * 300));
+  const viva = await nuevo(fechaVig);
+  const anulada = await nuevo(sumaDias(fechaVig, -1));
+  await SB.from("requisitos_sanitarios_aplicados").update({ anulado_at: new Date().toISOString() }).eq("id", anulada.cuerpo[0].id);
+  const cambio = await rpc(P.admin, "guardar_requisitos_estancia", { p_exige_evaluacion: false, p_obligatorias: [], p_vigencias: { [tipo]: vigNueva } });
+  comprobar(cambio.ok, `el admin cambia la vigencia de ${tipoVig.vigencia_meses} a ${vigNueva} meses, desde su sesión y sin chocar con la protección del registro (${cambio.mensaje ?? "ok"})`);
+  comprobar(Number(cambio.cuerpo?.recalculadas) >= 1, `la base dice cuántas cartillas cambiaron (${cambio.cuerpo?.recalculadas})`);
+  const leerVig = async (id) => (await SB.from("requisitos_sanitarios_aplicados").select("vigencia_meses_aplicado, fecha_vencimiento").eq("id", id).single()).data;
+  const vivaDespues = await leerVig(viva.cuerpo[0].id);
+  comprobar(vivaDespues.vigencia_meses_aplicado === vigNueva, `la aplicación viva vence con la vigencia nueva (${vivaDespues.fecha_vencimiento})`);
+  comprobar((await leerVig(anulada.cuerpo[0].id)).vigencia_meses_aplicado === tipoVig.vigencia_meses, "una aplicación anulada no se toca");
 } finally {
   await quitar(P.admin, P.recConId, "registrar_vacunas");
   // Huellitas vuelve a sus requisitos de antes (otras auditorías esperan la evaluación y las vacunas).
