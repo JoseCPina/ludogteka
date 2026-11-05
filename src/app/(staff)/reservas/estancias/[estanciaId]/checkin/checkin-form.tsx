@@ -16,6 +16,7 @@ import { AVISO_FOTO_DEMO, esRechazoDeDemo } from "@/lib/solo-lectura";
 import { AvisoBorrador, useAutoguardado } from "@/lib/borradores/use-autoguardado";
 import {
   confirmarCheckin,
+  type PaseAlEntrar,
   type ConfirmacionesEntradaSalida,
   agregarPertenencia,
   prepararRutaFotoLlegada,
@@ -136,6 +137,8 @@ export function CheckinForm({
   // se acumula: si también está llena la casa, se pregunta una cosa y luego la otra.
   const [fueraHorario, setFueraHorario] = useState<string | null>(null);
   const [quedoFueraHorario, setQuedoFueraHorario] = useState<string | null>(null);
+  // El pase que el check-in aplicó solo (si el perro tenía uno vigente y la estancia estaba suelta).
+  const [paseUsado, setPaseUsado] = useState<PaseAlEntrar | null>(null);
   const [confirmado, setConfirmado] = useState<ConfirmacionesEntradaSalida>({});
   const pregunta = fueraHorario ?? sobrecupo;
 
@@ -175,6 +178,7 @@ export function CheckinForm({
     setFueraHorario(null);
     setQuedo(res.quedo ?? null);
     setQuedoFueraHorario(res.quedoFueraHorario ?? null);
+    setPaseUsado(res.pase ?? null);
     borrador.descartar();
     setRegistrado(true);
     router.refresh();
@@ -193,6 +197,13 @@ export function CheckinForm({
           {quedoFueraHorario && (
             <span className="mt-2 block" data-checkin-fuera-horario>
               Entró fuera del horario ({quedoFueraHorario}). Quedó anotado en la bitácora.
+            </span>
+          )}
+          {paseUsado && (
+            <span className="mt-2 block font-semibold" data-checkin-pase-usado>
+              {paseUsado.ilimitado
+                ? `Este día va con su ${paseUsado.nombre}: no se cobra.`
+                : `Se usó ${paseUsado.usados === 1 ? "1 día" : `${paseUsado.usados} días`} de su pase «${paseUsado.nombre}»: le ${paseUsado.restantes === 1 ? "queda 1" : `quedan ${paseUsado.restantes}`} de ${paseUsado.total}. Este día no se cobra.`}
             </span>
           )}
           <span className="mt-2 block font-semibold" data-pertenencias-recibidas>

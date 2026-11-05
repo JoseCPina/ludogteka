@@ -30,6 +30,28 @@ export async function crearVentaRapida(clienteId: string | null, lineas: LineaVe
   return { error: null, reservaId: data as string, registros: await registrosDe(supabase, [{ t: "reservas", i: data as string }]) };
 }
 
+/** Pases vigentes con saldo de un cliente (por perro), para avisar antes de vender una guardería como concepto suelto. */
+export type PaseVigente = { perro: string; nombre: string; restantes: number; total: number; ilimitado: boolean; vence: string | null; incluye: string | null };
+
+export async function pasesVigentesDeCliente(clienteId: string): Promise<PaseVigente[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("bonos_clientes_estado")
+    .select("perro_nombre, servicio_nombre, servicio_incluido_nombre, cantidad_total, cantidad_disponible, ilimitado, fecha_vencimiento")
+    .eq("cliente_id", clienteId)
+    .eq("estado", "activo")
+    .order("fecha_vencimiento", { ascending: true, nullsFirst: false });
+  return (data ?? []).map((b) => ({
+    perro: (b.perro_nombre as string | null) ?? "Mascota",
+    nombre: b.servicio_nombre as string,
+    incluye: (b.servicio_incluido_nombre as string | null) ?? null,
+    restantes: Number(b.cantidad_disponible ?? 0),
+    total: Number(b.cantidad_total ?? 0),
+    ilimitado: Boolean(b.ilimitado),
+    vence: (b.fecha_vencimiento as string | null) ?? null,
+  }));
+}
+
 export async function cancelarRenglonVenta(ventaId: string, reservaId: string, motivo: string): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   if (!motivo.trim()) return { error: "Escribe por qué se cancela." };
   const supabase = await createSupabaseServerClient();

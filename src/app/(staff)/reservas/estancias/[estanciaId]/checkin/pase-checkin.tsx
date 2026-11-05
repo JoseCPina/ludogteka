@@ -76,7 +76,8 @@ export function PaseCheckin({
         <div>
           <p className="font-bold text-ambar-oscuro">Tiene pases sin aplicar</p>
           <p className="text-sm text-ambar-oscuro">
-            {estado.descripcion}. Hoy quedó como día suelto ({dinero(estado.precioDia)}).
+            {estado.descripcion}. Hoy quedó como día suelto ({dinero(estado.precioDia)}).{" "}
+            {enCurso ? "Tócalo para cubrir este día con el pase." : "Al confirmar el check-in se aplica solo; también puedes aplicarlo ya."}
           </p>
           {error && <p className="mt-1 text-sm font-semibold text-coral-oscuro">{error}</p>}
           {puedeAjustar && estado.bono && (

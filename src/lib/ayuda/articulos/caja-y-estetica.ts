@@ -44,7 +44,7 @@ Una estancia que ya salió solo admite cargos nuevos (**Aplicar cargo** en la re
 
 ¿La misma persona tiene varias cuentas abiertas (baño y guardería, por ejemplo)? Cóbralas juntas, con un solo pago y un solo recibo: [Cobrar varios servicios juntos](/ayuda/cobrar-varios-servicios-juntos).
 
-Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bono**.
+Si el perro tiene day pass o mensualidad, junto a su línea sale **Pagar con bono**. Y si una línea de guardería la cubre un pase vigente de ese perro, arriba del cobro sale **Tiene pase vigente: no cobres lo que el pase ya cubre**, con cuántos días le quedan y el botón **Usar el pase**; **Registrar cobro** no cobra hasta que uses el pase o toques **Cobrar de todos modos** (si el cliente prefiere pagar ese día y guardar sus pases). Lo mismo en Venta rápida: al escoger un cliente con pase vigente, te lo recuerda antes de venderle un día de guardería como concepto suelto.
 
 ## Si otra persona cobra la misma cuenta al mismo tiempo
 

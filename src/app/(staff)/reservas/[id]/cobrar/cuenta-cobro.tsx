@@ -260,6 +260,10 @@ export function CuentaCobro({
   const [bonoElegidoId, setBonoElegidoId] = useState("");
   const [cantidadBono, setCantidadBono] = useState("1");
   const aplicandoBono = useEspera();
+  // Caso Raya (5 de noviembre de 2026): si alguna línea la cubre un pase vigente de ESE perro, se dice arriba del cobro y
+  // «Registrar cobro» pide confirmar antes de cobrar lo que el pase ya pagó.
+  const [insisteCobrar, setInsisteCobrar] = useState(false);
+  const usandoPases = useEspera();
 
   function restantePorCubrir(l: LineaCuenta) {
     return l.cantidad - l.cantidadCubiertaPorBono;
@@ -322,6 +326,21 @@ export function CuentaCobro({
     .filter((d) => !d.cancelado)
     .reduce((sum, d) => sum + d.montoAplicado, 0);
   const saldoDisponibleParaDescuento = totales.totalCuenta - totalDescontadoActivo;
+  const lineasConPase = lineas.filter((l) => bonosParaLinea(l).length > 0);
+  async function usarPasesPendientes() {
+    setError(null);
+    const res = await usandoPases.ejecutar(async () => {
+      for (const l of lineasConPase) {
+        const bono = bonosParaLinea(l)[0];
+        const r = await consumirBono(reservaId, bono.id, l.tipo as ItemTipoBono, l.origenId, Math.min(restantePorCubrir(l), bono.ilimitado ? restantePorCubrir(l) : bono.cantidadDisponible));
+        if (r.error) return r;
+      }
+      return { error: null as string | null };
+    });
+    if (res.error) return setError(res.error);
+    setInsisteCobrar(false);
+    refrescar();
+  }
   // N129: sin saldo por cobrar no hay acciones de cobro ni de ajuste de precio (solo ver, anular o devolver cobros).
   const porCobrar = cuentaPorCobrar(totales.saldo);
   const valorNumDescuento = Number(valorDescuento) || 0;
@@ -558,6 +577,10 @@ export function CuentaCobro({
     }
     if (totales.saldo <= 0.005) {
       setError("Esta cuenta no tiene saldo por cobrar.");
+      return;
+    }
+    if (lineasConPase.length > 0 && !insisteCobrar) {
+      setError(`${lineasConPase.map((l) => l.descripcion).join(", ")}: ${lineasConPase.length === 1 ? "la cubre" : "las cubre"} el pase vigente de${lineasConPase.length === 1 ? "l perro" : " los perros"}. Toca «Usar el pase» arriba, o «Cobrar de todos modos» si el cliente prefiere pagar y guardar sus días.`);
       return;
     }
     if (sinEfectivo > totales.saldo + 0.005) {
@@ -971,6 +994,30 @@ export function CuentaCobro({
           </ul>
         )}
       </div>
+
+      {porCobrar && lineasConPase.length > 0 && (
+        <Alert variante="advertencia" titulo="Tiene pase vigente: no cobres lo que el pase ya cubre" data-aviso-pase-vigente>
+          <span className="block">
+            {lineasConPase.map((l) => {
+              const b = bonosParaLinea(l)[0];
+              return `${l.descripcion}: ${b.servicioNombre}${b.ilimitado ? "" : ` (le ${b.cantidadDisponible === 1 ? "queda 1 día" : `quedan ${b.cantidadDisponible} días`})`}`;
+            }).join(" · ")}
+            .
+          </span>
+          <span className="mt-2 flex flex-wrap gap-2">
+            <Button type="button" tamano="compacto" cargando={usandoPases.cargando} onClick={usarPasesPendientes} data-usar-pase>
+              {usandoPases.cargando ? "Aplicando…" : "Usar el pase"}
+            </Button>
+            {!insisteCobrar ? (
+              <Button type="button" tamano="compacto" variante="secundario" onClick={() => { setInsisteCobrar(true); setError(null); }} data-cobrar-de-todos-modos>
+                Cobrar de todos modos
+              </Button>
+            ) : (
+              <span className="self-center text-sm font-semibold text-ambar-oscuro">Se cobrará aunque tenga pase; el pase conserva sus días.</span>
+            )}
+          </span>
+        </Alert>
+      )}
 
       {!porCobrar && tieneSaldoAFavor(totales.saldo) ? (
         <div className="flex flex-col gap-1 rounded-lg border-[1.5px] border-ambar bg-ambar-suave p-4" data-cuenta-saldo-a-favor={(-totales.saldo).toFixed(2)}>

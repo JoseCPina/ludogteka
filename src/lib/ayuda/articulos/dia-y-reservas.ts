@@ -413,7 +413,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 
 1. Toca **Check-in** en el tablero o en Guardería u Hotel, y escoge al perro de la lista.
 2. Revisa los avisos de arriba: alertas de manejo, alergias graves, vacunas y contrato.
-3. Si viene con pase, lo verás. Si **Tiene pases sin aplicar**, toca **Usar el pase para hoy**.
+3. Si viene con pase, lo verás. Si **Tiene pases sin aplicar**, no hace falta tocar nada: al confirmar el check-in el pase se aplica solo y la confirmación lo dice («Se usó 1 día de su pase «Day pass — 15 pases»: le quedan 12 de 15. Este día no se cobra»). También puedes tocar **Usar el pase para hoy** antes. El pase es del perro: el de su hermano no le sirve.
 4. En **Quién entrega al perro** escoge al dueño o a su contacto de emergencia. Si lo trae alguien más, escoge **Otra persona (escribo su nombre)** y escribe su nombre en **Nombre de la otra persona** y, de preferencia, su teléfono: así queda claro que no fue el dueño.
 5. Anota el **Estado del perro a la llegada (opcional)** y toca **Tomar/subir foto**.
 6. En **Agregar pertenencia** escribe lo que trae (correa, cama, juguete) y toca **Agregar**. Las que se anotaron al reservar salen ahí como **Ya declaradas en la reserva**.
@@ -428,7 +428,8 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 ## Si algo no sale
 
 - **Confirmar check-in** está apagado y junto a él dice «Falta: escoge quién entrega al perro.»: escoge de la lista (el campo lleva * y «obligatorio»). Con **Otra persona**, si falta el nombre, dice «Falta: el nombre de quien entrega al perro.».
-- Si no tiene reserva, usa **Walk-in (sin reserva)** en la lista de check-in.
+- Si no tiene reserva, usa **Walk-in (sin reserva)** en la lista de check-in. Si abres el check-in de una reserva de un día que ya pasó, arriba dice «Esta reserva era para el …»: si el perro llegó hoy, regístralo como walk-in (su pase se aplica solo) y en la reserva marca aquel día como «No llegó» o cancélalo; si de verdad es el check-in de aquel día, sigue ahí. Así el día y el pase quedan en la fecha correcta.
+- Un día que el perro no vino (**No llegó**) devuelve su día al pase, igual que cancelar la estancia; la cuenta no queda con saldo a favor.
 - Si el check-in se hizo por error y el perro venía con pase, quien tenga el permiso «Ajustar días de pases» toca **Deshacer este check-in** (ver [Cómo ajustar los días usados de un pase](/ayuda/ajustar-dias-usados-de-un-pase)).`,
   },
   {
