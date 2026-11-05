@@ -19,7 +19,10 @@ export default async function Recetas({ searchParams }: { searchParams: Promise<
     supabase.rpc("vet_recetas_lista", { p_perro: null, p_estado: estado === "anulada" || estado === "emitida" ? estado : null, p_archivadas: archivadas === "1", p_limite: 200 }),
   ]);
   const filas = (data ?? []) as RecetaResumen[];
-  const enlace = (e: string, a: boolean) => `/veterinaria/recetas?${[e ? `estado=${e}` : "", a ? "archivadas=1" : ""].filter(Boolean).join("&")}`;
+  const enlace = (e: string, a: boolean) => {
+    const filtros = [e ? `estado=${e}` : "", a ? "archivadas=1" : ""].filter(Boolean).join("&");
+    return filtros ? `/veterinaria/recetas?${filtros}` : "/veterinaria/recetas";
+  };
 
   return (
     <div className="flex flex-col gap-5">

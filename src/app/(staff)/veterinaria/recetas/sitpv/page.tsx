@@ -26,7 +26,10 @@ export default async function Sitpv({ searchParams }: { searchParams: Promise<{ 
   const medicos = (estadoCrudo ?? []) as EstadoMedicoSitpv[];
   const bloqueo = Number(reglaMeses?.valor ?? 3);
   const alerta = Number(reglaDia?.valor ?? 10);
-  const enlace = (e: string, a: boolean) => `/veterinaria/recetas/sitpv?${[e ? `estado=${e}` : "", a ? "archivadas=1" : ""].filter(Boolean).join("&")}`;
+  const enlace = (e: string, a: boolean) => {
+    const filtros = [e ? `estado=${e}` : "", a ? "archivadas=1" : ""].filter(Boolean).join("&");
+    return filtros ? `/veterinaria/recetas/sitpv?${filtros}` : "/veterinaria/recetas/sitpv";
+  };
 
   return (
     <div className="flex flex-col gap-5">

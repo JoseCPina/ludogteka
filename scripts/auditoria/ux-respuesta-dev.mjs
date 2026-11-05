@@ -166,7 +166,7 @@ try {
         botonesProbados.add(clave);
         const el = p.locator("button").nth(c.i);
         // Si la acción anterior movió los botones de lugar, este ya no es el mismo: se salta.
-        const textoAhora = ((await el.innerText().catch(() => "")) || (await el.getAttribute("aria-label").catch(() => "")) || "").trim().replace(/s+/g, " ").slice(0, 50);
+        const textoAhora = ((await el.innerText().catch(() => "")) || (await el.getAttribute("aria-label").catch(() => "")) || "").trim().replace(/\s+/g, " ").slice(0, 50);
         if (textoAhora !== c.texto) continue;
         await p.evaluate(() => { window.__ux.t0 = 0; window.__ux.t = {}; });
         registro = [];
@@ -196,8 +196,9 @@ try {
       // ── Enlaces ──
       const enlaces = await p.$$eval("a[href]", (as) =>
         as
-          .map((a, i) => { const r = a.getBoundingClientRect(); return { i, href: a.getAttribute("href") || "", menu: !!a.closest("#menu-lateral-staff, aside, nav"), texto: (a.innerText || a.getAttribute("aria-label") || "").trim().replace(/s+/g, " ").slice(0, 40), visible: r.width > 0 && r.height > 0, externo: a.target === "_blank" || a.hasAttribute("download") }; })
-          .filter((e) => e.visible && !e.externo && e.href.startsWith("/") && e.href.split("#")[0] !== location.pathname + location.search && e.href.split("#")[0] !== location.pathname)
+          .map((a, i) => { const r = a.getBoundingClientRect(); return { i, href: a.getAttribute("href") || "", menu: !!a.closest("#menu-lateral-staff, aside, nav"), texto: (a.innerText || a.getAttribute("aria-label") || "").trim().replace(/\s+/g, " ").slice(0, 40), visible: r.width > 0 && r.height > 0, externo: a.target === "_blank" || a.hasAttribute("download"), mismaPagina: a.pathname === location.pathname && a.search === location.search }; })
+          // Un enlace a la misma pantalla (también con un «?» vacío, que el navegador tira) no navega: no hay llegada que medir.
+          .filter((e) => e.visible && !e.externo && e.href.startsWith("/") && !e.mismaPagina && e.href.split("#")[0] !== location.pathname)
       ).catch(() => []);
       const lista = [];
       const elegir = (cuales, tope) => {
