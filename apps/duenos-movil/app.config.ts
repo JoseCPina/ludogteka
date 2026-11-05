@@ -38,6 +38,9 @@ const config: ExpoConfig = {
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
     predictiveBackGestureEnabled: true,
+    // Push nativo en Android (FCM): el google-services.json del proyecto de Firebase de PeluDesk vive en EAS como
+    // variable de tipo archivo (GOOGLE_SERVICES_JSON); nunca en el repo. Sin él, la app compila sin push nativo.
+    ...(process.env.GOOGLE_SERVICES_JSON ? { googleServicesFile: process.env.GOOGLE_SERVICES_JSON } : {}),
     permissions: ["CAMERA", "ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION", "POST_NOTIFICATIONS", "VIBRATE"],
     blockedPermissions: ["android.permission.RECORD_AUDIO", "android.permission.ACCESS_BACKGROUND_LOCATION"],
   },

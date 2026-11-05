@@ -11,6 +11,7 @@ import { Mapa, Pin, hayMapa, regionDe } from "@/componentes/mapa";
 import { HojaInferior } from "@/componentes/hoja";
 import { Boton, BotonIcono, Chip, Insignia, Mensaje, Texto, Vacio } from "@/componentes/ui";
 import { Icono, type NombreIcono } from "@/componentes/icono";
+import { LogoGoogleMaps } from "@/componentes/logo-google-maps";
 import { coloresLugar, fuentes, radio, useColores } from "@/tema";
 
 type Categoria = "veterinaria" | "abiertas" | "urgencias" | "estetica" | "guarderia" | "hotel" | "petfriendly" | "tienda";
@@ -156,7 +157,7 @@ export default function Cerca() {
           </View>
         }
         ListEmptyComponent={!cargando && !error ? <Vacio icono="explorar" titulo="Nada por aquí" texto={hayMapa ? "Prueba con otra categoría o muévete en el mapa." : "Prueba con otra categoría."} /> : undefined}
-        ListFooterComponent={datos?.atribucionGoogle ? <Texto v="pie" color={c.textoTenue} style={{ paddingVertical: 8 }}>Algunos datos son de Google Maps.</Texto> : undefined}
+        ListFooterComponent={datos?.atribucionGoogle ? <View style={{ paddingVertical: 8, gap: 2 }}><LogoGoogleMaps /><Texto v="pie" color={c.textoTenue}>Algunos datos son de Google Maps.</Texto></View> : undefined}
         renderItem={({ item: l }) => <RenglonLugar l={l} alTocar={() => elegir(l, true)} />}
       />
     );
@@ -278,7 +279,13 @@ function FichaLugar({ l, ficha }: { l: Lugar; ficha: Ficha | null }) {
           {ficha.google.opiniones.map((o, i) => <Texto key={i} v="secundario" lineas={4}>{"★".repeat(Math.round(o.calificacion))} «{o.texto}» · {o.autor}{o.cuando ? `, ${o.cuando}` : ""}</Texto>)}
         </View>
       ) : null}
-      {l.fuente === "google" || l.googlePlaceId ? <Texto v="pie" color={c.textoTenue}>Datos de Google Maps</Texto> : null}
+      {l.fuente === "google" || l.googlePlaceId ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {/* En iOS (mapa de Apple) los datos de Google llevan su logo; en Android lo trae el mapa de Google. */}
+          <LogoGoogleMaps forzar={Platform.OS === "ios"} />
+          {Platform.OS !== "ios" ? <Texto v="pie" color={c.textoTenue}>Datos de Google Maps</Texto> : null}
+        </View>
+      ) : null}
       {!l.enPeluDesk && l.fichaUrl ? (
         <Pressable onPress={() => Linking.openURL(l.fichaUrl!)} style={{ paddingVertical: 6 }}>
           <Texto v="secundario" color={c.primario}>¿Es tu negocio? Reclama tu ficha gratis</Texto>

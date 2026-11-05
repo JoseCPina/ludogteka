@@ -43,7 +43,9 @@ o su compilación en EAS. El porqué está en `PLAN.md` («La app es nativa»); 
   de Expo (`src/lib/movil/push.ts`), a sus celulares; un token que Expo da por muerto (`DeviceNotRegistered`) se da de baja.
   `EXPO_ACCESS_TOKEN` (opcional, solo en Vercel) si se activa el push seguro del proyecto de Expo.
 - En Android, Expo entrega por FCM: **hace falta el proyecto de Firebase de PeluDesk** (`google-services.json` en la app y la
-  llave de cuenta de servicio de FCM V1 subida a EAS). Sin eso, la app dice «Este celular todavía no puede recibirlas» y todo
+  llave de cuenta de servicio de FCM V1 subida a EAS). `google-services.json` NO va al repo (`.gitignore`): es la variable de
+  archivo `GOOGLE_SERVICES_JSON` de EAS, que `app.config.ts` pone en `android.googleServicesFile`; la llave de FCM vive solo
+  en las credenciales de EAS. Sin eso, la app dice «Este celular todavía no puede recibirlas» y todo
   llega igual a Avisos y por WhatsApp. En iOS, APNs con la cuenta de Apple Developer.
 - Tocar una notificación abre su pantalla: las direcciones de los avisos son las de la web y `rutaDeAviso()` las traduce.
 
