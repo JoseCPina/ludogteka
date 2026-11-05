@@ -1,6 +1,8 @@
 import Constants from "expo-constants";
 import { Platform } from "react-native";
+import { File } from "expo-file-system";
 import * as SecureStoreNativo from "expo-secure-store";
+import { reportarError } from "./errores";
 
 // En web (capturas y pruebas del mismo código) no hay almacén seguro: localStorage.
 const SecureStore = Platform.OS === "web"
@@ -69,7 +71,9 @@ async function crudo(accion: string, cuerpo: BodyInit, json: boolean, token: str
       body: cuerpo,
       signal: control.signal,
     });
-  } catch {
+  } catch (e) {
+    // Lo que no es de la red (una petición mal armada) no se disfraza: llega al reporte de errores.
+    if (!control.signal.aborted && !/network|connect|timeout|resolve|socket|ssl|internet/i.test(String(e))) reportarError(e, { origen: "peticion", accion });
     throw new ErrorDeRed(control.signal.aborted ? "Tardó demasiado. Revisa tu conexión e intenta de nuevo." : "No hay conexión. Revisa tu internet e intenta de nuevo.");
   } finally {
     clearTimeout(tope);
@@ -114,7 +118,9 @@ export async function llamar<T = Record<string, unknown>>(accion: string, args: 
     const form = new FormData();
     form.append("args", JSON.stringify(args));
     for (const [k, v] of Object.entries(campos ?? {})) form.append(k, v);
-    for (const a of archivos ?? []) form.append(a.campo, { uri: a.uri, name: a.nombre, type: a.tipo } as unknown as Blob);
+    // El fetch de Expo no sabe mandar la forma { uri, name, type } de React Native (truena antes de salir): un archivo
+    // va como File de expo-file-system. En web (capturas y pruebas), la forma de siempre.
+    for (const a of archivos ?? []) form.append(a.campo, (Platform.OS === "web" ? { uri: a.uri, name: a.nombre, type: a.tipo } : new File(a.uri)) as unknown as Blob);
     return { cuerpo: form, json: false };
   };
   let token = await tokenVigente();

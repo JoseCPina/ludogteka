@@ -41,7 +41,8 @@ const config: ExpoConfig = {
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
     },
-    predictiveBackGestureEnabled: true,
+    // Con el gesto predictivo prendido, el botón «atrás» de Android sacaba de la app en vez de regresar una pantalla.
+    predictiveBackGestureEnabled: false,
     // Push nativo en Android (FCM): el google-services.json del proyecto de Firebase de PeluDesk vive en EAS como
     // variable de tipo archivo (GOOGLE_SERVICES_JSON); nunca en el repo. Sin él, la app compila sin push nativo.
     ...(process.env.GOOGLE_SERVICES_JSON ? { googleServicesFile: process.env.GOOGLE_SERVICES_JSON } : {}),
