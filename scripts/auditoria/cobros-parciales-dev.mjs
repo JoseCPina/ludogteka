@@ -217,7 +217,7 @@ try {
       await A.from("negocios").update({ plan: "prueba", prueba_termina_at: new Date(Date.now() + 7 * 86_400_000).toISOString() }).eq("id", H);
     }
     const r = await fetch(`${BASE}/api/mercadopago/simulacion/${orden.id}`);
-    comprobar(r.ok, `pagarlo (simulación) responde ${r.status}${r.ok ? "" : `: ${(await r.text()).replace(/<[^>]+>/g, " ").replace(/s+/g, " ").slice(0, 200)}`}`);
+    comprobar(r.ok, `pagarlo (simulación) responde ${r.status}${r.ok ? "" : `: ${(await r.text()).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 200)}`}`);
     const t3 = await totales(reserva.id);
     comprobar(centavos(t3?.saldo) === 0, `la cuenta queda en $${t3?.saldo}`);
   } else bien("Huellitas no cobra en simulación: el pago del link no se puede hacer aquí (se comprobó el monto)");

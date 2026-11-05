@@ -24,7 +24,7 @@ const P = await personas();
 const nav = await abrirNavegador();
 const limpieza = [];
 const centavos = (n) => Math.round(Number(n) * 100);
-const limpioTexto = (t) => String(t ?? "").replace(/s+/g, " ").trim();
+const limpioTexto = (t) => String(t ?? "").replace(/\s+/g, " ").trim();
 
 try {
   const { p, api } = await abrirComo(nav, datos.adminB, B, { width: 1280, height: 900 });
