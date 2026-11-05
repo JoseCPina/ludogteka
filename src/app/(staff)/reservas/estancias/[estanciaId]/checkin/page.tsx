@@ -250,6 +250,7 @@ export default async function CheckinEstanciaPage({
       ) : (
         <CheckinForm
           estanciaId={estanciaId}
+          puedeRevertir={tienePermiso(sesion, "revertir_operaciones")}
           perroId={estancia.perro_id}
           clienteId={perro.cliente_id}
           pertenenciasIniciales={pertenencias ?? []}

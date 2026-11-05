@@ -6,6 +6,8 @@ import { SeccionFacturar } from "@/components/cfdi/seccion-facturar";
 import { etiquetaMotivoCuenta, type InfoCancelarCuenta } from "@/app/(staff)/caja/cancelar-cuenta-tipos";
 import { zonaActual, negocioActual } from "@/lib/negocio/actual";
 import { nombresDePersonal } from "@/lib/personal/nombres";
+import { Deshacer } from "@/components/operaciones/deshacer";
+import { OperacionesCuenta } from "@/components/operaciones/operaciones-cuenta";
 import type { CorreccionPrecio } from "./correccion-precio-info";
 import { formatearFecha } from "@/lib/formato";
 import { dinero } from "@/lib/dinero";
@@ -191,8 +193,9 @@ export async function PantallaCobro({
     cobroIds.length
       ? supabase
           .from("devoluciones")
-          .select("id, motivo, created_at, autorizado_por, cobro_id, origen, devolucion_metodos(metodo, monto)")
+          .select("id, motivo, created_at, autorizado_por, cobro_id, origen, turno_id, devolucion_metodos(metodo, monto)")
           .in("cobro_id", cobroIds)
+          .is("deleted_at", null)
           .order("created_at")
       : Promise.resolve({ data: [] as never[], error: null }),
     idsLineasBono.length
@@ -386,6 +389,7 @@ export async function PantallaCobro({
         ? "hecho en el panel del proveedor"
         : "—",
     metodos: (d.devolucion_metodos as { metodo: string; monto: number }[]) ?? [],
+    anulable: Boolean(turnoAbierto && (turnoAbierto as { id?: string }).id === d.turno_id && (d.origen ?? "manual") === "manual"),
   }));
 
   const descuentos: DescuentoHistorial[] = (descuentosCrudo ?? []).map((d) => {
@@ -406,6 +410,7 @@ export async function PantallaCobro({
   });
 
   const puedeCancelarCuenta = tienePermiso(sesion, "cancelar_cuentas");
+  const puedeRevertir = tienePermiso(sesion, "revertir_operaciones");
 
   return (
     <div className="flex flex-col gap-6">
@@ -423,6 +428,7 @@ export async function PantallaCobro({
             {cancelada.motivo_texto ? " — " + cancelada.motivo_texto : ""}. La canceló {cancelada.por_nombre} el {formatearFecha(cancelada.cuando, zona)}; se dejaron de cobrar{" "}
             {dinero(cancelada.saldo_cancelado)}. Ya no admite cobros ni cargos.
           </span>
+          <Deshacer puede={puedeRevertir} operaciones={[{ tipo: "cuenta_cancelada", id, hechoEn: cancelada.cuando }]} className="mt-2" />
         </Alert>
       )}
 
@@ -453,10 +459,12 @@ export async function PantallaCobro({
           puedeAnular={tienePermiso(sesion, "anular_cobros")}
           puedeEditarMonto={tienePermiso(sesion, "editar_monto_cobros")}
           puedeTurnosCerrados={tienePermiso(sesion, "corregir_turnos_cerrados")}
+          puedeRevertir={puedeRevertir}
           cancelarCuenta={puedeCancelarCuenta ? { descripcion: lineas.map((l) => l.descripcion).join(" · ") || "Cuenta" } : null}
           mp={{ disponible: mpDisponible, ordenes: ordenesMp, clienteTelefono: (cliente?.telefono as string | null) ?? null, terminalManualBloqueada: Boolean(terminalManualBloqueada) }}
         />
       )}
+      {!error && <OperacionesCuenta reservaId={id} puedeRevertir={puedeRevertir} />}
       {!error && !cancelada && (
         <SeccionFacturar
           clienteId={reserva.cliente_id as string}

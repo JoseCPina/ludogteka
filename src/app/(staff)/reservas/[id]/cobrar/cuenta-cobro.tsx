@@ -20,6 +20,7 @@ import { CancelarRenglonVenta } from "./cancelar-renglon-venta";
 import { MarcarNoRecibido } from "./marcar-no-recibido";
 import { CorregirCobro } from "./corregir-cobro";
 import { CancelarCuenta } from "@/components/cuentas/cancelar-cuenta";
+import { Deshacer } from "@/components/operaciones/deshacer";
 import { anotarCobroDePantalla, leerCobrosDePantalla } from "@/lib/cobro/cobros-de-pantalla";
 import { idCliente } from "@/lib/id-cliente";
 import { CorregirPrecioLinea } from "./corregir-precio-linea";
@@ -137,6 +138,8 @@ export type DevolucionHistorial = {
   creadoEn: string;
   autorizadoPorNombre: string;
   metodos: { metodo: string; monto: number }[];
+  /** Se puede anular desde aquí (es manual y su turno sigue abierto). */
+  anulable?: boolean;
 };
 
 const ETIQUETA_METODO: Record<string, string> = {
@@ -183,6 +186,7 @@ export function CuentaCobro({
   puedeAnular = false,
   puedeEditarMonto = false,
   puedeTurnosCerrados = false,
+  puedeRevertir = false,
   cancelarCuenta = null,
   mp,
 }: {
@@ -210,6 +214,8 @@ export function CuentaCobro({
   puedeAnular?: boolean;
   puedeEditarMonto?: boolean;
   puedeTurnosCerrados?: boolean;
+  /** «Deshacer operaciones»: anular una devolución (mientras su turno siga abierto). */
+  puedeRevertir?: boolean;
   // «Cancelar cuenta» (permiso cancelar_cuentas): va aquí arriba para que su saldo sea el mismo que el resumen (QA S15).
   cancelarCuenta?: { descripcion: string } | null;
   mp: { disponible: ResumenCobro; ordenes: OrdenCobroFila[]; clienteTelefono: string | null; terminalManualBloqueada: boolean };
@@ -1325,10 +1331,13 @@ export function CuentaCobro({
                   {devolucionesDeEste.length > 0 && (
                     <div className="mt-2 border-t border-border pt-2">
                       {devolucionesDeEste.map((d) => (
-                        <p key={d.id} className="text-sm text-coral-oscuro">
-                          Devuelto {dinero(d.metodos.reduce((s, m) => s + m.monto, 0))} — {d.motivo} (autorizó{" "}
-                          {d.autorizadoPorNombre}, {formatearFecha(d.creadoEn, zona)})
-                        </p>
+                        <div key={d.id} className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="text-sm text-coral-oscuro">
+                            Devuelto {dinero(d.metodos.reduce((s, m) => s + m.monto, 0))} — {d.motivo} (autorizó{" "}
+                            {d.autorizadoPorNombre}, {formatearFecha(d.creadoEn, zona)})
+                          </p>
+                          {d.anulable && <Deshacer puede={puedeRevertir} operaciones={[{ tipo: "devolucion", id: d.id, hechoEn: d.creadoEn }]} onHecho={() => refrescar()} />}
+                        </div>
                       ))}
                     </div>
                   )}

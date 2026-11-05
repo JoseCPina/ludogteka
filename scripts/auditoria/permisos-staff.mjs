@@ -14,7 +14,7 @@ import { A, NEGOCIO, URL, env, tokenDe } from "./sesiones-dev.mjs";
 const PERMISOS = [
   "inventario_costos", "tarifas", "reportes_financieros", "personal", "nomina", "gastos",
   "configuracion_negocio", "excepciones_reserva", "descuentos_sin_tope", "plantillas_contrato", "corregir_estilista", "corregir_servicio", "tarjeta_manual", "ajustar_pases",
-  "anular_cobros", "editar_monto_cobros", "corregir_turnos_cerrados", "agregar_efectivo", "eliminar_citas",
+  "anular_cobros", "editar_monto_cobros", "corregir_turnos_cerrados", "agregar_efectivo", "eliminar_citas", "revertir_operaciones",
   "importar_datos",
   "agregar_servicios_extra", "editar_catalogo_extras",
   // 5 de noviembre de 2026 (migración 20261203003800): lo que era «solo admin». Los de Veterinaria (designar_medicos,
@@ -249,6 +249,8 @@ const pruebas = {
   async editar_monto_cobros() { return porGuardia(R.rpc("editar_monto_cobro", { p_cobro_id: crypto.randomUUID(), p_metodo: "efectivo", p_monto_nuevo: 1, p_motivo: "prueba de permisos" })); },
   async agregar_efectivo() { return porGuardia(R.rpc("cancelar_efectivo_agregado", { p_id: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
   async eliminar_citas() { return porGuardia(R.rpc("eliminar_cita_estetica", { p_cita_id: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
+  // «Deshacer operaciones» (migración 20261203004300): reabrir una cuenta, deshacer un check-in, etc.
+  async revertir_operaciones() { return porGuardia(R.rpc("reabrir_cuenta", { p_reserva: crypto.randomUUID(), p_motivo: "prueba de permisos" })); },
   async agregar_servicios_extra() { return porGuardia(R.rpc("extra_marcar_hecho", { p_id: crypto.randomUUID() })); },
   async editar_catalogo_extras() { return porGuardia(R.rpc("extra_zona_guardar", { p_id: null, p_extra: crypto.randomUUID(), p_nombre: "x", p_km_hasta: null, p_precio: 1, p_activo: true })); },
   async corregir_turnos_cerrados() {

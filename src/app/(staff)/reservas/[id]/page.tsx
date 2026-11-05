@@ -15,6 +15,7 @@ import { ESTILO_ESTADO, ETIQUETA_ESTADO, estiloEstado, etiquetaEstado } from "@/
 import { RefrescoCuenta } from "@/components/cuentas/refresco-cuenta";
 import { negocioActual, negocioIdActual, zonaActual } from "@/lib/negocio/actual";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
 import { nombresDePersonal } from "@/lib/personal/nombres";
 import { describirEstancia, formatearFecha, formatearHoraNegocio } from "@/lib/formato";
 import { unirNombres } from "@/lib/texto/frases";
@@ -54,7 +55,7 @@ export default async function DetalleReservaPage({
   const { data: estancias, error: errorEstancias } = await supabase
     .from("estancias")
     .select(
-      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, updated_at, motivo_cancelacion, cancelada_por, cancelada_at, checkin_sobrecupo, checkin_fuera_horario, checkout_fuera_horario, dia_cerrado_confirmado, perros(nombre), servicios(nombre, categoria, unidad)"
+      "id, perro_id, servicio_id, fecha_entrada, fecha_salida, estado, precio_unitario, horas, updated_at, hora_entrada_real, hora_salida_real, motivo_cancelacion, cancelada_por, cancelada_at, checkin_sobrecupo, checkin_fuera_horario, checkout_fuera_horario, dia_cerrado_confirmado, perros(nombre), servicios(nombre, categoria, unidad)"
     )
     .eq("reserva_id", id)
     .is("deleted_at", null)
@@ -67,6 +68,8 @@ export default async function DetalleReservaPage({
     ? await nombresDePersonal(supabase, canceladores, { esAdmin: sesionReserva?.rol === "admin", negocioId: await negocioIdActual() })
     : new Map<string, string>();
   const zonaReserva = await zonaActual();
+  // «Deshacer» / «Corregir» en cada estancia (migración 20261203004300).
+  const puedeRevertir = tienePermiso(sesionReserva ?? (await obtenerSesionConRol()), "revertir_operaciones");
   const filas = (estancias ?? []).map((e) => {
     const perro = Array.isArray(e.perros) ? e.perros[0] : e.perros;
     const servicio = Array.isArray(e.servicios) ? e.servicios[0] : e.servicios;
@@ -82,13 +85,16 @@ export default async function DetalleReservaPage({
       unidad: (servicio?.unidad as string) ?? "dia",
       horas: (e.horas as number | null) ?? null,
       version: (e.updated_at as string | null) ?? null,
+      horaEntradaReal: (e.hora_entrada_real as string | null) ?? null,
+      horaSalidaReal: (e.hora_salida_real as string | null) ?? null,
+      canceladaAt: (e.cancelada_at as string | null) ?? null,
       sobrecupo: (e.checkin_sobrecupo as string | null) ?? null,
       fueraHorario: {
         reserva: (e.dia_cerrado_confirmado as string | null) ?? null,
         entrada: (e.checkin_fuera_horario as string | null) ?? null,
         salida: (e.checkout_fuera_horario as string | null) ?? null,
       },
-      cancelacion: e.estado === "cancelada" && e.cancelada_at
+      cancelacion: (e.estado === "cancelada" || e.estado === "no_llego") && e.cancelada_at
         ? {
             quien: (e.cancelada_por ? nombresCancel.get(e.cancelada_por as string) : null) ?? "alguien del equipo",
             cuando: `${formatearFecha(e.cancelada_at as string, zonaReserva)} a las ${formatearHoraNegocio(e.cancelada_at as string, zonaReserva)}`,
@@ -270,6 +276,7 @@ export default async function DetalleReservaPage({
               cuentaCobrado={totalCobrado}
               cuentaDevuelto={totalDevuelto}
               cuentaSaldo={saldo}
+              puedeRevertir={puedeRevertir}
             />
           ))}
         </div>

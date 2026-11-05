@@ -10,6 +10,8 @@ import { CheckoutForm } from "./checkout-form";
 import { ConvertirHotel, type SugerenciaHotel } from "./convertir-hotel";
 import { SeccionServiciosExtra } from "@/components/extras/seccion-servicios-extra";
 import { CargosSeccion, type Cargo, type ServicioCargo } from "../../../cargos-seccion";
+import { obtenerSesionConRol } from "@/lib/auth/sesion";
+import { tienePermiso } from "@/lib/auth/permisos";
 import { zonaActual } from "@/lib/negocio/actual";
 import { cuentasPorEstancia } from "@/lib/cuentas/cuenta-estancia";
 import { EstadoVivo } from "@/components/concurrencia/estado-vivo";
@@ -24,6 +26,8 @@ export default async function CheckoutEstanciaPage({
   const zona = await zonaActual();
   const { estanciaId } = await params;
   const supabase = await createSupabaseServerClient();
+  const sesionCheckout = await obtenerSesionConRol();
+  const puedeRevertir = tienePermiso(sesionCheckout, "revertir_operaciones");
 
   const { data: estancia, error } = await supabase
     .from("estancias")
@@ -258,6 +262,7 @@ export default async function CheckoutEstanciaPage({
       ) : (
         <CheckoutForm
           estanciaId={estanciaId}
+          puedeRevertir={puedeRevertir}
           esHotel={esHotel}
           fechaEntrada={estancia.fecha_entrada}
           fechaSalida={estancia.fecha_salida}
@@ -290,6 +295,7 @@ export default async function CheckoutEstanciaPage({
 
       <div className="border-t border-border pt-4">
         <CargosSeccion
+          puedeRevertir={puedeRevertir}
           estanciaId={estanciaId}
           estado={estancia.estado as string}
           cargosIniciales={cargos}

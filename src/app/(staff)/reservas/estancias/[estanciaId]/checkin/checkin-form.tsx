@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { Alert } from "@/components/ui/alert";
+import { Deshacer } from "@/components/operaciones/deshacer";
 import { AvisoDemo } from "@/components/ui/aviso-demo";
 import { AVISO_FOTO_DEMO, esRechazoDeDemo } from "@/lib/solo-lectura";
 import { AvisoBorrador, useAutoguardado } from "@/lib/borradores/use-autoguardado";
@@ -34,9 +35,12 @@ export function CheckinForm({
   pertenenciasIniciales,
   declaradas,
   conocidos = [],
+  puedeRevertir = false,
 }: {
   estanciaId: string;
   perroId: string;
+  /** Permiso «Deshacer operaciones»: «Deshacer el check-in» al terminar. */
+  puedeRevertir?: boolean;
   clienteId: string;
   pertenenciasIniciales: Pertenencia[];
   // Lo que la reserva ya traía declarado (texto libre de la estancia), si algo.
@@ -206,6 +210,7 @@ export function CheckinForm({
                 : `Se usó ${paseUsado.usados === 1 ? "1 día" : `${paseUsado.usados} días`} de su pase «${paseUsado.nombre}»: le ${paseUsado.restantes === 1 ? "queda 1" : `quedan ${paseUsado.restantes}`} de ${paseUsado.total}. Este día no se cobra.`}
             </span>
           )}
+          <Deshacer puede={puedeRevertir} operaciones={[{ tipo: "checkin_estancia", id: estanciaId, hechoEn: new Date().toISOString(), destino: "reservada" }]} className="mt-2" onHecho={() => setRegistrado(false)} />
           <span className="mt-2 block font-semibold" data-pertenencias-recibidas>
             Pertenencias recibidas:{" "}
             {pertenencias.length > 0 || declaradas ? [...(declaradas ? [declaradas] : []), ...pertenencias.map((p) => p.descripcion)].join(", ") : "ninguna"}.

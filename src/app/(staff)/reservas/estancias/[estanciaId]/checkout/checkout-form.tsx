@@ -14,6 +14,7 @@ import { alternarPertenencia, confirmarCheckout } from "../../../checkin-actions
 import { MoverFechas } from "../../../mover-fechas";
 import { textoSalidaAnticipada, type CotizacionSalida } from "@/lib/reservas/salida-anticipada";
 import { Enlace } from "@/components/ui/enlace";
+import { Deshacer } from "@/components/operaciones/deshacer";
 import { dinero as dineroSalida } from "@/lib/dinero";
 import { cuentaAlSalir } from "@/lib/reservas/salida-anticipada";
 
@@ -31,9 +32,12 @@ export function CheckoutForm({
   cuenta = null,
   hoy = null,
   pasoElCierre = false,
+  puedeRevertir = false,
 }: {
   estanciaId: string;
   esHotel: boolean;
+  /** Permiso «Deshacer operaciones»: «Deshacer la salida» al terminar. */
+  puedeRevertir?: boolean;
   fechaEntrada: string;
   fechaSalida: string;
   /** updated_at de la estancia al cargar (QA N43). */
@@ -158,6 +162,7 @@ export function CheckoutForm({
             {ajusteAplicado}.
           </span>
         )}
+        <Deshacer puede={puedeRevertir} operaciones={[{ tipo: "checkout_estancia", id: estanciaId, hechoEn: new Date().toISOString() }]} className="mt-2" onHecho={() => setTerminado(false)} />
         {cobroHref ? (
           <Enlace href={cobroHref} data-cobrar-cuenta className="mt-2 text-sm">
             {saldoAlSalir !== null && saldoAlSalir < -0.005 ? `Devolver ${dineroSalida(-saldoAlSalir)} al cliente` : saldoAlSalir !== null && saldoAlSalir <= 0.005 ? "Ver cobros" : "Cobrar la cuenta"}
