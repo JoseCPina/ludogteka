@@ -26,8 +26,15 @@ const ok = (cond, texto) => { console.log(`${cond ? "  ✔" : "  ✘"} ${texto}`
 const esPermiso = (e) => e && (e.code === "42501" || /solo el personal|solo el dueño|42501/i.test(e.message ?? ""));
 const dia = (d) => d.toISOString().slice(0, 10);
 const hoy = new Date();
-const entrada = new Date(hoy.getTime() + (60 + Math.floor(Math.random() * 200)) * 86400000);
-while ([0, 6].includes(entrada.getUTCDay())) entrada.setUTCDate(entrada.getUTCDate() + 1);
+// Una ventana sin otras estancias del perro de prueba (otras auditorías dejan reservas futuras): mover la estancia no debe chocar.
+let entrada;
+for (let i = 0; i < 40; i++) {
+  entrada = new Date(hoy.getTime() + (60 + Math.floor(Math.random() * 600)) * 86400000);
+  while (entrada.getUTCDay() !== 1) entrada.setUTCDate(entrada.getUTCDate() + 1); // lunes: las fechas de la prueba (+1, +3, +4, +10, +11) caen entre semana
+  const desde = dia(entrada), hasta = dia(new Date(entrada.getTime() + 12 * 86400000));
+  const { count } = await SB.from("estancias").select("id", { count: "exact", head: true }).eq("perro_id", datos.perroSoloB).is("deleted_at", null).lte("fecha_entrada", hasta).gte("fecha_salida", desde);
+  if (!count) break;
+}
 const F1 = dia(entrada), F2 = dia(new Date(entrada.getTime() + 86400000)), F3 = dia(new Date(entrada.getTime() + 3 * 86400000)), F4 = dia(new Date(entrada.getTime() + 4 * 86400000));
 const F5 = dia(new Date(entrada.getTime() + 10 * 86400000)), F6 = dia(new Date(entrada.getTime() + 11 * 86400000));
 

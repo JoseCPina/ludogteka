@@ -565,7 +565,7 @@ Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y despué
 
 1. En **Nueva reserva** (Guardería u Hotel) o en **Agendar cita** (Estética), prende **Incluir recolección**.
 2. Escoge la dirección: **La guardada** del cliente o **Otra dirección** (puedes guardarla en su ficha).
-3. En **Sale desde** escoge **El local** o **La base de la camioneta** (la base se configura en Administración, en la sección «Ubicación»); pon la **Hora estimada** y, si quieres, una nota para quien recoge.
+3. En **Sale desde** escoge **El local** o **La base de la camioneta** (la base la configura un admin en su panel, en la sección «Ubicación»); pon la **Hora estimada** y, si quieres, una nota para quien recoge.
 4. Toca **Cotizar recolección**: ves los kilómetros (la distancia guardada, o la que calcula el mapa para una dirección nueva, o los que escribas a mano si el mapa no puede) y el precio con tu tarifa por kilómetro.
 5. Crea la reserva o agenda la cita. La recolección queda ligada a ella y su cargo entra a la cuenta en ese momento.
 

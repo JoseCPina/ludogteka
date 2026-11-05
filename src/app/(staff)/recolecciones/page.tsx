@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
 import { accesoDeSesion, puedeAbrir } from "@/lib/auth/acceso";
@@ -6,7 +6,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { hoyNegocio, sumarDiasFecha, formatearFechaCalendario } from "@/lib/formato";
 import { recoleccionesDelDia, puntosDePartida } from "@/lib/recoleccion/servidor";
 import { EnlacePestana } from "@/components/ui/enlace-pestana";
-import { Enlace } from "@/components/ui/enlace";
+import { EnlaceOTexto } from "@/components/acceso-contexto";
 import { Field } from "@/components/ui/field";
 import { BotonEnviar } from "@/components/ui/boton-enviar";
 import { ListaRecolecciones } from "./lista-recolecciones";
@@ -47,7 +47,7 @@ export default async function RecoleccionesPage({ searchParams }: { searchParams
       </div>
       {sinUbicar && (
         <p className="text-sm text-ambar-oscuro">
-          El negocio no está ubicado en el mapa: la ruta no puede ordenarse por cercanía ni calcular km solos. Un admin lo ubica en <Enlace href="/admin#ubicacion" enTexto>Administración, en la sección «Ubicación»</Enlace>.
+          El negocio no está ubicado en el mapa: la ruta no puede ordenarse por cercanía ni calcular km solos. Un admin lo ubica en <EnlaceOTexto href="/admin#ubicacion">su panel</EnlaceOTexto>, en la sección «Ubicación».
         </p>
       )}
       <ListaRecolecciones filas={filas} fecha={fecha} puedeEditar={sesion.rol === "admin" || sesion.rol === "recepcion"} />
