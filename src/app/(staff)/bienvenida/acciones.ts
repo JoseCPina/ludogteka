@@ -172,10 +172,19 @@ export async function guardarRequisitosHospedar(exigeEvaluacion: boolean, obliga
     if (!Number.isInteger(meses) || meses < 1 || meses > 60) return { error: "La vigencia va de 1 a 60 meses." };
   }
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.rpc("guardar_requisitos_estancia", { p_exige_evaluacion: exigeEvaluacion, p_obligatorias: obligatorias, p_vigencias: vigencias });
+  const { data, error } = await supabase.rpc("guardar_requisitos_estancia", { p_exige_evaluacion: exigeEvaluacion, p_obligatorias: obligatorias, p_vigencias: vigencias });
   if (error) return { error: traducirError(error) };
   refrescar();
-  return { error: null, exito: "Requisitos guardados. Se aplican desde la siguiente reserva.", registros: await registrosAjustes(supabase) };
+  // Migración 20261203003700: al cambiar una vigencia, el vencimiento de las cartillas ya registradas se recalcula con
+  // la vigencia nueva (fecha de aplicación + vigencia) y la base dice cuántas cambiaron; se dice aquí, no se calla.
+  const r = (data ?? {}) as { recalculadas?: number; detalle?: { etiqueta: string; de: number; a: number; cartillas: number }[] };
+  const n = Number(r.recalculadas ?? 0);
+  const detalle = (r.detalle ?? []).map((d) => `${d.etiqueta} de ${d.de} a ${d.a} meses (${d.cartillas})`).join("; ");
+  const exito =
+    n === 0
+      ? "Requisitos guardados. Se aplican desde la siguiente reserva."
+      : `Requisitos guardados. Se recalculó el vencimiento de ${n === 1 ? "1 cartilla ya registrada" : `${n} cartillas ya registradas`} con la vigencia nueva: ${detalle}.`;
+  return { error: null, exito, registros: await registrosAjustes(supabase) };
 }
 
 /** Publica el contrato general (el de la plantilla de PeluDesk, ya editado) con un clic. */
