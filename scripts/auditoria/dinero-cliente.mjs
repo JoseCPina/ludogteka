@@ -356,6 +356,9 @@ for (const persona of staffSinCostos ?? []) {
   const h = { apikey: env.NEXT_PUBLIC_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
   const quien = `${persona.rol} ${persona.nombre_completo ?? persona.id.slice(0, 8)}`;
   for (const t of ["gastos", "categorias_gasto", "gastos_recurrentes"]) {
+    // Las categorías no traen dinero: quien tiene «Categorías de gastos» (prendido para recepción desde la migración
+    // 20261203003800) las lee aunque no tenga «Gastos del local».
+    if (t === "categorias_gasto" && persona.rol === "recepcion" && permisosDe(persona.id).has("categorias_gasto")) continue;
     const filas = await (await fetch(`${URL}/rest/v1/${t}?select=id`, { headers: h })).json();
     if (!Array.isArray(filas) || filas.length > 0) hallazgos.push(`gastos: ${quien} lee ${Array.isArray(filas) ? filas.length : "?"} filas de ${t} sin el permiso`);
   }
