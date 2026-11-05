@@ -8,6 +8,7 @@ import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 import { llamar } from "@/lib/api";
 import { useAccion } from "@/lib/datos";
 import { fechaCorta } from "@/lib/formato";
+import { reportarError } from "@/lib/errores";
 import { tomarFoto, type FotoLista } from "@/lib/fotos";
 import { Boton, BotonIcono, Insignia, Mensaje, Texto } from "@/componentes/ui";
 import { Icono } from "@/componentes/icono";
@@ -43,12 +44,17 @@ export default function LeerCartilla() {
 
   const disparar = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-    const crudo = await camara.current?.takePictureAsync({ quality: 0.9, exif: false, skipProcessing: false });
-    if (!crudo) return;
-    const ctx = ImageManipulator.manipulate(crudo.uri);
-    if (Math.max(crudo.width, crudo.height) > 2000) ctx.resize(crudo.width >= crudo.height ? { width: 2000 } : { height: 2000 });
-    const final = await (await ctx.renderAsync()).saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
-    mandar({ uri: final.uri, nombre: `cartilla-${Date.now()}.jpg`, tipo: "image/jpeg" });
+    try {
+      const crudo = await camara.current?.takePictureAsync({ quality: 0.9, exif: false, skipProcessing: false });
+      if (!crudo) return;
+      const ctx = ImageManipulator.manipulate(crudo.uri);
+      if (Math.max(crudo.width, crudo.height) > 2000) ctx.resize(crudo.width >= crudo.height ? { width: 2000 } : { height: 2000 });
+      const final = await (await ctx.renderAsync()).saveAsync({ compress: 0.85, format: SaveFormat.JPEG });
+      mandar({ uri: final.uri, nombre: `cartilla-${Date.now()}.jpg`, tipo: "image/jpeg" });
+    } catch (e) {
+      reportarError(e, { origen: "camara" });
+      leer.setError("No pudimos tomar la foto. Intenta otra vez o escoge una de tus fotos.");
+    }
   };
 
   const deGaleria = async () => {
@@ -140,7 +146,7 @@ export default function LeerCartilla() {
   }
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <CameraView ref={camara} style={{ flex: 1 }} facing="back" autofocus="on" />
+      <CameraView ref={camara} style={{ flex: 1 }} facing="back" autofocus="on" onMountError={(e) => { reportarError(new Error(e.message), { origen: "camara" }); leer.setError("No pudimos abrir la cámara. Escoge una de tus fotos o captúrala a mano."); }} />
       <View pointerEvents="box-none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
         <View style={{ paddingTop: inset.top + 8, paddingHorizontal: 16, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <Pressable onPress={cerrar} accessibilityLabel="Cerrar" hitSlop={10} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }}>

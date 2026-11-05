@@ -35,8 +35,12 @@ export function alCambiarSesion(fn: (t: Tokens | null) => void): () => void {
 
 async function guardar(t: Tokens | null) {
   tokens = t;
-  if (t) await SecureStore.setItemAsync(LLAVE, JSON.stringify(t));
-  else await SecureStore.deleteItemAsync(LLAVE);
+  try {
+    if (t) await SecureStore.setItemAsync(LLAVE, JSON.stringify(t));
+    else await SecureStore.deleteItemAsync(LLAVE);
+  } catch {
+    // El almacén seguro del celular falló: la sesión sigue en memoria y se pedirá entrar la próxima vez.
+  }
   escuchas.forEach((fn) => fn(t));
 }
 

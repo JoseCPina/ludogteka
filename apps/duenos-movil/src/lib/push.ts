@@ -28,12 +28,15 @@ export type EstadoPush = "activas" | "denegadas" | "sin_configurar" | "simulador
 
 /** Pide permiso (si hace falta) y registra el token. No vuelve a preguntar si la persona ya dijo que no. */
 export async function activarPush(preguntar: boolean): Promise<EstadoPush> {
-  if (!Device.isDevice || Platform.OS === "web") return "simulador";
-  await canalAndroid();
-  let { status } = await Notifications.getPermissionsAsync();
-  if (status !== "granted" && preguntar) status = (await Notifications.requestPermissionsAsync()).status;
-  if (status !== "granted") return "denegadas";
+  if (Platform.OS === "web") return "simulador";
+  // Compilada sin el google-services.json de Firebase: en Android no hay push nativo; ni se pide permiso ni se toca FCM.
+  if (Platform.OS === "android" && !Constants.expoConfig?.extra?.hayPushAndroid) return "sin_configurar";
+  if (!Device.isDevice) return "simulador";
   try {
+    await canalAndroid();
+    let { status } = await Notifications.getPermissionsAsync();
+    if (status !== "granted" && preguntar) status = (await Notifications.requestPermissionsAsync()).status;
+    if (status !== "granted") return "denegadas";
     const projectId = (Constants.expoConfig?.extra?.eas as { projectId?: string } | undefined)?.projectId;
     const { data: token } = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
     const r = await llamar("registrarDispositivo", [{ token, plataforma: Platform.OS, modelo: Device.modelName ?? null, versionApp: Application.nativeApplicationVersion ?? null }]);

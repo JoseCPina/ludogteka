@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type MapView from "react-native-maps";
@@ -91,10 +91,15 @@ export default function Cerca() {
     buscar(punto, cat);
   }, [buscar]);
 
-  useEffect(() => {
-    const t = setTimeout(() => ubicar("veterinaria"), 0);
-    return () => clearTimeout(t);
-  }, [ubicar]);
+  // La ubicación se pide al abrir esta pestaña, nunca antes: una pestaña puede montarse sin que la persona la haya visto.
+  const ubicada = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (ubicada.current) return;
+      ubicada.current = true;
+      void ubicar("veterinaria");
+    }, [ubicar])
+  );
 
   const cambiarCategoria = (cat: Categoria) => {
     setCategoria(cat);

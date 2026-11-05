@@ -2,6 +2,7 @@ import { forwardRef, useState, type ReactNode } from "react";
 import { Platform, View } from "react-native";
 import Constants from "expo-constants";
 import MapView, { Marker, type MapViewProps, type Region } from "react-native-maps";
+import { LimiteDeParte } from "./limite-error";
 import { Icono, type NombreIcono } from "./icono";
 import { Texto } from "./ui";
 import { useColores, useEsOscuro } from "@/tema";
@@ -16,20 +17,19 @@ export const hayMapa = Platform.OS !== "android" || Boolean(Constants.expoConfig
 export const Mapa = forwardRef<MapView, MapViewProps & { children?: ReactNode; sinMapa?: ReactNode }>(function Mapa({ children, sinMapa, ...props }, ref) {
   const c = useColores();
   const oscuro = useEsOscuro();
-  if (!hayMapa) {
-    return (
-      sinMapa ?? (
-        <View style={[{ backgroundColor: c.superficieAlta, alignItems: "center", justifyContent: "center", padding: 32, gap: 8 }, props.style]}>
-          <Icono nombre="mapa" tamano={36} color={c.textoTenue} />
-          <Texto v="secundario" centrado>Aquí abajo está la lista con la distancia de cada lugar.</Texto>
-        </View>
-      )
-    );
-  }
+  const alternativa = sinMapa ?? (
+    <View style={[{ backgroundColor: c.superficieAlta, alignItems: "center", justifyContent: "center", padding: 32, gap: 8 }, props.style]}>
+      <Icono nombre="mapa" tamano={36} color={c.textoTenue} />
+      <Texto v="secundario" centrado>Aquí abajo está la lista con la distancia de cada lugar.</Texto>
+    </View>
+  );
+  if (!hayMapa) return alternativa;
   return (
-    <MapView ref={ref} showsUserLocation showsMyLocationButton={false} showsCompass={false} toolbarEnabled={false} userInterfaceStyle={oscuro ? "dark" : "light"} {...props}>
-      {children}
-    </MapView>
+    <LimiteDeParte nombre="mapa" alternativa={alternativa}>
+      <MapView ref={ref} showsUserLocation showsMyLocationButton={false} showsCompass={false} toolbarEnabled={false} userInterfaceStyle={oscuro ? "dark" : "light"} {...props}>
+        {children}
+      </MapView>
+    </LimiteDeParte>
   );
 });
 
@@ -38,6 +38,8 @@ export function Pin({ coordenada, color, icono, elegido, peludesk, alTocar, titu
   // En Android un marcador con vista propia se vuelve a dibujar en cada cambio si sigue «rastreando»: se apaga al pintar.
   const [rastrear, setRastrear] = useState(true);
   const tam = elegido ? 44 : 34;
+  // Una coordenada vacía en un marcador cierra la app desde el lado nativo: ese lugar simplemente no se pinta.
+  if (!Number.isFinite(coordenada.latitude) || !Number.isFinite(coordenada.longitude)) return null;
   return (
     <Marker coordinate={coordenada} onPress={alTocar} tracksViewChanges={rastrear} accessibilityLabel={titulo} anchor={{ x: 0.5, y: 0.5 }} zIndex={elegido ? 10 : peludesk ? 5 : 1}>
       <View onLayout={() => setTimeout(() => setRastrear(false), 400)} style={{ width: tam + 8, height: tam + 8, alignItems: "center", justifyContent: "center" }}>
