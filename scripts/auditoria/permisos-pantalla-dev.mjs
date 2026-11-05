@@ -56,7 +56,13 @@ const { data: otraRecepcion } = await SB.from("membresias").select("profile_id")
 // «medico»: un médico veterinario designado (la cuenta de estética que está en los dos negocios; scripts/auditoria/lib/medico-dev.mjs).
 const CUENTAS = { admin: datos.adminB, recepcion: datos.recepcionB, estetica: datos.esteticaB, encargada: otraRecepcion?.profile_id, medico: datos.esteticaAmbos };
 const INICIO = { admin: "/admin", recepcion: "/recepcion", estetica: "/estetica", encargada: "/recepcion", medico: "/veterinaria" };
-const PERMISOS_ENCARGADA = ["personal", "configuracion_negocio", "tarifas", "reportes_financieros", "nomina", "gastos", "inventario_costos"];
+// 5 de noviembre de 2026 (migración 20261203003800): también los permisos que antes eran «solo admin», para recorrer
+// con recepción lo que abren (plantilla del reporte, médicos, servicios, áreas, categorías de gastos, alertas en lote…).
+const PERMISOS_ENCARGADA = [
+  "personal", "configuracion_negocio", "tarifas", "reportes_financieros", "nomina", "gastos", "inventario_costos",
+  "extender_pases", "plantilla_reporte_guarderia", "designar_medicos", "ver_lecturas_expediente", "quitar_evaluacion", "devoluciones",
+  "revisar_tarjetas_manuales", "conciliacion", "cortesias", "categorias_gasto", "areas_inventario", "asistencia_ausencias", "servicios", "revisar_alertas",
+];
 
 // ── Módulos: todos prendidos mientras corre, y de regreso como estaban ──────────────────────────────────────────
 // Lo de antes queda en un archivo: si una corrida se corta a la fuerza, la siguiente lo restaura primero.

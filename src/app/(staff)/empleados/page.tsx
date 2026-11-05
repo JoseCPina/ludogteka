@@ -20,7 +20,7 @@ export default async function EmpleadosPage() {
   const supabase = await createSupabaseServerClient();
   const sesion = await obtenerSesionConRol();
   const puedeNomina = tienePermiso(sesion, "nomina");
-  const esAdmin = sesion?.rol === "admin";
+  const puedeAsistencia = tienePermiso(sesion, "asistencia_ausencias");
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = (hoyData as string | null) ?? hoyNegocio(zona);
   // "HH:MM" en la hora del negocio, para comparar contra su horario.
@@ -69,7 +69,7 @@ export default async function EmpleadosPage() {
               estado = { etiqueta: "No ha llegado", estilo: "bg-ambar-suave text-ambar-oscuro" };
             }
             // Recepción registra solo por quien no tiene cuenta; admin, por cualquiera.
-            const puedeRegistrar = esAdmin || (sesion?.rol === "recepcion" && !e.profile_id);
+            const puedeRegistrar = puedeAsistencia || (sesion?.rol === "recepcion" && !e.profile_id);
             return (
               <li key={e.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                 <div className="flex min-w-[14rem] flex-col gap-1">

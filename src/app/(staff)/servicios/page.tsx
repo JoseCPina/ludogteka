@@ -9,6 +9,7 @@ import { leerTodo } from "@/lib/supabase/paginar";
 import { servicioActivo } from "@/lib/tarifas/huecos";
 import { TablaResponsiva } from "@/components/ui/tabla-responsiva";
 import { Enlace } from "@/components/ui/enlace";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 const ETIQUETA_CATEGORIA: Record<string, string> = {
   guarderia: "Guardería",
@@ -21,7 +22,7 @@ const ETIQUETA_CATEGORIA: Record<string, string> = {
 
 export default async function ServiciosPage() {
   const sesion = await obtenerSesionConRol();
-  const esAdmin = sesion?.rol === "admin";
+  const esAdmin = tienePermiso(sesion, "servicios");
   const modulos = sesion?.modulos ?? [];
   const supabase = await createSupabaseServerClient();
   // Con Veterinaria prendida, su catálogo base (consulta, urgencia, seguimiento, vacuna) existe para capturarle precio.

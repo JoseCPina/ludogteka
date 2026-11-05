@@ -52,7 +52,7 @@ export const ZONAS: Zona[] = [
   // Con qué cobra el negocio y sus credenciales: solo admin, nunca se delega.
   { prefijo: "/admin/pagos", roles: ["admin"] },
   // La plantilla del reporte de guardería y los días de retención: solo admin.
-  { prefijo: "/admin/reporte-guarderia", roles: ["admin"] },
+  { prefijo: "/admin/reporte-guarderia", roles: ["admin"], permisos: ["plantilla_reporte_guarderia"] },
   // Pagar el plan es de admin; prender y apagar módulos, también de quien tenga «Administrar módulos».
   { prefijo: "/admin/modulos/pago", roles: ["admin"] },
   { prefijo: "/admin/modulos", roles: ["admin"], permisos: ["administrar_modulos"] },
@@ -68,7 +68,7 @@ export const ZONAS: Zona[] = [
   // Hotel y guardería: la política de salida anticipada.
   { prefijo: "/admin/hotel", roles: ["admin"], permisos: ["configuracion_negocio"] },
   { prefijo: "/admin/tarifa-guarderia", roles: ["admin"], permisos: ["tarifas"] },
-  { prefijo: "/admin", roles: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas"] },
+  { prefijo: "/admin", roles: ["admin"], permisos: ["personal", "configuracion_negocio", "tarifas", "revisar_alertas"] },
   { prefijo: "/recepcion", roles: ["recepcion", "admin"] },
   // Los primeros pasos de un negocio recién abierto en peludesk.mx.
   { prefijo: "/bienvenida", roles: ["admin"] },
@@ -86,8 +86,8 @@ export const ZONAS: Zona[] = [
   // (eso lo filtra RLS, no esta zona).
   { prefijo: "/perros", roles: ["admin", "recepcion", "estetica"] },
   // Con el permiso de tarifas solo le sirven las matrices de precios (crear y editar servicios es de admin).
-  { prefijo: "/servicios/nuevo", roles: ["admin"] },
-  { prefijo: "/servicios/:id", patron: /^\/servicios\/[^/]+$/, roles: ["admin"] },
+  { prefijo: "/servicios/nuevo", roles: ["admin"], permisos: ["servicios"] },
+  { prefijo: "/servicios/:id", patron: /^\/servicios\/[^/]+$/, roles: ["admin"], permisos: ["servicios"] },
   { prefijo: "/servicios", roles: ["admin"], permisos: ["tarifas"] },
   { prefijo: "/reservas", roles: ["admin", "recepcion"] },
   { prefijo: "/guarderia", roles: ["admin", "recepcion"] },
@@ -99,7 +99,7 @@ export const ZONAS: Zona[] = [
   { prefijo: "/caja", roles: ["admin", "recepcion"] },
   // Veterinaria: entra cualquier rol del personal que sea médico veterinario designado o tenga algún permiso del
   // módulo (`acceso_veterinaria()`); las pantallas clínicas piden además su permiso.
-  { prefijo: "/veterinaria/medicos", roles: ["admin"] },
+  { prefijo: "/veterinaria/medicos", roles: ["admin"], permisos: ["designar_medicos"] },
   { prefijo: "/veterinaria/inventario/nuevo", roles: ["admin"], permisos: ["lotes_clinicos"] },
   { prefijo: "/veterinaria/estimados", ...VET, vet: ["crear_estimados"] },
   { prefijo: "/veterinaria/expediente/:id", patron: /^\/veterinaria\/expediente\/[^/]+/, ...VET, vet: ["atender_consultas", "firmar_expediente"] },
@@ -109,14 +109,14 @@ export const ZONAS: Zona[] = [
   { prefijo: "/veterinaria", ...VET },
   { prefijo: "/contratos", roles: ["admin", "recepcion"] },
   // El catálogo de inventario lo dan de alta admin y recepción; estética registra consumo y merma.
-  { prefijo: "/inventario/areas", roles: ["admin"] },
+  { prefijo: "/inventario/areas", roles: ["admin"], permisos: ["areas_inventario"] },
   { prefijo: "/inventario/sin-costo", roles: ["admin"], permisos: ["inventario_costos"] },
   { prefijo: "/inventario/nuevo", roles: ["admin", "recepcion"] },
   { prefijo: "/inventario/equipo/nuevo", roles: ["admin", "recepcion"] },
   { prefijo: "/inventario", roles: ["admin", "recepcion", "estetica"] },
   { prefijo: "/reportes", roles: ["admin"], permisos: ["reportes_financieros"] },
   // Gastos del local: con «Gastos»; las categorías, solo admin.
-  { prefijo: "/gastos/categorias", roles: ["admin"] },
+  { prefijo: "/gastos/categorias", roles: ["admin"], permisos: ["categorias_gasto"] },
   { prefijo: "/gastos", roles: ["admin"], permisos: ["gastos"] },
   // Empleados: el dinero (nómina, comisiones) y el alta, solo con «Nómina».
   { prefijo: "/empleados/nomina", roles: ["admin"], permisos: ["nomina"] },

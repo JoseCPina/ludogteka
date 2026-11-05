@@ -39,7 +39,6 @@ export default async function VeterinariaInicio() {
   const sesion = await obtenerSesionConRol();
   const puedeLotes = tienePermiso(sesion, "lotes_clinicos");
   const puedeConfig = tienePermiso(sesion, "configuracion_negocio");
-  const esAdmin = sesion?.rol === "admin";
 
   const [{ data: alertasCrudo }, { data: permisosCrudo }, { data: atencionCrudo }, { data: censoCrudo }, { data: leerCrudo }, { data: estimadosCrudo }, { data: recetasCrudo }] = await Promise.all([
     puedeLotes ? supabase.rpc("inventario_clinico_alertas") : Promise.resolve({ data: null }),
@@ -151,7 +150,7 @@ export default async function VeterinariaInicio() {
           )}
         </Tarjeta>
 
-        {esAdmin && (
+        {tienePermiso(sesion, "designar_medicos") && (
           <Tarjeta href="/veterinaria/medicos" titulo="Médicos">
             <p>Quién es médico veterinario, con su cédula, su CPA del SITPV y sus folios de receta.</p>
           </Tarjeta>

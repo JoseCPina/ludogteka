@@ -7,6 +7,7 @@ import { MENSAJE_DEMO } from "@/lib/solo-lectura";
 import { traducirError } from "../reservas/traducir-error";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 // Revisión de las tarjetas manuales (migración 20261008000000). Todo es del
 // admin y la base lo vuelve a comprobar con su sesión: aquí solo se traduce.
@@ -15,15 +16,18 @@ import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 
 export type ResultadoTarjeta = { error: string | null; aviso?: string; registros?: RegistroFinal[] };
 
-async function exigirAdmin(): Promise<ResultadoTarjeta | null> {
+// Revisar y marcar «no recibida» van con «Revisar tarjetas manuales»; el tope de alerta sigue siendo de admin.
+async function exigirAdmin(permiso?: "revisar_tarjetas_manuales"): Promise<ResultadoTarjeta | null> {
   const sesion = await obtenerSesionConRol();
-  if (sesion?.rol !== "admin") return { error: "Solo un admin revisa las tarjetas manuales." };
+  if (permiso ? !tienePermiso(sesion, permiso) : sesion?.rol !== "admin") {
+    return { error: permiso ? "Solo un admin, o quien tenga el permiso «Revisar tarjetas manuales», revisa las tarjetas manuales." : "Solo un admin cambia el tope de las tarjetas manuales." };
+  }
   if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO };
   return null;
 }
 
 export async function revisarTarjetaManual(tarjetaId: string, nota: string, reservaId?: string | null): Promise<ResultadoTarjeta> {
-  const negado = await exigirAdmin();
+  const negado = await exigirAdmin("revisar_tarjetas_manuales");
   if (negado) return { error: negado.error };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("tarjeta_manual_revisar", { p_tarjeta_id: tarjetaId, p_nota: nota.trim() });
@@ -36,7 +40,7 @@ export async function revisarTarjetaManual(tarjetaId: string, nota: string, rese
 }
 
 export async function marcarTarjetaManualNoRecibida(tarjetaId: string, motivo: string, reservaId?: string | null): Promise<ResultadoTarjeta> {
-  const negado = await exigirAdmin();
+  const negado = await exigirAdmin("revisar_tarjetas_manuales");
   if (negado) return { error: negado.error };
   if (motivo.trim().length < 5) return { error: "Escribe el motivo: qué pasó con este cobro." };
   const supabase = await createSupabaseServerClient();

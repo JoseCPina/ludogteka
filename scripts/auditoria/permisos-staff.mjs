@@ -17,6 +17,10 @@ const PERMISOS = [
   "anular_cobros", "editar_monto_cobros", "corregir_turnos_cerrados", "agregar_efectivo", "eliminar_citas",
   "importar_datos",
   "agregar_servicios_extra", "editar_catalogo_extras",
+  // 5 de noviembre de 2026 (migración 20261203003800): lo que era «solo admin». Los de Veterinaria (designar_medicos,
+  // ver_lecturas_expediente) dependen del módulo y se prueban en las auditorías de veterinaria.
+  "extender_pases", "plantilla_reporte_guarderia", "quitar_evaluacion", "devoluciones", "revisar_tarjetas_manuales", "conciliacion",
+  "cortesias", "categorias_gasto", "areas_inventario", "asistencia_ausencias", "servicios", "revisar_alertas",
 ];
 
 
@@ -267,6 +271,37 @@ const pruebas = {
     const r = await R.rpc("marcar_requiere_refirma", { p_plantilla_id: plantilla.id, p_valor: plantilla.requiere_refirma });
     return { dejo: !r.error, ve: !r.error, detalle: r.error?.message };
   },
+
+  // ── 5 de noviembre de 2026: lo que era «solo admin» ─────────────────────────────────────────────────────────────
+  // Guardia ANTES de buscar el registro: con un id inexistente, «sin permiso» se distingue de «no existe».
+  async revisar_tarjetas_manuales() { return porGuardia(R.rpc("tarjeta_manual_revisar", { p_tarjeta_id: crypto.randomUUID(), p_nota: "prueba de permisos" })); },
+  async conciliacion() { return porGuardia(R.rpc("conciliacion_dar_por_revisada", { p_id: crypto.randomUUID(), p_nota: "prueba de permisos" })); },
+  async quitar_evaluacion() { return porGuardia(R.rpc("quitar_evaluacion_comportamiento", { p_perro_id: crypto.randomUUID() })); },
+  // Con una fecha de hace años no hay nada que cerrar: con el permiso responde {total: 0}; sin él, rechaza.
+  async revisar_alertas() {
+    const r = await R.rpc("alertas_dar_por_revisadas_hasta", { p_hasta: "2000-01-01", p_nota: "prueba de permisos" });
+    return { dejo: !r.error, ve: !r.error && Number(r.data?.total ?? -1) === 0, detalle: r.error?.message };
+  },
+  // Políticas de escritura directa: insertar una fila y borrarla (admin, por la API con la llave de servicio).
+  async categorias_gasto() {
+    const r = await R.from("categorias_gasto").insert({ nombre: `Prueba de permisos ${Date.now()}` }).select("id");
+    if (r.data?.length) await A.from("categorias_gasto").delete().in("id", r.data.map((x) => x.id));
+    return { dejo: !r.error && (r.data ?? []).length === 1, ve: !r.error, detalle: r.error?.message };
+  },
+  async areas_inventario() {
+    const clave = `prueba_permisos_${Date.now()}`;
+    const r = await R.from("areas_inventario").insert({ clave, nombre: "Prueba de permisos" }).select("id");
+    if (r.data?.length) await A.from("areas_inventario").delete().in("id", r.data.map((x) => x.id));
+    return { dejo: !r.error && (r.data ?? []).length === 1, ve: !r.error, detalle: r.error?.message };
+  },
+  // Guardias que están después de buscar el registro (cortesía, vigencia de un pase, asistencia, servicios, plantilla del
+  // reporte): se comprueba lo que la base responde a tiene_permiso, que es lo que esas funciones y políticas consultan.
+  async cortesias() { const r = await R.rpc("tiene_permiso", { p_permiso: "cortesias" }); return { dejo: r.data === true, ve: r.data === true }; },
+  async devoluciones() { return porGuardia(R.rpc("preparar_reembolso", { p_cobro_id: crypto.randomUUID(), p_monto: 1, p_motivo: "prueba de permisos" })); },
+  async extender_pases() { const r = await R.rpc("tiene_permiso", { p_permiso: "extender_pases" }); return { dejo: r.data === true, ve: r.data === true }; },
+  async plantilla_reporte_guarderia() { const r = await R.rpc("tiene_permiso", { p_permiso: "plantilla_reporte_guarderia" }); return { dejo: r.data === true, ve: r.data === true }; },
+  async asistencia_ausencias() { return porGuardia(R.rpc("ajustar_vacaciones", { p_empleado_id: crypto.randomUUID(), p_dias: 1, p_tipo: "asignacion", p_motivo: "prueba de permisos" })); },
+  async servicios() { const r = await R.rpc("tiene_permiso", { p_permiso: "servicios" }); return { dejo: r.data === true, ve: r.data === true }; },
 };
 
 console.log(`Recepcionista de prueba: ${rec.nombre_completo ?? rec.id.slice(0, 8)} | tope de recepción: $${topeRec}`);
@@ -324,6 +359,9 @@ await A.from("reservas").update({ deleted_at: new Date().toISOString() }).eq("id
 await dar("tarjeta_manual");
 // «Agregar servicios extra» también viene prendido por omisión en recepción.
 await dar("agregar_servicios_extra");
+// «Categorías de gastos» y «Áreas de inventario» también (migración 20261203003800).
+await dar("categorias_gasto");
+await dar("areas_inventario");
 if (turnoTarjeta?.propio) await A.from("turnos_caja").update({ estado: "cerrado", cerrado_at: new Date().toISOString(), deleted_at: new Date().toISOString() }).eq("id", turnoTarjeta.id);
 
 console.log(`\n${fallas.length === 0 ? "TODO BIEN" : `FALLAS: ${fallas.length}`}`);

@@ -263,6 +263,91 @@ export const PERMISOS = [
     implica:
       "Contesta las reseñas que dejan los dueños desde su app (la respuesta se ve junto a la reseña en la página del negocio) y esconde de la vista pública las que no deben salir; las estrellas y el texto del dueño no se pueden cambiar. Con el módulo Portal prendido. Viene apagado.",
   },
+  // 5 de noviembre de 2026 (migración 20261203003800): lo que seguía siendo «solo admin» por rol fijo.
+  {
+    clave: "extender_pases",
+    etiqueta: "Extender la vigencia de pases",
+    implica:
+      "Cambia la fecha de vencimiento de un pase de guardería (day pass o mensualidad) con un motivo por escrito que queda en el historial del pase. Corregir los días usados es «Ajustar días de pases». Viene apagado.",
+  },
+  {
+    clave: "plantilla_reporte_guarderia",
+    etiqueta: "Plantilla del reporte de guardería",
+    implica:
+      "Edita la plantilla del reporte de comportamiento diario (secciones, opciones, orden) y los días que se guardan las fotos y videos. Llenar y mandar el reporte es «Reportes de guardería». Viene apagado.",
+  },
+  {
+    clave: "designar_medicos",
+    etiqueta: "Designar médicos veterinarios",
+    implica:
+      "Designa a una persona del personal como médico veterinario (cédula y CPA), le quita la designación y le asigna folios de receta (con el módulo Veterinaria prendido). Viene apagado.",
+  },
+  {
+    clave: "ver_lecturas_expediente",
+    etiqueta: "Ver quién abrió un expediente",
+    implica:
+      "Ve el registro de quién abrió el expediente clínico de una mascota y cuándo (con el módulo Veterinaria prendido). Viene apagado.",
+  },
+  {
+    clave: "quitar_evaluacion",
+    etiqueta: "Quitar una evaluación de comportamiento",
+    implica:
+      "Quita la evaluación de comportamiento ya marcada en la ficha de un perro, con un motivo por escrito; el perro vuelve a necesitarla para reservar guardería u hotel. Viene apagado.",
+  },
+  {
+    clave: "devoluciones",
+    etiqueta: "Registrar devoluciones",
+    implica:
+      "Registra una devolución de dinero sobre un cobro (en efectivo, transferencia o con el proveedor de cobro), marca un cobro de terminal como no recibido cuando el proveedor confirma que no hubo pago, y cancela una orden de terminal o link que quedó por confirmar. Mueve dinero: viene apagado.",
+  },
+  {
+    clave: "revisar_tarjetas_manuales",
+    etiqueta: "Revisar tarjetas manuales",
+    implica:
+      "Ve en «Necesita atención» y en Conciliación las tarjetas registradas a mano que esperan verificación (con montos y folios), las da por revisadas con el voucher o las marca como no recibidas. Cambiar el tope de alerta sigue siendo de admin. Viene apagado.",
+  },
+  {
+    clave: "conciliacion",
+    etiqueta: "Conciliación con el proveedor de cobro",
+    implica:
+      "Da por revisada una diferencia de la conciliación con Mercado Pago o Clip, o todas las anteriores a una fecha, y decide si se muestran los pagos ajenos de la cuenta. Viene apagado.",
+  },
+  {
+    clave: "cortesias",
+    etiqueta: "Cortesías sobre servicios realizados",
+    implica:
+      "Cancela como cortesía la cuenta de un servicio que ya se realizó (la cuenta queda en cero con el motivo y su nombre). Cancelar cuentas de servicios que no se hicieron es «Cancelar cuentas». Viene apagado.",
+  },
+  {
+    clave: "categorias_gasto",
+    etiqueta: "Categorías de gastos",
+    implica:
+      "Crea, edita y da de baja las categorías de los gastos del local. Viene prendido para toda la recepción; quítalo a quien no deba.",
+  },
+  {
+    clave: "areas_inventario",
+    etiqueta: "Áreas de inventario",
+    implica:
+      "Crea y edita las áreas del inventario (recepción, estética, cocina…) donde se acomodan los insumos y el equipo. Viene prendido para toda la recepción; quítalo a quien no deba.",
+  },
+  {
+    clave: "asistencia_ausencias",
+    etiqueta: "Asistencia, ausencias y vacaciones",
+    implica:
+      "Corrige la asistencia de cualquier empleado (queda el registro original y el motivo), aprueba, rechaza o cancela ausencias (también las ya aprobadas), asigna o ajusta días de vacaciones y registra asistencia o pide ausencias por quien sí tiene cuenta en la app. Viene apagado.",
+  },
+  {
+    clave: "servicios",
+    etiqueta: "Crear y editar servicios",
+    implica:
+      "Crea, edita y da de baja los servicios del negocio y su receta de consumo de insumos. Los precios de cada servicio son «Precios y tarifas». Viene apagado.",
+  },
+  {
+    clave: "revisar_alertas",
+    etiqueta: "Dar por revisadas alertas en lote",
+    implica:
+      "Usa en el panel de admin «Dar por revisadas todas las anteriores a…»: cierra de un paso, con una nota, las tarjetas manuales por revisar, los contratos sin firmar, las llegadas atrasadas, los links de pago sin resolver y la conciliación anteriores a una fecha. No toca cuentas con saldo ni comprobantes sanitarios. Viene apagado.",
+  },
 ] as const;
 
 export type ClavePermiso = (typeof PERMISOS)[number]["clave"];

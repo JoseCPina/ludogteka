@@ -175,6 +175,9 @@ export function CuentaCobro({
   descuentos,
   topeRecepcion,
   esAdmin,
+  puedeCortesias = esAdmin,
+  puedeDevoluciones = esAdmin,
+  puedeTarjetas = esAdmin,
   puedeSinTope,
   puedeTarjetaManual,
   puedeAnular = false,
@@ -196,6 +199,10 @@ export function CuentaCobro({
   descuentos: DescuentoHistorial[];
   topeRecepcion: number;
   esAdmin: boolean;
+  // Permisos por persona (5 de noviembre de 2026): cortesías, devoluciones y tarjetas manuales ya no son solo de admin.
+  puedeCortesias?: boolean;
+  puedeDevoluciones?: boolean;
+  puedeTarjetas?: boolean;
   // Admin o recepción con «Descuentos sin tope». Devoluciones: solo admin.
   puedeSinTope: boolean;
   puedeTarjetaManual: boolean;
@@ -640,7 +647,7 @@ export function CuentaCobro({
   return (
     <div className="flex flex-col gap-6">
       {cancelarCuenta && totales.saldo > 0.005 && (
-        <CancelarCuenta reservaId={reservaId} descripcion={cancelarCuenta.descripcion} saldo={totales.saldo} esAdmin={esAdmin} />
+        <CancelarCuenta reservaId={reservaId} descripcion={cancelarCuenta.descripcion} saldo={totales.saldo} esAdmin={puedeCortesias} />
       )}
       {error && (
         <Alert variante="error" titulo="No se pudo completar la acción">
@@ -1148,7 +1155,7 @@ export function CuentaCobro({
         disponible={mp.disponible}
         ordenes={mp.ordenes}
         clienteTelefono={mp.clienteTelefono}
-        esAdmin={esAdmin}
+        esAdmin={puedeDevoluciones}
       />
 
       <div className="flex flex-col gap-3">
@@ -1237,7 +1244,7 @@ export function CuentaCobro({
                         {t.banco ? ` · ${t.banco}` : ""} · {etiquetaMotivo(t.motivo, t.motivoTexto)}
                         {t.sobreTope ? " · arriba del tope de alerta" : ""}
                       </p>
-                      {esAdmin && t.estado === "por_revisar" && <RevisarTarjetaManual tarjetaId={t.id} monto={t.monto} reservaId={reservaId} cuentas={c.grupo?.cuentas.length ?? 1} />}
+                      {puedeTarjetas && t.estado === "por_revisar" && <RevisarTarjetaManual tarjetaId={t.id} monto={t.monto} reservaId={reservaId} cuentas={c.grupo?.cuentas.length ?? 1} />}
                     </div>
                   ))}
 
@@ -1279,7 +1286,7 @@ export function CuentaCobro({
                     </div>
                   )}
 
-                  {esAdmin && c.origen === "manual" && totalDevuelto === 0 && c.metodos.some((m) => m.metodo === "terminal") && c.metodos.every((m) => m.metodo !== "terminal" || Number(m.propina) === 0) && (
+                  {puedeDevoluciones && c.origen === "manual" && totalDevuelto === 0 && c.metodos.some((m) => m.metodo === "terminal") && c.metodos.every((m) => m.metodo !== "terminal" || Number(m.propina) === 0) && (
                     <div className="mt-2 border-t border-border pt-2">
                       <MarcarNoRecibido
                         reservaId={reservaId}
@@ -1290,7 +1297,7 @@ export function CuentaCobro({
                     </div>
                   )}
 
-                  {esAdmin && totalDevuelto < totalCobro && (c.origen === "mercadopago_point" || c.origen === "mercadopago_link") && (
+                  {puedeDevoluciones && totalDevuelto < totalCobro && (c.origen === "mercadopago_point" || c.origen === "mercadopago_link") && (
                     <div className="mt-2 border-t border-border pt-2">
                       {devolviendoCobroId !== c.id ? (
                         <Button type="button" variante="secundario" onClick={() => setDevolviendoCobroId(c.id)}>
@@ -1309,7 +1316,7 @@ export function CuentaCobro({
                     </div>
                   )}
 
-                  {esAdmin && totalDevuelto < totalCobro && c.origen !== "mercadopago_point" && c.origen !== "mercadopago_link" && (
+                  {puedeDevoluciones && totalDevuelto < totalCobro && c.origen !== "mercadopago_point" && c.origen !== "mercadopago_link" && (
                     <div className="mt-2 border-t border-border pt-2">
                       {devolviendoCobroId !== c.id ? (
                         <Button

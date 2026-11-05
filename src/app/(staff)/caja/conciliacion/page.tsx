@@ -12,6 +12,7 @@ import { RevisarTarjetaManual } from "@/components/cobro/revisar-tarjeta-manual"
 import { ETIQUETA_TARJETA_MANUAL, etiquetaMotivo } from "@/lib/cobro/tarjeta-manual";
 import { leerTodo, leerTodoPorIds } from "@/lib/supabase/paginar";
 import { Enlace } from "@/components/ui/enlace";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 type TarjetaFila = {
   id: string;
@@ -63,7 +64,7 @@ export default async function ConciliacionPage() {
   const supabase = await createSupabaseServerClient();
   const { data: hoyData } = await supabase.rpc("fecha_negocio");
   const hoy = String(hoyData);
-  const esAdminSesion = sesion?.rol === "admin";
+  const esAdminSesion = tienePermiso(sesion, "revisar_tarjetas_manuales");
   const [{ data, error }, { data: porConfirmar }, { data: tarjetasCrudo }, { data: mostrarAjenos }] = await Promise.all([
     leerTodo<Fila>(() => supabase.from("conciliacion_terminal").select("id, tipo, monto, ocurrio_at, detectada_at, cobro_id, orden_id, mp_pago_id, detalle").is("resuelta_at", null).neq("tipo", "pago_ajeno").order("detectada_at").order("id")),
     leerTodo<{ id: string; monto: number; created_at: string; detalle_error: string | null; reserva_id: string }>(() =>
@@ -86,7 +87,8 @@ export default async function ConciliacionPage() {
   const ids = filas.map((f) => f.cobro_id).filter(Boolean) as string[];
   const { data: cobros } = await leerTodoPorIds<{ id: string; reserva_id: string }, string>(ids, (bloque) => supabase.from("cobros").select("id, reserva_id").in("id", bloque).order("id"));
   const reservaDe = new Map((cobros ?? []).map((c) => [c.id as string, c.reserva_id as string]));
-  const esAdmin = sesion?.rol === "admin";
+  const esAdmin = tienePermiso(sesion, "conciliacion");
+  const puedeTarjetas = tienePermiso(sesion, "revisar_tarjetas_manuales");
 
   return (
     <div className="flex flex-col gap-6">
@@ -121,7 +123,7 @@ export default async function ConciliacionPage() {
         </section>
       )}
 
-      {esAdmin && (
+      {puedeTarjetas && (
         <section className="flex flex-col gap-2" data-tarjetas-manuales>
           <h2 className="text-[0.9375rem] font-semibold text-foreground">Tarjetas manuales por revisar</h2>
           <p className="text-sm text-n-600">

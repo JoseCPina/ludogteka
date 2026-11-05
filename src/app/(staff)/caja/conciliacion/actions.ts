@@ -6,6 +6,7 @@ import { cargarNegocioLanding } from "@/lib/landing/negocio";
 import { MENSAJE_DEMO } from "@/lib/solo-lectura";
 import { registrosDe } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 export async function darPorRevisada(id: string, nota: string): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   const supabase = await createSupabaseServerClient();
@@ -36,7 +37,7 @@ export async function darPorRevisadasHasta(hasta: string, nota: string): Promise
 // (informativos). Apagada por omisión; la base vuelve a comprobar que es admin.
 export async function guardarMostrarPagosAjenos(mostrar: boolean): Promise<{ error: string | null; registros?: RegistroFinal[] }> {
   const sesion = await obtenerSesionConRol();
-  if (sesion?.rol !== "admin") return { error: "Solo un admin cambia esta opción." };
+  if (!tienePermiso(sesion, "conciliacion")) return { error: "Solo un admin, o quien tenga el permiso «Conciliación con el proveedor de cobro», cambia esta opción." };
   if ((await cargarNegocioLanding()).plan === "demo") return { error: MENSAJE_DEMO };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.rpc("guardar_conciliacion_mostrar_ajenos", { p_mostrar: mostrar });

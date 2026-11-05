@@ -9,6 +9,7 @@ import { zonaActual } from "@/lib/negocio/actual";
 import { ESTADOS_ESTIMADO, TIPOS_CITA, TIPOS_EVENTO, dinero, type EstimadoResumen, type EventoLinea, type MedicoVet } from "@/lib/veterinaria/expediente";
 import { CapturarResultado, IniciarConsulta, SubirAdjunto } from "../captura";
 import { Enlace } from "@/components/ui/enlace";
+import { tienePermiso } from "@/lib/auth/permisos";
 
 type Lectura = { recurso: string; persona: string; leido_at: string };
 
@@ -45,7 +46,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
     supabase.rpc("vet_estimados_de_mascota", { p_perro: perroId }),
     supabase.rpc("vet_medicos_lista"),
     supabase.rpc("vet_mi_medico"),
-    sesion?.rol === "admin" ? supabase.rpc("vet_lecturas_lista", { p_perro: perroId, p_limite: 40 }) : Promise.resolve({ data: null }),
+    tienePermiso(sesion, "ver_lecturas_expediente") ? supabase.rpc("vet_lecturas_lista", { p_perro: perroId, p_limite: 40 }) : Promise.resolve({ data: null }),
   ]);
   const linea = (lineaCrudo ?? []) as EventoLinea[];
   const sinFirmar = linea.filter((e) => e.tipo === "consulta" && e.estado === "borrador").length;
@@ -154,7 +155,7 @@ export default async function ExpedienteMascota({ params, searchParams }: { para
         )}
       </section>
 
-      {sesion?.rol === "admin" && (
+      {tienePermiso(sesion, "ver_lecturas_expediente") && (
         <section className="flex flex-col gap-2 rounded-lg border border-border bg-card shadow-tarjeta p-5">
           <h2 className="text-lg font-semibold text-foreground">Quién abrió este expediente</h2>
           <p className="text-sm text-n-600">Las últimas lecturas, para que todo acceso quede a la vista.</p>
