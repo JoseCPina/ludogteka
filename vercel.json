@@ -84,6 +84,10 @@
     {
       "path": "/api/cron/alertas",
       "schedule": "27 * * * *"
+    },
+    {
+      "path": "/api/cron/solicitudes",
+      "schedule": "42 * * * *"
     }
   ]
 }

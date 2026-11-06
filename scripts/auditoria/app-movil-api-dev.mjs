@@ -121,6 +121,54 @@ try {
   const yo = await api("yo", [], token);
   revisa(yo.json?.dueno?.id === C1.profile_id, "«yo» es la persona del token");
 
+  console.log("3b. Pedir lugar");
+  {
+    const conVinculo = ids.length ? ids : [];
+    let m = null, serv = null;
+    for (const mid of conVinculo) {
+      const pant = await api("reservar", [mid], token);
+      const n = (pant.json?.negocios ?? []).find((x) => x.id === H && x.servicios?.length);
+      if (n) { m = mid; serv = n.servicios.find((s) => s.unidad !== "hora") ?? n.servicios[0]; break; }
+    }
+    if (!m) revisa(false, "hay una mascota de C1 con guardería en Huellitas");
+    else {
+      const f = new Date(Date.now() + (600 + Math.floor(Math.random() * 60)) * 86400000);
+      while (f.getUTCDay() !== 3) f.setUTCDate(f.getUTCDate() + 1);
+      const entrada = f.toISOString().slice(0, 10);
+      const salida = new Date(f.getTime() + 86400000).toISOString().slice(0, 10);
+      const rev = await api("revisarReserva", [H, m, serv.id, entrada, salida, null, null], token);
+      const faltan = rev.json?.datos?.faltan ?? [];
+      revisa(rev.status === 200 && Array.isArray(rev.json?.datos?.faltan), `revisarReserva contesta qué falta (${faltan.map((x) => x.clave).join(", ") || "nada"}) ${rev.json?.error ?? ""}`);
+      const textos = JSON.stringify(faltan);
+      revisa(!/\/perros|\/admin|\/servicios|un admin|excepci[oó]n/i.test(textos), "en palabras del dueño: sin rutas del panel ni «un admin»");
+      const eva = faltan.find((x) => x.clave === "evaluacion");
+      if (eva) revisa(/conviva bien/.test(eva.explicacion), "la evaluación explica por qué");
+      const vac = faltan.find((x) => x.clave === "sanitario");
+      if (vac) revisa(vac.accion === null && /cartilla|comprobante/.test(vac.explicacion) && !/aquí mismo/.test(vac.explicacion), `la vacuna dice cuál (${vac.titulo}) y que lleve o mande la cartilla, sin prometer que la app la sube al expediente`);
+      revisa(!faltan.some((x) => x.clave === "contrato"), "el contrato de alta no es requisito (se firma después de reservar)");
+      if (faltan.length) {
+        const pide = await api("pedirLugar", [H, m, serv.id, entrada, salida, null, null, null], token);
+        revisa(pide.status === 200 && pide.json?.datos?.estado === "pendiente", `pedirLugar deja la solicitud ${pide.json?.error ?? ""}`);
+        const sid = pide.json?.datos?.id;
+        const vis = await api("visitas", [], token);
+        const lista = vis.json?.solicitudes ?? [];
+        const vista = lista.find((s) => s.id === sid);
+        revisa(Boolean(vista) && vista.estado === "pendiente" && vista.faltan.length > 0, "sale en sus visitas, con lo que falta");
+        revisa(!/precio|monto|saldo|total/i.test(JSON.stringify(vista ?? {})), "sin montos");
+        const ajena = await api("cancelarSolicitud", [H, sid], (await entrar(C2.telefono)).r.json?.tokens?.accessToken);
+        revisa(Boolean(ajena.json?.error), "otro dueño no la cancela");
+        const cancela = await api("cancelarSolicitud", [H, sid], token);
+        revisa(cancela.json?.datos?.estado === "cancelada", `él sí ${cancela.json?.error ?? ""}`);
+        const sidBase = servicioH.from("solicitudes_reserva");
+        await sidBase.delete().eq("id", sid);
+      }
+      const sinSesion = await api("revisarReserva", [H, m, serv.id, entrada, salida, null, null]);
+      revisa(sinSesion.status === 401, "sin sesión, 401");
+      const ajenaM = await api("revisarReserva", [H, mascotaAjena, serv.id, entrada, salida, null, null], token);
+      revisa(Boolean(ajenaM.json?.error), `con mascota ajena no contesta qué le falta (${ajenaM.json?.error ?? "¡contestó!"})`);
+    }
+  }
+
   console.log("4. Notificaciones nativas");
   const malo = await api("registrarDispositivo", [{ token: "no-es-un-token", plataforma: "android" }], token);
   revisa(Boolean(malo.json?.error), "un token que no es de Expo se rechaza");

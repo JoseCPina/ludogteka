@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { incluyeEnLinea } from "@/lib/app/texto-servicio";
-import { cupoApp, reservarApp } from "../../../negocios/acciones";
+import { cupoApp, pedirLugarApp, reservarApp, revisarReservaApp, type RevisionReserva } from "../../../negocios/acciones";
+import { RequisitosReserva } from "@/components/app/requisitos-reserva";
 import { FirmarContratoApp } from "@/components/app/firmar-contrato-app";
 import { nombreDeContrato } from "@/lib/app/contratos-texto";
 import type { DisponibilidadEstancia } from "@/lib/app/negocios";
@@ -43,6 +44,8 @@ export function Reservar({ mascotaId, nombre, negocios, negocioInicial }: { masc
   const [cupo, setCupo] = useState<DisponibilidadEstancia | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hecha, setHecha] = useState<Hecha | null>(null);
+  const [revision, setRevision] = useState<RevisionReserva | null>(null);
+  const [pedido, setPedido] = useState(false);
   const consulta = useEspera();
   const envio = useEspera();
 
@@ -51,6 +54,7 @@ export function Reservar({ mascotaId, nombre, negocios, negocioInicial }: { masc
   const fechasListas = Boolean(entrada && salidaReal && salidaReal > entrada);
 
   function reiniciar() {
+    setRevision(null);
     setCupo(null);
     setError(null);
   }
@@ -61,13 +65,33 @@ export function Reservar({ mascotaId, nombre, negocios, negocioInicial }: { masc
     const r = await consulta.ejecutar(() => cupoApp(negocio.id, servicio.id, entrada, salidaReal));
     if (r.error || !r.datos) return setError(r.error ?? "No pudimos ver el cupo.");
     setCupo(r.datos);
+    await revisar();
+  }
+
+  async function revisar() {
+    if (!servicio || !fechasListas) return;
+    const q = await consulta.ejecutar(() => revisarReservaApp(negocio.id, mascotaId, servicio.id, entrada, salidaReal, porHora ? horas : null, null));
+    if (q.error) return setError(q.error);
+    setRevision(q.datos ?? null);
+  }
+
+  async function pedirLugar() {
+    if (!servicio || !fechasListas) return;
+    setError(null);
+    const r = await envio.ejecutar(() => pedirLugarApp(negocio.id, mascotaId, servicio.id, entrada, salidaReal, porHora ? horas : null, null));
+    if (r.error) return setError(r.error);
+    setPedido(true);
   }
 
   async function reservar() {
     if (!servicio || !fechasListas) return;
     setError(null);
     const r = await envio.ejecutar(() => reservarApp(negocio.id, mascotaId, servicio.id, entrada, salidaReal, porHora ? horas : null));
-    if (r.error) return setError(r.error);
+    if (r.error) {
+      setError(r.error);
+      await revisar();
+      return;
+    }
     const d = (r.datos ?? {}) as { precio_total?: number | null; saldo?: number | null; cubierto_con_pase?: number | null; bono?: unknown; contratos_por_firmar?: { id: string; tipo_nombre: string }[] };
     setHecha({
       negocioId: negocio.id,
@@ -79,6 +103,21 @@ export function Reservar({ mascotaId, nombre, negocios, negocioInicial }: { masc
       conPase: Boolean(d.bono) || Number(d.cubierto_con_pase ?? 0) > 0,
       contratos: d.contratos_por_firmar ?? [],
     });
+  }
+
+  if (pedido) {
+    return (
+      <div className="apd-opciones" data-lugar-pedido>
+        <div className="apd-resumen" role="status">
+          <span style={{ fontWeight: 800, fontSize: "1.1rem" }}>Listo, pediste su lugar</span>
+          <span>{negocio.nombre} lo revisa y te avisa aquí. Todavía no se cobra ni se aparta. Si no contesta en 3 días, la solicitud caduca y te avisamos.</span>
+        </div>
+        <div className="apd-fila" style={{ flexWrap: "wrap" }}>
+          <Link href="/visitas" className="apd-boton">Ver mis solicitudes</Link>
+          <Link href={`/mascotas/${mascotaId}`} className="apd-boton-sec">Volver a {nombre}</Link>
+        </div>
+      </div>
+    );
   }
 
   if (hecha) {
@@ -227,7 +266,17 @@ export function Reservar({ mascotaId, nombre, negocios, negocioInicial }: { masc
               );
             })}
           </div>
-          {cupo.hayCupo ? (
+          {revision && revision.faltan.length > 0 && (
+            <>
+              <RequisitosReserva faltan={revision.faltan} puedePedirLugar={revision.puedePedirLugar} negocioId={negocio.id} mascotaId={mascotaId} />
+              {revision.puedePedirLugar && (
+                <button type="button" className="apd-boton apd-boton-ancho" style={{ marginTop: "0.8rem" }} aria-busy={envio.cargando || undefined} disabled={envio.cargando} onClick={pedirLugar} data-pedir-lugar>
+                  {envio.cargando ? "Pidiendo…" : "Pedir lugar"}
+                </button>
+              )}
+            </>
+          )}
+          {revision && revision.faltan.length > 0 ? null : cupo.hayCupo ? (
             <div className="apd-tarjeta" style={{ marginTop: "0.5rem" }} data-resumen-reserva>
               <p style={{ fontWeight: 800 }}>{servicio?.nombre} para {nombre}</p>
               <p className="apd-nota">{porNoche ? `Del ${corto(entrada)} al ${corto(salidaReal)}` : corto(entrada)} · {negocio.nombre}</p>

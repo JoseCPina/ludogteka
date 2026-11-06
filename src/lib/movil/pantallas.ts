@@ -4,7 +4,7 @@ import { misMascotas, miMascota, misNegocios, misAvisos, edadTexto, nombreEspeci
 import { cartillaDe, proximas, hoyMx, diasEntre } from "@/lib/app/cartilla";
 import { aAtencionDelDueno } from "@/lib/app/atenciones";
 import {
-  vinculosApp, vinculoDe, contratosPorFirmarApp, pagosPendientesApp, abonosDeCuentaApp, visitasApp, pasesApp, datosDeNegociosApp,
+  vinculosApp, vinculoDe, contratosPorFirmarApp, pagosPendientesApp, abonosDeCuentaApp, visitasApp, solicitudesApp, pasesApp, datosDeNegociosApp,
   misResenasApp, saldosAFavorApp, fotosDelDiaApp, reportesDelDiaApp, carnetApp, expedienteApp, recetasApp, serviciosApp, resenasDeNegocioApp,
 } from "@/lib/app/negocios";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -246,8 +246,9 @@ export async function pantallaReservar(id: string) {
 
 export async function pantallaVisitas() {
   if (await sinSesion()) return null;
-  const [visitas, datos, calificadas] = await Promise.all([visitasApp(), datosDeNegociosApp(), misResenasApp()]);
+  const [visitas, datos, calificadas, solicitudes] = await Promise.all([visitasApp(), datosDeNegociosApp(), misResenasApp(), solicitudesApp()]);
   return {
+    solicitudes: solicitudes.map((s) => ({ ...s, zona: datos.get(s.negocioId)?.zona ?? "America/Mexico_City" })),
     visitas: visitas.map((v) => ({ ...v, zona: datos.get(v.negocioId)?.zona ?? "America/Mexico_City", calificada: calificadas.has(v.id), puedeResenar: v.puedeResenar && !calificadas.has(v.id) })),
   };
 }

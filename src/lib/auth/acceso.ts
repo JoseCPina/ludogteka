@@ -92,6 +92,7 @@ export const ZONAS: Zona[] = [
   { prefijo: "/servicios/:id", patron: /^\/servicios\/[^/]+$/, roles: ["admin"], permisos: ["servicios"] },
   { prefijo: "/servicios", roles: ["admin"], permisos: ["tarifas"] },
   { prefijo: "/reservas", roles: ["admin", "recepcion"] },
+  { prefijo: "/solicitudes", roles: ["admin", "recepcion"] },
   { prefijo: "/guarderia", roles: ["admin", "recepcion"] },
   // Quién está adentro ahora (hotel y guardería), con fotos, videos y reporte.
   { prefijo: "/adentro", roles: ["admin", "recepcion"] },

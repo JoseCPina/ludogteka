@@ -24,6 +24,7 @@ const NO_ES_DINERO = new Set([
 // Del negocio, no del cliente: ningún cliente debe recibir UNA sola fila,
 // con o sin columnas de dinero (23 de septiembre de 2026).
 const SOLO_STAFF = [
+  "solicitudes_reserva",
   // Recolección a domicilio (migración 20261203004100): la tabla trae precio; el dueño la ve por mis_recolecciones (sin precio).
   "recolecciones",
   // Con dinero

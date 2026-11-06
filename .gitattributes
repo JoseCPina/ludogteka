@@ -1,1 +1,3 @@
 *.sh text eol=lf
+# Las migraciones se aplican desde la copia de trabajo: siempre LF (un ancla multilínea con CRLF no casa con pg_get_functiondef).
+supabase/migrations/*.sql text eol=lf

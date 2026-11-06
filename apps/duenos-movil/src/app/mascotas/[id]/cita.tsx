@@ -8,6 +8,7 @@ import { pesos, sumarDias } from "@/lib/formato";
 import { Pantalla } from "@/componentes/pantalla";
 import { Boton, Chip, Fila, Grupo, Mensaje, Texto, Vacio } from "@/componentes/ui";
 import { RecoleccionPedir, type RecoleccionPedida } from "@/componentes/recoleccion-pedir";
+import { Requisitos, type Revision } from "@/componentes/requisitos";
 import { fuentes, radio, useColores } from "@/tema";
 
 type Servicio = { id: string; nombre: string; duracionMinutos: number | null };
@@ -34,13 +35,28 @@ export default function Cita() {
   const [hora, setHora] = useState<{ inicio: string; hora: string } | null>(null);
   const [recoleccion, setRecoleccion] = useState<RecoleccionPedida | null>(null);
   const [hecha, setHecha] = useState<{ atiende: string | null; total: number | null } | null>(null);
+  const [revision, setRevision] = useState<Revision | null>(null);
+  const [pedido, setPedido] = useState(false);
   const cargaHoras = useAccion();
   const pedir = useAccion();
 
   const d = p.datos;
   const negocio = d?.enLinea.find((n) => n.id === negocioId) ?? d?.enLinea[0] ?? null;
 
+  const revisar = async (h: { inicio: string } | null) => {
+    setRevision(null);
+    if (!negocio || !servicio || !h) return;
+    const q = await llamar<{ datos?: Revision }>("revisarReserva", [negocio.id, id, servicio.id, null, null, null, h.inicio]).catch(() => null);
+    if (q?.datos) setRevision(q.datos);
+  };
+  const pedirLugar = async () => {
+    if (!negocio || !servicio || !hora) return;
+    const r = await pedir.ejecutar(() => llamar<{ datos?: { id: string } }>("pedirLugar", [negocio.id, id, servicio.id, null, null, null, hora.inicio, recoleccion]));
+    if (r?.datos) setPedido(true);
+  };
+
   const verHoras = (n: Negocio | null, s: Servicio | null, f: string | null) => {
+    setRevision(null);
     setHora(null);
     setHoras(null);
     if (!n || !s || !f) return;
@@ -58,6 +74,14 @@ export default function Cita() {
     else if (r?.error && /ocup/i.test(r.error)) verHoras(negocio, servicio, dia); // la hora se ocupó: se vuelve a leer el día
   };
 
+  if (pedido && negocio) {
+    return (
+      <Pantalla>
+        <Vacio icono="listo" titulo="Listo, pediste su lugar" texto={`${negocio.nombre} lo revisa y te avisa aquí. Todavía no se cobra ni se aparta. Si no contesta en 3 días, la solicitud caduca y te avisamos.`} accion={<Boton titulo="Ver mis solicitudes" alTocar={() => router.replace("/visitas")} />} />
+      </Pantalla>
+    );
+  }
+
   if (hecha && negocio && servicio && hora && dia) {
     return (
       <Pantalla>
@@ -67,7 +91,7 @@ export default function Cita() {
   }
 
   return (
-    <Pantalla cargando={p.cargando} error={p.error} alReintentar={p.refrescar} pie={negocio && hora ? <Boton titulo={`Pedir la cita · ${hora.hora}`} alTocar={confirmar} cargando={pedir.ocupado} /> : undefined}>
+    <Pantalla cargando={p.cargando} error={p.error} alReintentar={p.refrescar} pie={negocio && hora ? (revision?.faltan.length ? (revision.puedePedirLugar ? <Boton titulo="Pedir lugar" alTocar={pedirLugar} cargando={pedir.ocupado} /> : undefined) : <Boton titulo={`Pedir la cita · ${hora.hora}`} alTocar={confirmar} cargando={pedir.ocupado} />) : undefined}>
       {d ? (
         <>
           {d.toca.length ? <Mensaje tono="info" texto={`Le toca: ${d.toca.map((t) => t.nombre).join(", ")}.`} /> : null}
@@ -114,12 +138,13 @@ export default function Cita() {
                     {horas?.horas.map((h) => {
                       const activo = hora?.inicio === h.inicio;
                       return (
-                        <Pressable key={h.inicio} onPress={() => { Haptics.selectionAsync().catch(() => {}); setHora(h); }} style={{ width: "31%", height: 48, borderRadius: radio.control, alignItems: "center", justifyContent: "center", backgroundColor: activo ? c.primario : c.superficie, borderWidth: 1, borderColor: activo ? c.primario : c.linea }}>
+                        <Pressable key={h.inicio} onPress={() => { Haptics.selectionAsync().catch(() => {}); setHora(h); revisar(h); }} style={{ width: "31%", height: 48, borderRadius: radio.control, alignItems: "center", justifyContent: "center", backgroundColor: activo ? c.primario : c.superficie, borderWidth: 1, borderColor: activo ? c.primario : c.linea }}>
                           <Text style={{ fontFamily: fuentes.semi, fontSize: 16, color: activo ? c.sobrePrimario : c.texto }}>{h.hora}</Text>
                         </Pressable>
                       );
                     })}
                   </View>
+                  {revision?.faltan.length && negocio ? <Requisitos revision={revision} negocioId={negocio.id} mascotaId={id} /> : null}
                   {negocio?.recoleccion && hora ? <RecoleccionPedir negocioId={negocio.id} mascotaId={id} alCambiar={setRecoleccion} /> : null}
                   <Mensaje texto={cargaHoras.error ?? pedir.error} />
                 </View>

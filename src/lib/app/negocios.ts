@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { requisitoParaDueno, type MotivoBase } from "./requisitos";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAppEnNegocio } from "./en-negocio";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -370,3 +371,21 @@ export async function resenasDeNegocioApp(negocioId: string): Promise<ResumenRes
     ultimas: (d.ultimas ?? []).map((u) => ({ estrellas: u.estrellas, texto: u.texto, respuesta: u.respuesta, createdAt: u.created_at, quien: u.quien, origenTipo: u.origen_tipo })),
   };
 }
+
+/** Lo que la persona pidió con «Pedir lugar», negocio por negocio (mis_solicitudes: sin montos). */
+export type SolicitudApp = { id: string; negocioId: string; negocioNombre: string; tipo: string; perroNombre: string; servicioNombre: string; fechaEntrada: string | null; fechaSalida: string | null; inicio: string | null; estado: string; faltan: string[]; motivoRechazo: string | null; evaluacionAgendada: string | null; expiraAt: string };
+export const solicitudesApp = cache(async (): Promise<SolicitudApp[]> => {
+  const vistos = new Map<string, string>();
+  for (const v of await vinculosApp()) vistos.set(v.negocioId, v.negocioNombre);
+  const listas = await Promise.all(
+    [...vistos].map(async ([negocioId, negocioNombre]) => {
+      const supabase = await supabaseAppEnNegocio(negocioId);
+      const { data } = await supabase.rpc("mis_solicitudes");
+      return ((data ?? []) as { id: string; tipo: string; perro_nombre: string; servicio_nombre: string; fecha_entrada: string | null; fecha_salida: string | null; inicio: string | null; estado: string; motivos: MotivoBase[]; motivo_rechazo: string | null; evaluacion_agendada_at: string | null; expira_at: string }[]).map((s) => ({
+        id: s.id, negocioId, negocioNombre, tipo: s.tipo, perroNombre: s.perro_nombre, servicioNombre: s.servicio_nombre, fechaEntrada: s.fecha_entrada, fechaSalida: s.fecha_salida, inicio: s.inicio,
+        estado: s.estado, faltan: s.motivos.map((m) => requisitoParaDueno(m).titulo), motivoRechazo: s.motivo_rechazo, evaluacionAgendada: s.evaluacion_agendada_at, expiraAt: s.expira_at,
+      }));
+    })
+  );
+  return listas.flat();
+});

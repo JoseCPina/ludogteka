@@ -1,3 +1,4 @@
+import { SolicitudesEnAgenda } from "@/components/solicitudes/en-agenda";
 import { fechaParaAgendar } from "@/lib/estetica/proponer-hora";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { obtenerSesionConRol } from "@/lib/auth/sesion";
@@ -172,6 +173,7 @@ export default async function AgendaPage({
           </div>
         </div>
       </div>
+      <SolicitudesEnAgenda tipo="cita" />
 
       <AvisoRazasSinCatalogar cuantos={perrosSinRaza} />
 

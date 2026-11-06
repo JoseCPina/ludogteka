@@ -297,6 +297,16 @@ try {
   const sello = String(Date.now()).slice(-7);
 
   await SB.from("clientes").update({ direccion: "Calle Guardada 12", direccion_lat: 22.17, direccion_lng: -101.0, distancia_base_km: 4.5 }).eq("id", C.cliente_id);
+  // «Cliente no encontrado»: el dueño con mascota cotiza; el que no tiene expediente, o lo tiene dado de baja, lo sabe claro.
+  const cConMascota = await cotizaApp("Calle Guardada 12");
+  ok(cConMascota.status === 200 && !cConMascota.json?.error && cConMascota.json?.datos?.km != null, `dueño con mascota en el negocio: cotiza (${cConMascota.json?.datos?.km} km) ${cConMascota.json?.error ?? ""}`);
+  const { data: otrasMascotas } = await A.from("mascotas").select("id").neq("dueno_id", C.profile_id).is("deleted_at", null).limit(1);
+  const cSinMascota = await api("cotizarRecoleccion", [B, otrasMascotas[0].id, "Calle Guardada 12", null, null, "negocio"], tokenC);
+  ok(/no tiene expediente/i.test(cSinMascota.json?.error ?? ""), `dueño sin esa mascota en el negocio: «${cSinMascota.json?.error}»`);
+  await SB.from("clientes").update({ deleted_at: new Date().toISOString() }).eq("id", C.cliente_id);
+  const cBaja = await api("cotizarRecoleccion", [B, mascotaC, "Calle Guardada 12", null, null, "negocio"], tokenC);
+  await SB.from("clientes").update({ deleted_at: null }).eq("id", C.cliente_id);
+  ok(Boolean(cBaja.json?.error) && !/cliente no encontrado/i.test(cBaja.json.error), `dueño con expediente dado de baja: ya no sale «Cliente no encontrado» («${cBaja.json?.error}»)`);
   const dg = await api("direccionGuardada", [B, mascotaC], tokenC);
   ok(dg.json?.direccion === "Calle Guardada 12", `la app lee su dirección guardada (${dg.json?.direccion ?? dg.json?.error})`);
   let n0 = { ...llamadas };

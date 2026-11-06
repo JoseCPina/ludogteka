@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { useEspera } from "@/hooks/use-espera";
 import { incluyeEnLinea } from "@/lib/app/texto-servicio";
-import { horasApp, pedirCitaApp } from "../../../negocios/acciones";
+import { horasApp, pedirCitaApp, pedirLugarApp, revisarReservaApp, type RevisionReserva } from "../../../negocios/acciones";
+import { RequisitosReserva } from "@/components/app/requisitos-reserva";
 
 export type NegocioCita = {
   id: string;
@@ -31,6 +32,8 @@ export function PedirCita({ mascotaId, nombre, negocios, negocioInicial }: { mas
   const [horas, setHoras] = useState<{ dia: string; abre: boolean; lista: Hora[] } | null>(null);
   const [hora, setHora] = useState<Hora | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [revision, setRevision] = useState<RevisionReserva | null>(null);
+  const [pedido, setPedido] = useState(false);
   const [hecha, setHecha] = useState<Hecha | null>(null);
   const consulta = useEspera();
   const envio = useEspera();
@@ -55,6 +58,24 @@ export function PedirCita({ mascotaId, nombre, negocios, negocioInicial }: { mas
     const r = await consulta.ejecutar(() => horasApp(negocio.id, sId, d));
     if (r.error || !r.datos) return setError(r.error ?? "No pudimos ver las horas de ese día.");
     setHoras({ dia: d, abre: r.datos.abre, lista: r.datos.horas });
+  }
+
+  // Al escoger la hora se revisa qué falta: si falta algo, en vez de «Pedir la cita» sale «Pedir lugar».
+  async function escogerHora(h: NonNullable<typeof hora>) {
+    setHora(h);
+    setRevision(null);
+    if (!servicio) return;
+    const q = await consulta.ejecutar(() => revisarReservaApp(negocio.id, mascotaId, servicio.id, null, null, null, h.inicio));
+    if (q.error) return setError(q.error);
+    setRevision(q.datos ?? null);
+  }
+
+  async function pedirLugar() {
+    if (!servicio || !hora) return;
+    setError(null);
+    const r = await envio.ejecutar(() => pedirLugarApp(negocio.id, mascotaId, servicio.id, null, null, null, hora.inicio));
+    if (r.error) return setError(r.error);
+    setPedido(true);
   }
 
   async function pedir() {
@@ -150,14 +171,31 @@ export function PedirCita({ mascotaId, nombre, negocios, negocioInicial }: { mas
           {horas && horas.dia === dia && horas.lista.length > 0 && (
             <div className="apd-horas" data-horas-cita>
               {horas.lista.map((h) => (
-                <button key={h.inicio} type="button" className="apd-hora" aria-pressed={hora?.inicio === h.inicio} onClick={() => setHora(h)} data-hora={h.inicio}>{h.hora}</button>
+                <button key={h.inicio} type="button" className="apd-hora" aria-pressed={hora?.inicio === h.inicio} onClick={() => escogerHora(h)} data-hora={h.inicio}>{h.hora}</button>
               ))}
             </div>
           )}
         </>
       )}
 
-      {servicio && dia && hora && (
+      {pedido && (
+        <div className="apd-resumen" role="status" data-lugar-pedido>
+          <span style={{ fontWeight: 800 }}>Listo, pediste su lugar</span>
+          <span>{negocio.nombre} lo revisa y te avisa aquí. Todavía no se cobra ni se aparta. Si no contesta en 3 días, la solicitud caduca y te avisamos.</span>
+          <Link href="/visitas" className="apd-boton">Ver mis solicitudes</Link>
+        </div>
+      )}
+      {!pedido && revision && revision.faltan.length > 0 && (
+        <>
+          <RequisitosReserva faltan={revision.faltan} puedePedirLugar={revision.puedePedirLugar} negocioId={negocio.id} mascotaId={mascotaId} />
+          {revision.puedePedirLugar && (
+            <button type="button" className="apd-boton apd-boton-ancho" style={{ marginTop: "0.8rem" }} aria-busy={envio.cargando || undefined} disabled={envio.cargando} onClick={pedirLugar} data-pedir-lugar>
+              {envio.cargando ? "Pidiendo…" : "Pedir lugar"}
+            </button>
+          )}
+        </>
+      )}
+      {!pedido && !(revision && revision.faltan.length > 0) && servicio && dia && hora && (
         <div className="apd-tarjeta" style={{ marginTop: "0.75rem" }} data-resumen-cita>
           <p style={{ fontWeight: 800 }}>{servicio.nombre} para {nombre}</p>
           <p className="apd-nota">{diaLargo(dia)} a las {hora.hora} · {negocio.nombre}</p>

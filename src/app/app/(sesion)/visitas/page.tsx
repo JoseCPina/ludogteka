@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { visitasApp, datosDeNegociosApp, misResenasApp } from "@/lib/app/negocios";
+import { visitasApp, datosDeNegociosApp, misResenasApp, solicitudesApp } from "@/lib/app/negocios";
+import { MisSolicitudes } from "./mis-solicitudes";
 import { formatearDiaDeInstante, horaLocalDeInstante, formatearFechaCalendario } from "@/lib/formato";
 import { ListaVisitas, type VisitaVista } from "./lista-visitas";
 
@@ -10,7 +11,7 @@ import { ListaVisitas, type VisitaVista } from "./lista-visitas";
  * («Acción requerida» antes de la cita, Fresha).
  */
 export default async function VisitasPage() {
-  const [visitas, negocios, calificadas] = await Promise.all([visitasApp(), datosDeNegociosApp(), misResenasApp()]);
+  const [visitas, negocios, calificadas, solicitudes] = await Promise.all([visitasApp(), datosDeNegociosApp(), misResenasApp(), solicitudesApp()]);
   const vista: VisitaVista[] = visitas.map((v) => {
     const zona = negocios.get(v.negocioId)?.zona ?? "America/Mexico_City";
     const cuando =
@@ -46,6 +47,7 @@ export default async function VisitasPage() {
         <h1 className="apd-titulo">Citas y estancias</h1>
         <p className="apd-linea">Lo que tienes agendado en cada negocio. Confírmalo con un toque y, cuando termine, cuéntanos cómo te fue.</p>
       </div>
+      <MisSolicitudes solicitudes={solicitudes} />
       {vista.length === 0 ? (
         <section className="apd-seccion apd-aparece" style={{ ["--i" as string]: 1 }}>
           <div className="apd-vacio" data-sin-visitas>

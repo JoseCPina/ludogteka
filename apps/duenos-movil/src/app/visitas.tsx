@@ -16,16 +16,43 @@ const ESTADO: Record<string, { t: string; tono: "aviso" | "exito" | "primario" |
 
 /** Lo que viene y lo que ya fue: confirmar en un toque y, al terminar, opinar con estrellas (una vez por visita). */
 export default function Visitas() {
-  const p = usePantalla<{ visitas: Visita[] }>("visitas");
+  const p = usePantalla<{ visitas: Visita[]; solicitudes?: Solicitud[] }>("visitas");
   const [vista, setVista] = useState<"proximas" | "pasadas">("proximas");
   const lista = (p.datos?.visitas ?? []).filter((v) => (vista === "proximas" ? ["reservada", "confirmada", "en_curso"].includes(v.estado) : v.estado === "finalizada"));
   const ordenada = vista === "proximas" ? [...lista].reverse() : lista.slice(0, 30);
   return (
     <Pantalla cargando={p.cargando} error={p.error} refrescando={p.refrescando} alRefrescar={p.refrescar} alReintentar={p.refrescar}>
+      {(p.datos?.solicitudes ?? []).map((s) => <TarjetaSolicitud key={s.id} s={s} alCambiar={p.recargar} />)}
       <Segmentos valor={vista} alCambiar={setVista} opciones={[{ valor: "proximas", texto: "Próximas" }, { valor: "pasadas", texto: "Pasadas" }]} />
       {p.datos && ordenada.length === 0 ? <Vacio icono="calendario" titulo={vista === "proximas" ? "Nada agendado" : "Sin visitas pasadas"} texto={vista === "proximas" ? "Pide una cita o reserva desde la ficha de tu mascota." : undefined} /> : null}
       {ordenada.map((v) => <TarjetaVisita key={v.id} v={v} alCambiar={p.recargar} />)}
     </Pantalla>
+  );
+}
+
+type Solicitud = { id: string; negocioId: string; negocioNombre: string; tipo: string; perroNombre: string; servicioNombre: string; fechaEntrada: string | null; fechaSalida: string | null; inicio: string | null; estado: string; faltan: string[]; motivoRechazo: string | null; evaluacionAgendada: string | null; zona: string };
+const ESTADO_SOLICITUD: Record<string, { t: string; tono: "aviso" | "exito" | "neutro" | "peligro" }> = {
+  pendiente: { t: "Esperando al negocio", tono: "aviso" }, aceptada: { t: "Aceptada", tono: "exito" }, rechazada: { t: "No se pudo", tono: "peligro" }, caducada: { t: "Caducó", tono: "neutro" }, cancelada: { t: "Cancelada", tono: "neutro" },
+};
+
+function TarjetaSolicitud({ s, alCambiar }: { s: Solicitud; alCambiar: () => void }) {
+  const c = useColores();
+  const accion = useAccion();
+  const e = ESTADO_SOLICITUD[s.estado] ?? { t: s.estado, tono: "neutro" as const };
+  const cuando = s.inicio ? `${diaDeInstante(s.inicio, s.zona)} · ${horaDeInstante(s.inicio, s.zona)}` : s.fechaEntrada ? fechaCorta(s.fechaEntrada) : "";
+  return (
+    <View style={{ backgroundColor: c.superficie, borderRadius: radio.tarjeta, padding: 16, gap: 6 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <Texto v="cuerpoFuerte" style={{ flex: 1 }}>Solicitud: {s.servicioNombre} · {s.perroNombre}</Texto>
+        <Insignia texto={e.t} tono={e.tono} />
+      </View>
+      <Texto v="secundario">{s.negocioNombre} · {cuando}</Texto>
+      {s.estado === "pendiente" && s.faltan.length ? <Texto v="secundario">Falta: {s.faltan.join(", ")}</Texto> : null}
+      {s.evaluacionAgendada && s.estado === "pendiente" ? <Texto v="secundario" color={c.texto}>Evaluación: {diaDeInstante(s.evaluacionAgendada, s.zona)} · {horaDeInstante(s.evaluacionAgendada, s.zona)}</Texto> : null}
+      {s.motivoRechazo ? <Texto v="secundario" color={c.texto}>Motivo: {s.motivoRechazo}</Texto> : null}
+      {s.estado === "pendiente" ? <Boton compacto ancho={false} variante="texto" titulo="Cancelar solicitud" cargando={accion.ocupado} alTocar={() => accion.ejecutar(async () => { const r = await llamar("cancelarSolicitud", [s.negocioId, s.id]); if (!r.error) alCambiar(); return r; })} /> : null}
+      <Mensaje texto={accion.error} />
+    </View>
   );
 }
 
