@@ -7,10 +7,11 @@ import { fechaCorta, pesos, sumarDias } from "@/lib/formato";
 import { Pantalla } from "@/componentes/pantalla";
 import { Boton, Campo, Chip, Fila, Grupo, Insignia, Mensaje, Texto, Vacio } from "@/componentes/ui";
 import { CampoFecha } from "@/componentes/fecha";
+import { RecoleccionPedir, type RecoleccionPedida } from "@/componentes/recoleccion-pedir";
 import { useColores } from "@/tema";
 
 type Servicio = { id: string; nombre: string; categoria: "hotel" | "guarderia"; unidad: string };
-type Negocio = { id: string; nombre: string; hoy: string; servicios: Servicio[] };
+type Negocio = { id: string; nombre: string; hoy: string; servicios: Servicio[]; recoleccion?: boolean };
 type Datos = { mascota: { id: string; nombre: string }; negocios: Negocio[] };
 type Cupo = { hayCupo: boolean; dias: { fecha: string; abre: boolean; cupo: number | null; disponible: number }[] };
 type Hecha = { precio_total?: number | null; saldo?: number | null; cubierto_con_pase?: number | null; contratos_por_firmar?: { id: string; tipo_nombre: string }[] };
@@ -30,6 +31,7 @@ export default function Reservar() {
   const [horas, setHoras] = useState("");
   const [cupo, setCupo] = useState<Cupo | null>(null);
   const [hecha, setHecha] = useState<Hecha | null>(null);
+  const [recoleccion, setRecoleccion] = useState<RecoleccionPedida | null>(null);
   const ver = useAccion();
   const reservar = useAccion();
   const d = p.datos;
@@ -46,7 +48,7 @@ export default function Reservar() {
     });
 
   const confirmar = async () => {
-    const r = await reservar.ejecutar(() => llamar<{ datos?: Hecha }>("reservarEstancia", [negocio!.id, id, servicio!.id, entrada, salidaReal, porHora ? Number(horas) || null : null]));
+    const r = await reservar.ejecutar(() => llamar<{ datos?: Hecha }>("reservarEstancia", [negocio!.id, id, servicio!.id, entrada, salidaReal, porHora ? Number(horas) || null : null, recoleccion]));
     if (r?.datos) setHecha(r.datos);
   };
 
@@ -108,6 +110,7 @@ export default function Reservar() {
                 ))}
               </Grupo>
             ) : null}
+            {servicio && negocio?.recoleccion ? <RecoleccionPedir negocioId={negocio.id} mascotaId={id} alCambiar={setRecoleccion} /> : null}
             <Mensaje texto={ver.error ?? reservar.error} />
           </>
         )

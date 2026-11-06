@@ -1,0 +1,10 @@
+{
+  "nombre": "peludesk_entrada_v1",
+  "idioma": "es_MX",
+  "categoria": "AUTHENTICATION",
+  "vence_minutos": 10,
+  "boton_copiar": "Copiar código",
+  "boton_autocompletar": "Autocompletar",
+  "paquete_android": "mx.peludesk.app",
+  "huella_android": "vUXddizbZnP"
+}

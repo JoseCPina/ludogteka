@@ -30,9 +30,8 @@ o su compilación en EAS. El porqué está en `PLAN.md` («La app es nativa»); 
   `leerCartilla` (la lógica de la ruta de la web, ahora en `src/lib/app/cartilla-foto.ts`), `cartillaPdf` (base64),
   `registrarDispositivo` / `quitarDispositivo`, y las de las fases 4 y 5. Sin sesión: 401 (`sesion: false`); lo que no es de la
   persona: 404; una acción de la web que navega (`redirect`) devuelve `{ ir }`.
-- **Sesión**: la entrada es la de siempre (código «ENTRAR ABC123» por WhatsApp, `src/lib/app/entrada.ts`); con
-  `destino: "tokens"`, `canjearEntrada` y `entrarConContrasena` devuelven el access y el refresh token en lugar de escribir la
-  cookie. La app los guarda en el almacén seguro del sistema (`expo-secure-store`: Keychain / Keystore) y los renueva cinco
+- **Sesión**: código de 6 dígitos que PeluDesk manda (`src/lib/app/entrada-codigo.ts`, tabla `app_codigos_entrada`, solo el hash; un solo uso, 10 minutos, 5 intentos, bloqueo de 15 minutos por número): plantilla de autenticación `peludesk_entrada_v1` (botón «Autocompletar» con el paquete y la huella de firma); si Meta la rechaza o no está aprobada, mensaje de sesión con la ventana abierta y luego SMS (`src/lib/sms/enviar.ts`, Twilio; sin sus variables no se ofrece). En Android, `modules/codigo-automatico` (módulo local de Expo) hace el saludo con WhatsApp y escucha el SMS Retriever, sin pedir permisos. **La huella cambia con la firma**: `huella_android` es la del keystore de EAS; Google Play firma con otra, así que al publicar hay que agregar esa en `supported_apps` y en el SMS. Con `destino: "tokens"`, la entrada verificada y `entrarConContrasena` devuelven el access y el refresh token en lugar de escribir la
+  cookie. El flujo anterior («ENTRAR ABC123», `pedirCodigo`/`consultarEntrada`/`canjearEntrada`) sigue en el servidor solo para APK ya instalados. La app los guarda en el almacén seguro del sistema (`expo-secure-store`: Keychain / Keystore) y los renueva cinco
   minutos antes de vencer (`renovarSesion`; Supabase rota el refresh token). Un 401 renueva una vez; si no se puede, sale.
 
 ## Que la app no se cierre (5 de noviembre de 2026)
@@ -43,6 +42,11 @@ o su compilación en EAS. El porqué está en `PLAN.md` («La app es nativa»); 
 - **Lo que falta no cierra**: sin llave de Maps, lista; sin `google-services.json` (`extra.hayPushAndroid`), no se toca FCM; permisos, cámara y fotos con `try` y aviso. Las pestañas nativas se montan todas al abrir: nada en una pestaña pide permisos al montarse, solo al enfocarse (`useFocusEffect`).
 - **Reporte de errores** (`src/lib/errores.ts`, Sentry): apagado mientras `EXPO_PUBLIC_SENTRY_DSN` no exista en el entorno de EAS. Sin datos personales: sin persona, sin capturas, sin toques ni consola, y sin ids, correos, teléfonos ni tokens en los textos. `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` en EAS suben los mapas de JavaScript. Un cierre antes de que arranque JavaScript (como el de R8) puede no llegar: falta probar el inicio nativo temprano.
 - **Compilar en la laptop**: `C:\android` (JDK 17, SDK, emulador `peludesk`) y una copia de la app en `C:\pd`; rutas largas: `buildStagingDirectory` corto y `CMAKE_OBJECT_PATH_MAX=128` en `android/app/build.gradle` de la copia. El recorrido con la app de producción, en el emulador. El perfil `preview` de EAS compila solo `arm64-v8a`.
+
+## Onboarding y fechas
+- `src/lib/onboarding.tsx`: lo visto se guarda por cuenta y por dispositivo (almacén seguro). `Bienvenida` (tres pasos, una vez) y `GuiaSeccion` (una hoja por pestaña; «No volver a mostrar» apaga las de todas), `src/componentes/onboarding.tsx`.
+- `src/componentes/rueda.tsx`: ruedas propias, iguales en Android y iPhone, con el tema. `CampoFechaRuedas` para la cartilla y el seguimiento (`conAtajos`: Hoy, Ayer, Hace una semana, Hace un mes); la próxima dosis se propone sola: vacuna 12 meses, desparasitación 3. `SelectorEdad` (`edad.tsx`) para el nacimiento. Citas y reservas siguen con su propio selector.
+- Recolección al pedir cita y reservar: `RecoleccionPedir`, con `cotizarRecoleccion` y el campo `recoleccion` de las pantallas `cita` y `reservar`.
 
 ## Notificaciones nativas
 - `expo-notifications` pide permiso, crea los canales de Android («Avisos de tus mascotas» y «Alertas de animales cerca») y

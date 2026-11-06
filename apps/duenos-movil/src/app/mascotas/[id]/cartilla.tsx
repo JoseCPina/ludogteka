@@ -8,7 +8,7 @@ import { usePantalla, useAccion } from "@/lib/datos";
 import { enCuanto, fechaCorta, hoyLocal } from "@/lib/formato";
 import { Pantalla } from "@/componentes/pantalla";
 import { Boton, BotonIcono, Campo, Fila, Grupo, Insignia, Mensaje, Segmentos, Vacio } from "@/componentes/ui";
-import { CampoFecha } from "@/componentes/fecha";
+import { CampoFechaRuedas, sumarMesesIso } from "@/componentes/rueda";
 import { useColores } from "@/tema";
 
 type Registro = { id: string; tipo: "vacuna" | "desparasitacion"; nombre: string; fechaAplicacion: string | null; proximaDosis: string | null; fuente: string; estado: string; lote: string | null; negocioQR: string | null };
@@ -27,6 +27,11 @@ export default function Cartilla() {
   const [nombre, setNombre] = useState("");
   const [aplicada, setAplicada] = useState<string | null>(null);
   const [proxima, setProxima] = useState<string | null>(null);
+  const [proximaAMano, setProximaAMano] = useState(false);
+  // La próxima dosis se propone sola según lo que suele durar: vacunas un año, desparasitación tres meses. Se puede cambiar.
+  const proponer = (t: "vacuna" | "desparasitacion", f: string | null) => {
+    if (!proximaAMano) setProxima(f ? sumarMesesIso(f, t === "vacuna" ? 12 : 3) : null);
+  };
   const agregar = useAccion();
   const pdf = useAccion();
   const ajuste = useAccion();
@@ -38,6 +43,7 @@ export default function Cartilla() {
       setNombre("");
       setAplicada(null);
       setProxima(null);
+      setProximaAMano(false);
       p.recargar();
     }
   };
@@ -83,10 +89,10 @@ export default function Cartilla() {
             {mano ? (
               <Grupo titulo="Agregar a mano" style={{ gap: 12 }}>
                 <View style={{ padding: 16, gap: 14 }}>
-                  <Segmentos valor={tipo} alCambiar={setTipo} opciones={[{ valor: "vacuna", texto: "Vacuna" }, { valor: "desparasitacion", texto: "Desparasitación" }]} />
+                  <Segmentos valor={tipo} alCambiar={(t) => { setTipo(t); proponer(t, aplicada); }} opciones={[{ valor: "vacuna", texto: "Vacuna" }, { valor: "desparasitacion", texto: "Desparasitación" }]} />
                   <Campo etiqueta={tipo === "vacuna" ? "¿Qué vacuna?" : "¿Qué producto?"} value={nombre} onChangeText={setNombre} placeholder={tipo === "vacuna" ? "Rabia, séxtuple…" : "Bravecto, Drontal…"} />
-                  <CampoFecha etiqueta="Cuándo se la pusieron" valor={aplicada} alCambiar={setAplicada} maximo={hoyLocal()} />
-                  <CampoFecha etiqueta="Próxima dosis" valor={proxima} alCambiar={setProxima} ayuda="Te avisamos 7 días antes y el mismo día." />
+                  <CampoFechaRuedas conAtajos etiqueta="Cuándo se la pusieron" valor={aplicada} alCambiar={(v) => { setAplicada(v); proponer(tipo, v); }} maximo={hoyLocal()} />
+                  <CampoFechaRuedas etiqueta="Próxima dosis" valor={proxima} alCambiar={(v) => { setProxima(v); setProximaAMano(true); }} minimo={aplicada ?? hoyLocal()} ayuda="La proponemos sola; cámbiala si tu veterinario dijo otra. Te avisamos 7 días antes y el mismo día." />
                   <Mensaje texto={agregar.error} />
                   <Boton titulo="Guardar" alTocar={guardar} cargando={agregar.ocupado} deshabilitado={!nombre.trim()} />
                 </View>

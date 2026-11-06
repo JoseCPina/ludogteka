@@ -9,6 +9,7 @@ import { Pantalla } from "@/componentes/pantalla";
 import { Boton, Mensaje, Texto, Vacio } from "@/componentes/ui";
 import { Icono, type NombreIcono } from "@/componentes/icono";
 import { radio, useColores } from "@/tema";
+import { GuiaSeccion } from "@/componentes/onboarding";
 
 type Aviso = { id: string; tipo: string; titulo: string; cuerpo: string; url: string | null; leidoAt: string | null; createdAt: string };
 const ICONO: Record<string, NombreIcono> = { recordatorio: "vacuna", vacuna: "vacuna", medicamento: "medicina", perdida: "alerta", alerta: "alerta", hallazgo: "chat", negocio: "tienda2", bienvenida: "mascota", prueba: "aviso" };
@@ -32,6 +33,7 @@ export default function Avisos() {
 
   return (
     <>
+      <GuiaSeccion seccion="avisos" />
       <Stack.Screen options={{ headerRight: () => (sinLeer ? <Pressable hitSlop={8} onPress={async () => { await accion.ejecutar(() => llamar("marcarTodosLeidos")); p.recargar(); }}><Texto v="secundario" color={c.primario}>Marcar leídos</Texto></Pressable> : null) }} />
       <Pantalla cargando={p.cargando} error={p.error} refrescando={p.refrescando} alRefrescar={p.refrescar} alReintentar={p.refrescar}>
         {push && push !== "activas" ? (

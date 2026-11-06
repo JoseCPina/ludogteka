@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'mx.peludesk.codigoautomatico'
+version = '1.0.0'
+
+android {
+  namespace "mx.peludesk.codigoautomatico"
+  defaultConfig {
+    versionCode 1
+    versionName "1.0.0"
+  }
+}
+
+dependencies {
+  // SMS Retriever: leer el SMS del código sin pedir permiso de SMS.
+  implementation 'com.google.android.gms:play-services-auth-api-phone:18.1.0'
+}

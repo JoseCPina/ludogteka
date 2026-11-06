@@ -2,7 +2,8 @@
 
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { canjearEntrada, entrarConContrasena, estadoEntrada, pedirEntrada, type EstadoEntrada } from "@/lib/app/entrada";
+import { entrarConContrasena } from "@/lib/app/entrada";
+import { pedirCodigoEntrada, verificarCodigoEntrada, type EnvioCodigo } from "@/lib/app/entrada-codigo";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 // Entrar a la app para dueños (src/lib/app/entrada.ts). Ninguna de estas acciones escribe una tabla que la pantalla
@@ -13,18 +14,16 @@ async function origen(): Promise<{ ip: string | null; userAgent: string | null }
   return { ip: (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || h.get("x-real-ip") || null, userAgent: h.get("user-agent") };
 }
 
-export async function pedirCodigo(telefono: string): Promise<{ error: string | null; entrada?: EstadoEntrada }> {
-  return pedirEntrada({ telefono, ...(await origen()) });
+// registro-final: no cambia nada que la pantalla pinte; manda el código.
+export async function pedirCodigo(telefono: string, canal?: "whatsapp" | "sms"): Promise<{ error: string | null; envio?: EnvioCodigo }> {
+  const { ip } = await origen();
+  return pedirCodigoEntrada({ telefono, canal, ip });
 }
 
-export async function consultarEntrada(id: string): Promise<{ error: string | null; entrada?: EstadoEntrada | null }> {
-  return { error: null, entrada: await estadoEntrada(id) };
-}
-
-// Verificada por WhatsApp: abre la sesión y navega a donde iba. // registro-final: abre sesión y navega
-export async function canjear(id: string, ir: string | null): Promise<{ error: string | null }> {
-  const r = await canjearEntrada(id);
-  if (r.error) return { error: r.error };
+// El código correcto abre la sesión y navega a donde iba. // registro-final: abre sesión y navega
+export async function verificarCodigo(telefono: string, codigo: string, ir: string | null): Promise<{ error: string | null; pedirOtro?: boolean }> {
+  const r = await verificarCodigoEntrada({ telefono, codigo, destino: "cookie" });
+  if (r.error) return { error: r.error, pedirOtro: r.pedirOtro };
   redirect(destinoSeguro(ir));
 }
 

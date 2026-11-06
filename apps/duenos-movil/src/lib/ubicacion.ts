@@ -1,6 +1,15 @@
 import { Alert, Linking } from "react-native";
 import * as Location from "expo-location";
 
+/** ¿Ya dio permiso? Sirve para distinguir «sin permiso» de «con permiso, pero el GPS todavía no da señal». */
+export async function hayPermisoUbicacion(): Promise<boolean> {
+  try {
+    return (await Location.getForegroundPermissionsAsync()).status === "granted";
+  } catch {
+    return false;
+  }
+}
+
 /** La ubicación del celular (permiso «mientras se usa la app»). Null si la persona no la da. */
 export async function miUbicacion(o: { precisa?: boolean; avisar?: boolean } = {}): Promise<{ lat: number; lng: number; precision: number | null } | null> {
   try {

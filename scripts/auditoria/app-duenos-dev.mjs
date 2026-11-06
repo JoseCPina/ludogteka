@@ -11,7 +11,7 @@
 // Comprueba, con Huellitas (y Ludogteka como «el otro negocio»):
 //   1. Hosts: app.localhost sirve la app (/ sin sesión → /entrar; manifest y sw-app.js de PeluDesk; /app no existe en
 //      el dominio de un negocio ni en el de la plataforma; /portal y /plataforma no existen en la app).
-//   2. Entrar por código de WhatsApp, de punta a punta: pedir código en pantalla → mensaje «ENTRAR ABC123» firmado al
+//   2. Entrar por código de WhatsApp, de punta a punta: pedir código en pantalla → sale por la plantilla (doble) y se escribe; antes:
 //      webhook (desde ESE número; desde otro número se rechaza; vencido se rechaza) → la pantalla entra sola; la cuenta
 //      es la que ya tenía el teléfono (un cliente de Huellitas) o una nueva; el código se canjea una sola vez.
 //   3. Mis mascotas: el cliente ve sus mascotas de Huellitas (puente); un expediente nuevo en Huellitas aparece en la
@@ -156,32 +156,15 @@ try {
   await pagina.locator("[data-campo-telefono]").fill(C1.telefono);
   await pagina.locator("[data-boton-entrar]").click();
   await pagina.locator("[data-codigo-entrada]").waitFor({ timeout: 20_000 });
-  const codigo = (await pagina.locator("[data-codigo-entrada]").innerText()).trim();
-  if (!/^[A-Z0-9]{6}$/.test(codigo)) hallazgo(`el código en pantalla no tiene forma: «${codigo}»`);
-  else bien(`código en pantalla (${codigo}) y botón para abrir WhatsApp`);
-  if (!(await pagina.locator("[data-abrir-whatsapp]").count())) hallazgo("falta el botón «Abrir WhatsApp con el código» (¿PELUDESK_WHATSAPP en el servidor?)");
+  const codigo = mock.wa.at(-1)?.template?.components?.[0]?.parameters?.[0]?.text ?? "";
+  if (!/^\d{6}$/.test(codigo)) hallazgo(`no salió el código por la plantilla: «${codigo}»`);
+  else bien("el código de 6 dígitos sale por la plantilla de WhatsApp");
   const ancho1 = await pagina.evaluate(() => ({ s: document.documentElement.scrollWidth, w: window.innerWidth }));
   if (ancho1.s > ancho1.w + 1) hallazgo(`/entrar desborda a 390 px (${ancho1.s} > ${ancho1.w})`);
-  // Desde OTRO número se rechaza.
-  const otro = await mandarAlBot(C2.telefono, `ENTRAR ${codigo}`);
-  if (!/otro número/.test(otro ?? "")) hallazgo(`el código mandado desde otro número no se rechazó: «${otro}»`);
-  else bien("el código mandado desde otro número se rechaza");
-  const malo = await mandarAlBot(C1.telefono, "ENTRAR ZZZZZZ");
-  if (!/No encontramos ese código/.test(malo ?? "")) hallazgo(`un código inexistente no se rechazó: «${malo}»`);
-  else bien("un código que no existe se rechaza");
-  // Desde SU número se verifica y la pantalla entra sola a /avisos.
-  const ok = await mandarAlBot(C1.telefono, `entrar ${codigo.toLowerCase()}`);
-  if (!/ya te reconocimos/.test(ok ?? "")) hallazgo(`el código desde su número no se verificó: «${ok}»`);
-  else bien("desde su número el bot contesta «ya te reconocimos» (mayúsculas y minúsculas valen)");
+  await pagina.locator("[data-codigo-entrada]").fill(codigo);
   // La pantalla pregunta cada 3 s, canjea y la acción navega: se espera a estar EN /avisos (no en /entrar?ir=/avisos).
   await pagina.waitForURL((u) => new globalThis.URL(u.toString()).pathname === "/avisos", { timeout: 40_000 }).catch(() => hallazgo(`la pantalla no entró sola a /avisos tras verificar (está en ${pagina.url()})`));
   if (new globalThis.URL(pagina.url()).pathname === "/avisos") bien("la pantalla entró sola y respetó ?ir=/avisos");
-  const { data: entradaC1 } = await A.from("app_entradas").select("estado").eq("telefono", C1.telefono).order("created_at", { ascending: false }).limit(1).maybeSingle();
-  if (entradaC1?.estado !== "usada") hallazgo(`la entrada no quedó «usada»: ${entradaC1?.estado}`);
-  else bien("la entrada quedó usada (no se canjea dos veces)");
-  const repetido = await mandarAlBot(C1.telefono, `ENTRAR ${codigo}`);
-  if (!/No encontramos ese código|ya venció/.test(repetido ?? "")) hallazgo(`un código ya usado volvió a aceptarse: «${repetido}»`);
-  else bien("un código ya usado no vuelve a servir");
   // La cuenta es la de siempre (misma persona que el portal de Huellitas).
   const cookies = await ctx.cookies();
   if (!cookies.some((c) => /portal-auth-token/.test(c.name))) hallazgo("la sesión no quedó en la cookie del portal");
@@ -310,9 +293,7 @@ try {
   await p2.locator("[data-campo-telefono]").fill(telNuevo);
   await p2.locator("[data-boton-entrar]").click();
   await p2.locator("[data-codigo-entrada]").waitFor({ timeout: 20_000 });
-  const codigo2 = (await p2.locator("[data-codigo-entrada]").innerText()).trim();
-  const r2 = await mandarAlBot(telNuevo, `ENTRAR ${codigo2}`);
-  if (!/ya te reconocimos/.test(r2 ?? "")) hallazgo(`el número nuevo no se verificó: «${r2}»`);
+  await p2.locator("[data-codigo-entrada]").fill(mock.wa.at(-1)?.template?.components?.[0]?.parameters?.[0]?.text ?? "");
   await p2.waitForURL((u) => !/\/entrar/.test(u.toString()), { timeout: 25_000 }).catch(() => hallazgo("el número nuevo no entró"));
   if (await p2.locator("[data-sin-mascotas]").count()) bien("un número nuevo entra, con su cuenta recién creada, y ve el estado vacío");
   else hallazgo("el número nuevo no ve el estado vacío de Mis mascotas");

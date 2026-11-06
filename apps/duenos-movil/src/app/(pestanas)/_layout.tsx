@@ -1,5 +1,7 @@
 import { NativeTabs } from "expo-router/native-tabs";
 import { fuentes, useColores } from "@/tema";
+import { ProveedorOnboarding } from "@/lib/onboarding";
+import { Bienvenida } from "@/componentes/onboarding";
 
 /**
  * Cinco pestañas nativas (barra inferior del sistema: Liquid Glass en iOS, Material en Android): Mis mascotas, Cerca,
@@ -8,6 +10,8 @@ import { fuentes, useColores } from "@/tema";
 export default function Pestanas() {
   const c = useColores();
   return (
+    <ProveedorOnboarding>
+    <Bienvenida />
     <NativeTabs
       backgroundColor={c.superficie}
       indicatorColor={c.primarioSuave}
@@ -35,5 +39,6 @@ export default function Pestanas() {
         <NativeTabs.Trigger.Icon sf={{ default: "person.crop.circle", selected: "person.crop.circle.fill" }} md="account_circle" />
       </NativeTabs.Trigger>
     </NativeTabs>
+    </ProveedorOnboarding>
   );
 }

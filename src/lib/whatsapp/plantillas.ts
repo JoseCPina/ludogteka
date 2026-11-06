@@ -9,6 +9,7 @@ import teleconsulta from "@/lib/telemedicina/plantilla-teleconsulta.json";
 import perdida from "@/lib/app/plantilla-perdida.json";
 import citaSugerida from "@/lib/app/plantilla-cita-sugerida.json";
 import alertaCalle from "@/lib/app/plantilla-alerta-calle.json";
+import entrada from "@/lib/app/plantilla-entrada.json";
 
 /**
  * El catálogo ÚNICO de las plantillas de WhatsApp de PeluDesk (las que el bot y las tareas mandan desde el número de
@@ -22,7 +23,7 @@ import alertaCalle from "@/lib/app/plantilla-alerta-calle.json";
  * Una plantilla aprobada no se edita: cambiar un texto es una plantilla nueva (_v2) en su fuente; la vieja se retira
  * en Meta cuando la nueva está aprobada (scripts/whatsapp/meta.mjs plantilla-carnet-retirar es el ejemplo).
  */
-export type CategoriaPlantilla = "UTILITY" | "MARKETING";
+export type CategoriaPlantilla = "UTILITY" | "MARKETING" | "AUTHENTICATION";
 export type PlantillaPeluDesk = {
   nombre: string;
   idioma: string;
@@ -46,6 +47,18 @@ const NOMBRE_RECORDATORIO: Record<string, string> = {
 const ETAPA_SEGUIMIENTO: Record<string, string> = { dia5: "día 5", dia10: "día 10", dia15: "día 15" };
 
 export const PLANTILLAS_PELUDESK: PlantillaPeluDesk[] = [
+  {
+    nombre: entrada.nombre,
+    idioma: entrada.idioma,
+    categoria: "AUTHENTICATION",
+    uso: "El código de 6 dígitos para entrar a la app de dueños y a app.peludesk.mx (en Android se autocompleta con un toque).",
+    fuente: "src/lib/app/plantilla-entrada.json",
+    componentes: [
+      { type: "BODY", add_security_recommendation: true },
+      { type: "FOOTER", code_expiration_minutes: entrada.vence_minutos },
+      { type: "BUTTONS", buttons: [{ type: "OTP", otp_type: "ONE_TAP", text: entrada.boton_copiar, autofill_text: entrada.boton_autocompletar, supported_apps: [{ package_name: entrada.paquete_android, signature_hash: entrada.huella_android }] }] },
+    ],
+  },
   {
     nombre: herramienta.nombre,
     idioma: herramienta.idioma,

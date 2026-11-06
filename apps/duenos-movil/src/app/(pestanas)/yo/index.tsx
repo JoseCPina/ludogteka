@@ -6,6 +6,7 @@ import { usePantalla, useAccion } from "@/lib/datos";
 import { soltarPush } from "@/lib/push";
 import { Pantalla } from "@/componentes/pantalla";
 import { Boton, Campo, Fila, Grupo, Mensaje, Texto } from "@/componentes/ui";
+import { GuiaSeccion } from "@/componentes/onboarding";
 import { useColores } from "@/tema";
 
 type Datos = { dueno: { id: string; telefono: string | null; nombre: string | null }; negocios: { id: string; nombre: string; ciudad: string | null; url: string }[] };
@@ -29,6 +30,8 @@ export default function Yo() {
     ]);
 
   return (
+    <>
+    <GuiaSeccion seccion="yo" />
     <Pantalla cargando={p.cargando} error={p.error} refrescando={p.refrescando} alRefrescar={p.refrescar} alReintentar={p.refrescar}>
       {d ? (
         <>
@@ -54,5 +57,6 @@ export default function Yo() {
         </>
       ) : null}
     </Pantalla>
+    </>
   );
 }

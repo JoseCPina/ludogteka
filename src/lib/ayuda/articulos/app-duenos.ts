@@ -17,12 +17,12 @@ export const ARTICULOS_APP_DUENOS: Articulo[] = [
 ## Cómo entra tu cliente
 
 1. Abre **app.peludesk.mx** en su celular y escribe su **número de WhatsApp** (el mismo que tiene en su ficha contigo).
-2. La app le enseña un **código** y un botón para mandarlo por WhatsApp a PeluDesk («ENTRAR» y el código).
-3. En cuanto lo manda desde su número, la pantalla **entra sola**. Sin contraseña y sin correo.
+2. PeluDesk le manda un **código de 6 dígitos** por WhatsApp. En la app de Android se escribe solo con el botón «Autocompletar»; en iPhone y en la web lo copia o lo escribe. Vence a los 10 minutos.
+3. Si no le llega en un minuto, toca **Reenviar**. Sin contraseña y sin correo.
 
 Si ya tiene contraseña del portal de tu negocio, también le sirve ahí («entrar con contraseña»), pero el código es el camino normal.
 
-> El código se pide y se manda desde el mismo teléfono. Si tu cliente dice que «no entra», revisa que el número de su ficha sea el de su WhatsApp: la app lo reconoce por ese número.
+> El código llega al WhatsApp de ese número. Si tu cliente dice que «no entra», revisa que el número de su ficha sea el de su WhatsApp: la app lo reconoce por ese número.
 
 ## Qué ve
 
