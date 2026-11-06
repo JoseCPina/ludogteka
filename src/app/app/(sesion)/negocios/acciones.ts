@@ -6,6 +6,7 @@ import { registrosDe } from "@/lib/concurrencia/registro-final";
 import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { sesionApp } from "@/lib/app/sesion";
 import { supabaseAppEnNegocio } from "@/lib/app/en-negocio";
+import { cotizarPorDireccion, direccionDesdeUbicacion } from "@/lib/recoleccion/distancia";
 import { vinculoDe, vinculosApp } from "@/lib/app/negocios";
 import { firmarContratoCon, ipDeFirma } from "@/lib/contratos/firmar";
 import { linkDeSaldo } from "@/lib/pagos/link-de-saldo";
@@ -101,9 +102,14 @@ export async function pedirCitaApp(negocioId: string, mascotaId: string, servici
   return { error: null, datos: d, registros: await registrosDe(supabase, [{ t: "citas_estetica", i: d.cita_id, datos: d }, ...(d.recoleccion?.id ? [{ t: "recolecciones", i: d.recoleccion.id, datos: d.recoleccion }] : [])]) };
 }
 
-/** Cotiza la recolección para una mascota del dueño (su dirección guardada o una nueva ya ubicada); el precio sale de la tarifa del negocio. */
+/**
+ * Cotiza la recolección para una mascota del dueño por la DIRECCIÓN (la guardada o una nueva), con la tarifa del negocio.
+ * _lat y _lng ya no se usan: el APK anterior todavía los manda; la ubicación del celular nunca decide el cobro.
+ */
 // registro-final: solo cotiza; no cambia nada.
-export async function cotizarRecoleccionApp(negocioId: string, mascotaId: string, direccion: string, lat: number | null, lng: number | null, punto: "negocio" | "base" = "negocio") {
+export async function cotizarRecoleccionApp(negocioId: string, mascotaId: string, direccion: string, _lat?: number | null, _lng?: number | null, punto: "negocio" | "base" = "negocio") {
+  void _lat;
+  void _lng;
   const falta = await negocioMio(negocioId);
   if (falta) return { error: falta };
   const v = await vinculoDe(mascotaId, negocioId);
@@ -111,9 +117,35 @@ export async function cotizarRecoleccionApp(negocioId: string, mascotaId: string
   const supabase = await supabaseAppEnNegocio(negocioId);
   const { data: perro } = await supabase.from("perros").select("cliente_id").eq("id", v.perroId).maybeSingle();
   if (!perro?.cliente_id) return { error: "No encontramos tu cuenta en este negocio." };
-  const { data, error } = await supabase.rpc("recoleccion_cotizar", { p_cliente: perro.cliente_id, p_direccion: direccion.trim(), p_lat: lat, p_lng: lng, p_punto: punto });
-  if (error) return { error: rechazoDeLaBase(error) };
-  return { error: null, datos: data as Record<string, unknown> };
+  const r = await cotizarPorDireccion({ caller: supabase, negocioId, clienteId: perro.cliente_id as string, direccion, punto, esDueno: true });
+  if (r.error) return { error: r.error };
+  if (Number(r.cotizacion?.km) > 60) return { error: "Esa dirección queda a más de 60 km del negocio. Pregúntale si puede pasar por tu mascota." };
+  return { error: null, datos: r.cotizacion as unknown as Record<string, unknown>, lat: r.lat ?? null, lng: r.lng ?? null };
+}
+
+/** Su dirección guardada en este negocio, para abrir «Incluir recolección» ya llena. */
+// registro-final: solo lee.
+export async function direccionGuardadaApp(negocioId: string, mascotaId: string): Promise<{ error: string | null; direccion?: string | null }> {
+  const falta = await negocioMio(negocioId);
+  if (falta) return { error: falta };
+  const v = await vinculoDe(mascotaId, negocioId);
+  if (!v) return { error: "Esa mascota no tiene expediente en este negocio." };
+  const supabase = await supabaseAppEnNegocio(negocioId);
+  const { data: perro } = await supabase.from("perros").select("clientes(direccion)").eq("id", v.perroId).maybeSingle();
+  return { error: null, direccion: (perro as unknown as { clientes?: { direccion: string | null } } | null)?.clientes?.direccion ?? null };
+}
+
+/** «¿Usar donde estás ahora?»: propone una dirección; se cotiza hasta que la persona la confirma. */
+// registro-final: solo lee.
+export async function direccionDeMiUbicacionApp(negocioId: string, mascotaId: string, lat: number, lng: number): Promise<{ error: string | null; direccion?: string }> {
+  const falta = await negocioMio(negocioId);
+  if (falta) return { error: falta };
+  const v = await vinculoDe(mascotaId, negocioId);
+  if (!v) return { error: "Esa mascota no tiene expediente en este negocio." };
+  const supabase = await supabaseAppEnNegocio(negocioId);
+  const { data: perro } = await supabase.from("perros").select("cliente_id").eq("id", v.perroId).maybeSingle();
+  if (!perro?.cliente_id) return { error: "No encontramos tu cuenta en este negocio." };
+  return direccionDesdeUbicacion(negocioId, perro.cliente_id as string, lat, lng);
 }
 
 // ── Reservar guardería u hotel (la base valida cupo, requisitos y traslapes; el contrato de alta sale en el mismo flujo) ──

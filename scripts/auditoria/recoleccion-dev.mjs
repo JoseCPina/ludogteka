@@ -2,18 +2,24 @@
 // JWT reales (sin navegador). Sale con 1 si algo falla.
 //
 //   node scripts/auditoria/recoleccion-dev.mjs
+// Con la app compilada y el doble de Google (lo levanta este script en el puerto 4457):
+//   GOOGLE_MAPS_API_KEY=de-prueba GOOGLE_API_URL=http://127.0.0.1:4457 npm run start -- -p 3001
 //
 // Qué prueba: (1) puntos de partida y cotización (distancia guardada del cliente, dirección nueva por coordenada, km a
 // mano); (2) guardar en una estancia: la fila, su cargo en cargos_aplicados y en la cuenta de la reserva; (3) la ruta
 // del día la ve el personal de Huellitas y NO Ludogteka; (4) mover la estancia mueve la recolección; (5) marcar en
 // camino / recogido (recepción sí, el dueño no); (6) cancelar la estancia cancela la recolección y su cargo; (7) el
 // dueño cotiza y guarda solo en su cuenta (otra cuenta: 42501) y cancela la suya mientras está pendiente; (8) si se
-// puede crear una cita, moverla mueve la recolección y cancelarla la cancela. Deja todo como estaba.
+// puede crear una cita, moverla mueve la recolección y cancelarla la cancela; (9) los km por dirección en la app y el
+// panel: dirección guardada, nueva, inválida, muy general, lejana, caché, tope alcanzado, Google caído y km manipulados. Deja todo como estaba.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
+import http from "node:http";
 import { A, URL, env, tokenDe } from "./sesiones-dev.mjs";
+import { cookiesDe } from "./lib/huellitas-navegador.mjs";
+import { abrirNavegador } from "../lib/navegador.mjs";
 
 if (!URL.includes("sgfolltpvktbsiisfuzq")) throw new Error("Esto solo corre contra DESARROLLO.");
 const datos = JSON.parse(fs.readFileSync(path.join(os.tmpdir(), "peludesk-negocio-b.json"), "utf8"));
@@ -38,6 +44,9 @@ for (let i = 0; i < 40; i++) {
 const F1 = dia(entrada), F2 = dia(new Date(entrada.getTime() + 86400000)), F3 = dia(new Date(entrada.getTime() + 3 * 86400000)), F4 = dia(new Date(entrada.getTime() + 4 * 86400000));
 const F5 = dia(new Date(entrada.getTime() + 10 * 86400000)), F6 = dia(new Date(entrada.getTime() + 11 * 86400000));
 
+let limpiarDireccion = async () => {};
+let topeAntes;
+const inicioPrueba = new Date().toISOString();
 const creado = { reservas: [], estancias: [], citas: [], recolecciones: [], cargos: [], tarifa: null, clienteAntes: null, sucursalAntes: null };
 const [ADM, REC] = await Promise.all([tokenDe(datos.adminB), tokenDe(datos.recepcionB)]).then((t) => t.map((x) => como(x)));
 const DUENO = como(await tokenDe(datos.cuentaSoloB));
@@ -159,7 +168,17 @@ try {
   const cOtro = await DUENO.rpc("recoleccion_cotizar", { p_cliente: otroCliente.id, p_direccion: "x", p_lat: null, p_lng: null, p_punto: "negocio" });
   ok(esPermiso(cOtro.error), `no cotiza para otra cuenta (${cOtro.error?.message?.slice(0, 50) ?? "¡lo dejó!"})`);
   const segunda = await reservaConEstancia(F5, F6);
-  const gd = await DUENO.rpc("recoleccion_guardar", { p_reserva: segunda.reservaId, p_estancia: segunda.estanciaId, p_cita: null, p_fecha: null, p_hora: "09:00", p_direccion: "Calle de Prueba Recolección 123", p_lat: 22.17, p_lng: -101.0, p_punto: "negocio", p_km: 4.5, p_notas: null, p_guardar_direccion: true });
+  const argsDueno = { p_reserva: segunda.reservaId, p_estancia: segunda.estanciaId, p_cita: null, p_fecha: null, p_hora: "09:00", p_direccion: "Calle de Prueba Recolección 123", p_lat: 22.17, p_lng: -101.0, p_punto: "negocio", p_km: 4.5, p_notas: null, p_guardar_direccion: true };
+  const sinCotizar = await DUENO.rpc("recoleccion_guardar", argsDueno);
+  ok(esPermiso(sinCotizar.error), `sin cotizar, el dueño no guarda km que él mandó (${sinCotizar.error?.message?.slice(0, 50) ?? "¡lo dejó!"})`);
+  const reg = await SB.rpc("recoleccion_cotizacion_registrar", { p_cliente: cli.id, p_direccion: argsDueno.p_direccion, p_punto: argsDueno.p_punto ?? "negocio", p_lat: 22.111, p_lng: -100.222, p_km: 6.5, p_origen: "ruta" });
+  ok(!reg.error, `el servidor registra la cotización ${reg.error?.message ?? ""}`);
+  const manipulada = await DUENO.rpc("recoleccion_guardar", { ...argsDueno, p_km: 0.1 });
+  ok(esPermiso(manipulada.error), `km manipulados (0.1 contra 6.5 cotizados): se rechaza (${manipulada.error?.message?.slice(0, 50) ?? "¡lo dejó!"})`);
+  const gd = await DUENO.rpc("recoleccion_guardar", { ...argsDueno, p_km: 6.5, p_lat: 1, p_lng: 1 });
+  ok(!gd.error && Number(gd.data?.lat) === 22.111, `con los km de su cotización sí, y las coordenadas son las cotizadas, no las que mandó (${gd.data?.lat ?? gd.error?.message})`);
+  const reusada = await DUENO.rpc("recoleccion_guardar", { ...argsDueno, p_km: 6.5, p_estancia: null, p_fecha: F5 });
+  ok(esPermiso(reusada.error), `una cotización no sirve dos veces (${reusada.error?.message?.slice(0, 50) ?? "¡lo dejó!"})`);
   ok(!gd.error && gd.data?.id, `guarda en su propia reserva (${gd.error?.message ?? "ok"})`);
   if (gd.data?.id) { creado.recolecciones.push(gd.data.id); creado.cargos.push(gd.data.cargo_id); }
   const { data: cliTras } = await SB.from("clientes").select("direccion").eq("id", cli.id).single();
@@ -198,6 +217,194 @@ try {
     if (cc.error) console.log("  (no se pudo cancelar la cita:", cc.error.message.slice(0, 80), ")");
     const { data: recCita2 } = await SB.from("recolecciones").select("estado").eq("id", gc.data?.id).single();
     ok(recCita2?.estado === "cancelada", "cancelar la cita cancela la recolección");
+  }
+
+  // ── 9. Km por dirección: app y panel, con un doble de Google ───────────────────────────
+  console.log("\n── 9. Km por dirección (doble de Google)");
+  const PUERTO = Number(process.env.PUERTO_APP ?? 3001);
+  const HOST_APP = `app.localhost:${PUERTO}`;
+  const pedir = (host, ruta, cuerpo, token) => new Promise((res, rej) => {
+    const r = http.request({ host: "127.0.0.1", port: PUERTO, path: ruta, method: "POST", headers: { host, "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) } }, (s) => {
+      let t = "";
+      s.on("data", (d) => (t += d));
+      s.on("end", () => { try { res({ status: s.statusCode, json: JSON.parse(t) }); } catch { res({ status: s.statusCode, json: null, cuerpo: t }); } });
+    });
+    r.on("error", rej);
+    r.end(JSON.stringify(cuerpo));
+  });
+  const api = (accion, args = [], token = null) => pedir(HOST_APP, `/api/movil/${accion}`, { args }, token);
+  const origen = { lat: Number(puntos.negocio.lat), lng: Number(puntos.negocio.lng) };
+  const llamadas = { geocode: 0, ruta: 0, inversa: 0 };
+  let googleCaido = false;
+  const hash = (t) => [...t].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 997, 7);
+  const doble = http.createServer((req, res) => {
+    let b = "";
+    req.on("data", (d) => (b += d));
+    req.on("end", () => {
+      const j = (status, o) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(o)); };
+      const u = new globalThis.URL(req.url, "http://doble");
+      if (u.pathname.endsWith("/geocode/json")) {
+        if (u.searchParams.get("latlng")) { llamadas.inversa++; return j(200, { status: "OK", results: [{ formatted_address: "Av. Propuesta 77, Centro" }] }); }
+        llamadas.geocode++;
+        const d = u.searchParams.get("address") ?? "";
+        if (/inexistente/i.test(d)) return j(200, { status: "ZERO_RESULTS", results: [] });
+        const lejos = /lejana/i.test(d);
+        return j(200, { status: "OK", results: [{ geometry: { location_type: /colonia general/i.test(d) ? "APPROXIMATE" : "ROOFTOP", location: { lat: origen.lat + (lejos ? 5 : 0.05 + hash(d.toLowerCase()) / 100000), lng: origen.lng } } }] });
+      }
+      if (u.pathname.endsWith(":computeRoutes")) {
+        llamadas.ruta++;
+        if (googleCaido) return j(500, {});
+        const destino = JSON.parse(b).destination.location.latLng;
+        return j(200, { routes: [{ distanceMeters: Math.abs(destino.latitude - origen.lat) > 1 ? 700000 : 9100 }] });
+      }
+      j(404, {});
+    });
+  });
+  await new Promise((r) => doble.listen(4457, "127.0.0.1", r));
+
+  // El dueño de la app: un cliente de Huellitas con cuenta y con una mascota ligada a su expediente.
+  const { data: miembros } = await SB.from("membresias").select("profile_id, cliente_id").eq("negocio_id", B).eq("rol", "cliente").is("deleted_at", null).not("cliente_id", "is", null).limit(40);
+  let C = null, tokenC = null, mascotaC = null;
+  for (const mem of miembros ?? []) {
+    const { data: fila } = await SB.from("clientes").select("id, telefono, direccion, direccion_lat, direccion_lng, distancia_base_km, distancia_calculada_at, distancia_ajustada_manualmente").eq("id", mem.cliente_id).is("deleted_at", null).maybeSingle();
+    const { data: ms } = await A.from("mascotas").select("id").eq("dueno_id", mem.profile_id).is("deleted_at", null);
+    if (!fila?.telefono || !ms?.length) continue;
+    const t = await tokenDe(mem.profile_id);
+    for (const x of ms) {
+      const r = await api("direccionGuardada", [B, x.id], t);
+      if (r.status === 200 && !r.json?.error) { C = { ...mem, fila }; tokenC = t; mascotaC = x.id; break; }
+    }
+    if (C) break;
+  }
+  if (!C) throw new Error("No hay un dueño de Huellitas con mascota ligada: corre app-duenos-dev.mjs. ¿Está arrancada la app con el doble?");
+  const antesC = C.fila;
+  const borrarCotizaciones = () => SB.from("recoleccion_cotizaciones").delete().eq("negocio_id", B).eq("cliente_id", C.cliente_id);
+  limpiarDireccion = async () => {
+    await borrarCotizaciones();
+    await SB.from("maps_geocodificaciones").delete().eq("negocio_id", B);
+    await SB.from("maps_rutas").delete().eq("negocio_id", B);
+    await SB.from("maps_consultas").delete().eq("negocio_id", B).gte("created_at", inicioPrueba);
+    const { id, telefono, ...resto } = antesC;
+    void telefono;
+    await SB.from("clientes").update(resto).eq("id", id);
+    if (topeAntes !== undefined) await SB.from("negocios").update({ maps_consultas_mes: topeAntes }).eq("id", B);
+    await new Promise((r) => doble.close(r));
+  };
+  await borrarCotizaciones();
+  await SB.from("maps_geocodificaciones").delete().eq("negocio_id", B);
+  await SB.from("maps_rutas").delete().eq("negocio_id", B);
+  const cotizaApp = (dir, lat = null, lng = null) => api("cotizarRecoleccion", [B, mascotaC, dir, lat, lng, "negocio"], tokenC);
+  const sello = String(Date.now()).slice(-7);
+
+  await SB.from("clientes").update({ direccion: "Calle Guardada 12", direccion_lat: 22.17, direccion_lng: -101.0, distancia_base_km: 4.5 }).eq("id", C.cliente_id);
+  const dg = await api("direccionGuardada", [B, mascotaC], tokenC);
+  ok(dg.json?.direccion === "Calle Guardada 12", `la app lee su dirección guardada (${dg.json?.direccion ?? dg.json?.error})`);
+  let n0 = { ...llamadas };
+  const q1 = await cotizaApp("Calle Guardada 12");
+  ok(q1.json?.datos?.origen_km === "guardada" && Number(q1.json?.datos?.km) === 4.5 && llamadas.geocode === n0.geocode && llamadas.ruta === n0.ruta, `dirección guardada: su distancia, sin gastar en Google (${q1.json?.datos?.km} km) ${q1.json?.error ?? ""}`);
+
+  n0 = { ...llamadas };
+  const DIR = `Av. Nueva ${sello}, Centro`;
+  const q2 = await cotizaApp(DIR, 40, -3); // el celular dice que está en Madrid: no cuenta.
+  ok(q2.json?.datos?.origen_km === "ruta" && Number(q2.json?.datos?.km) === 9.1 && Number(q2.json?.datos?.cantidad) === 10, `dirección nueva: km por ruta (${q2.json?.datos?.km} km, ${q2.json?.datos?.origen_km}) y la ubicación mandada no cuenta ${q2.json?.error ?? ""}`);
+  ok(llamadas.geocode === n0.geocode + 1 && llamadas.ruta === n0.ruta + 1, `una geocodificación y una ruta (${llamadas.geocode - n0.geocode} y ${llamadas.ruta - n0.ruta})`);
+  n0 = { ...llamadas };
+  const q3 = await cotizaApp(`  av. NUEVA   ${sello},  centro `);
+  ok(Number(q3.json?.datos?.km) === 9.1 && llamadas.geocode === n0.geocode && llamadas.ruta === n0.ruta, `la misma dirección otra vez sale de la caché, sin llamar a Google (${q3.json?.datos?.km} km)`);
+  const { count: filasGeo } = await SB.from("maps_geocodificaciones").select("id", { count: "exact", head: true }).eq("negocio_id", B);
+  const { count: filasRuta } = await SB.from("maps_rutas").select("id", { count: "exact", head: true }).eq("negocio_id", B);
+  ok(filasGeo >= 1 && filasRuta >= 1, `la caché quedó guardada (${filasGeo} direcciones, ${filasRuta} rutas)`);
+
+  const q4 = await cotizaApp(`Calle Inexistente ${sello}`);
+  ok(Boolean(q4.json?.error) && !q4.json?.datos, `dirección inválida: se rechaza («${q4.json?.error}»)`);
+  const q5 = await cotizaApp(`Colonia General ${sello}`);
+  ok(Boolean(q5.json?.error) && !q5.json?.datos, `dirección muy general: se rechaza («${q5.json?.error}»)`);
+  const q6 = await cotizaApp(`Calle Lejana ${sello}`);
+  ok(/60 km/.test(q6.json?.error ?? ""), `más de 60 km: se rechaza («${q6.json?.error}»)`);
+  const u1 = await api("direccionDeMiUbicacion", [B, mascotaC, 22.2, -101.1], tokenC);
+  ok(u1.json?.direccion === "Av. Propuesta 77, Centro", `«¿Usar donde estás ahora?» propone una dirección (${u1.json?.direccion ?? u1.json?.error})`);
+  const { count: conUbic } = await SB.from("recoleccion_cotizaciones").select("id", { count: "exact", head: true }).eq("cliente_id", C.cliente_id).eq("direccion_norm", "av. propuesta 77, centro");
+  ok(conUbic === 0, "proponerla no cotiza ni cobra: falta que la confirme");
+
+  // km manipulados por las dos puertas del portal, con el JWT del dueño.
+  const DUENO_C = como(tokenC);
+  const { data: perroC } = await SB.from("perros").select("id").eq("cliente_id", C.cliente_id).is("deleted_at", null).limit(1).single();
+  const { data: servEstC } = await SB.from("servicios").select("id").eq("negocio_id", B).eq("categoria", "estetica").is("deleted_at", null).limit(1).single();
+  const sinQ = await DUENO_C.rpc("portal_pedir_cita_con_recoleccion", { p_perro: perroC.id, p_servicio: servEstC.id, p_inicio: `${F1}T16:00:00Z`, p_recoleccion: { direccion: `Calle Sin Cotizar ${sello}`, km: 0.01, lat: origen.lat, lng: origen.lng, punto: "negocio" } });
+  ok(Boolean(sinQ.error) && /cotizada/i.test(sinQ.error.message), `pedir cita con una dirección sin cotizar y km de 0.01: se rechaza (${sinQ.error?.message?.slice(0, 60) ?? "¡lo dejó!"})`);
+  const { data: citasFantasma } = await SB.from("citas_estetica").select("id").eq("perro_id", perroC.id).gte("inicio", `${F1}T00:00:00Z`).lte("inicio", `${F1}T23:59:59Z`).is("deleted_at", null);
+  ok((citasFantasma ?? []).length === 0, "y no quedó una cita a medias");
+
+  // Límite por dueño: 30 intentos al día, también de direcciones que no existen.
+  await SB.from("recoleccion_cotizaciones").insert(Array.from({ length: 30 }, (_, i) => ({ negocio_id: B, cliente_id: C.cliente_id, direccion_norm: `intento ${i}`, punto: "negocio", km: 0, origen: "intento", expira_at: new Date(Date.now() - 3600_000).toISOString() })));
+  n0 = { ...llamadas };
+  const q7 = await cotizaApp(`Calle Limite ${sello}`);
+  ok(Boolean(q7.json?.error) && llamadas.geocode === n0.geocode, `con 30 intentos en el día ya no se gasta en Google («${q7.json?.error}»)`);
+  await borrarCotizaciones();
+
+  // Google caído: línea recta × 1.3.
+  googleCaido = true;
+  const q8 = await cotizaApp(`Calle Caida ${sello}`);
+  googleCaido = false;
+  ok(q8.json?.datos?.origen_km === "estimada" && Number(q8.json?.datos?.km) > 0 && Number(q8.json?.datos?.km) < 9, `si Google falla: línea recta × 1.3 (${q8.json?.datos?.km} km, ${q8.json?.datos?.origen_km}) ${q8.json?.error ?? ""}`);
+
+  // Panel, en pantalla: ruta, inválida con km a mano y, con el tope, el aviso.
+  const nav = await abrirNavegador();
+  try {
+    const ctx = await nav.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctx.addCookies((await cookiesDe(datos.recepcionB)).cookies);
+    const p = await ctx.newPage();
+    p.setDefaultTimeout(30000);
+    p.setDefaultNavigationTimeout(90000);
+    const abrirCaja = async () => {
+      await p.goto(`http://huellitas.localhost:${PUERTO}/hotel/nueva?cliente=${C.cliente_id}`, { waitUntil: "load" });
+      const caja = p.locator("[data-incluir-recoleccion]");
+      await caja.waitFor();
+      await caja.locator("button").first().click();
+      await p.locator("[data-recoleccion-campos]").waitFor();
+      await p.waitForTimeout(2500);
+      const otra = caja.getByText("Otra dirección");
+      if (await otra.count()) await otra.click();
+      return caja;
+    };
+    const cotizaPanel = async (caja, dir) => {
+      await caja.getByLabel("Calle, número y colonia").fill(dir);
+      await caja.locator("[data-cotizar-recoleccion]").click();
+      await p.waitForTimeout(3500);
+    };
+    let caja = await abrirCaja();
+    await cotizaPanel(caja, `Panel Nueva ${sello}, Centro`);
+    const t1 = await caja.locator("[data-recoleccion-resumen]").innerText().catch(() => "");
+    ok(/9\.1 km/.test(t1) && /por ruta/.test(t1), `panel, dirección nueva: «${t1.replace(/\s+/g, " ").slice(0, 70)}»`);
+    await cotizaPanel(caja, `Calle Inexistente Panel ${sello}`);
+    ok((await caja.getByLabel("Kilómetros de ida (a mano)").count()) > 0, "panel, dirección inválida: pide los km a mano");
+
+    const { data: negH } = await SB.from("negocios").select("maps_consultas_mes").eq("id", B).single();
+    topeAntes = negH.maps_consultas_mes;
+    const { count: usadas } = await SB.from("maps_consultas").select("id", { count: "exact", head: true }).eq("negocio_id", B).eq("mes", `${new Date().toISOString().slice(0, 7)}-01`).neq("tipo", "pagina").is("deleted_at", null);
+    const pone = await SB.from("negocios").update({ maps_consultas_mes: usadas ?? 0 }).eq("id", B).select("maps_consultas_mes").single();
+    ok(!pone.error && pone.data?.maps_consultas_mes === (usadas ?? 0), `tope de la prueba puesto en lo ya usado (${usadas}) ${pone.error?.message ?? ""}`);
+    n0 = { ...llamadas };
+    const q9 = await cotizaApp(`Calle Tope ${sello}`);
+    ok(q9.json?.datos?.origen_km === "estimada" && Number(q9.json?.datos?.km) < 9 && llamadas.ruta === n0.ruta, `tope alcanzado, en la app: línea recta × 1.3, sin consultar la ruta (${q9.json?.datos?.km} km) ${q9.json?.error ?? ""}`);
+    caja = await abrirCaja();
+    await cotizaPanel(caja, `Panel Tope ${sello}, Centro`);
+    const cuerpo = await caja.innerText();
+    ok(/línea recta/.test(cuerpo) && /consultas de Google Maps/.test(cuerpo), "tope alcanzado, en el panel: lo dice y marca los km como estimados");
+    const { data: tab } = await ADM.rpc("tablero_atencion", { p_grupo: "dinero" });
+    ok(tab?.maps_tope?.tope === (usadas ?? 0), `«Necesita atención» del admin trae el aviso (${JSON.stringify(tab?.maps_tope ?? tab?.fallos ?? null)})`);
+    const { data: tabRec } = await REC.rpc("tablero_atencion", { p_grupo: "dinero" });
+    ok(!tabRec?.maps_tope, "recepción no lo recibe (es de quien administra el plan)");
+    const ctxAdm = await nav.newContext({ viewport: { width: 1280, height: 900 } });
+    await ctxAdm.addCookies((await cookiesDe(datos.adminB)).cookies);
+    const pa = await ctxAdm.newPage();
+    await pa.goto(`http://huellitas.localhost:${PUERTO}/admin`, { waitUntil: "load", timeout: 90000 });
+    await pa.waitForTimeout(6000);
+    ok(/consultas de Google Maps del mes/.test(await pa.locator("body").innerText()), "el admin lo ve en su Inicio, en «Necesita atención»");
+    await SB.from("negocios").update({ maps_consultas_mes: topeAntes }).eq("id", B);
+  } finally {
+  await limpiarDireccion();
+    await nav.close();
   }
 
   // ── Llave anónima pelada ─────────────────────────────────────────────────────────────────────────────────────────

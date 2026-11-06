@@ -13,7 +13,7 @@ export function etiquetaEstadoRecoleccion(estado: string): string {
 /** Lo que devuelve recoleccion_cotizar. */
 export type Cotizacion = {
   km: number | null;
-  origen_km: "guardada" | "calculada" | "sin_datos";
+  origen_km: "guardada" | "calculada" | "ruta" | "estimada" | "sin_datos";
   punto: PuntoPartida;
   punto_direccion: string | null;
   servicio_id: string;
