@@ -1,7 +1,8 @@
-import { type ReactNode } from "react";
-import { RefreshControl, ScrollView, View, type StyleProp, type ViewStyle } from "react-native";
+import { useCallback, useEffect, useRef, useState, type ComponentRef, type ReactNode } from "react";
+import { Keyboard, KeyboardAvoidingView, Platform, RefreshControl, ScrollView, TextInput, View, type StyleProp, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { espacio, useColores } from "@/tema";
+import { useFocusEffect } from "expo-router";
 import { Boton, Esqueleto, Mensaje } from "./ui";
 
 /**
@@ -13,9 +14,46 @@ export function Pantalla({ children, cargando, error, refrescando, alRefrescar, 
 }) {
   const c = useColores();
   const inset = useSafeAreaInsets();
+  const lista = useRef<ComponentRef<typeof ScrollView>>(null);
+  const desplazado = useRef(0);
+  const [conTeclado, setConTeclado] = useState(false);
+  // Hay varias pantallas montadas en la pila: solo la que se está viendo responde al teclado.
+  const enfocada = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      enfocada.current = true;
+      return () => {
+        enfocada.current = false;
+      };
+    }, [])
+  );
+  // Con el teclado abierto se esconde el botón fijo y el campo enfocado sube a la vista.
+  useEffect(() => {
+    const abre = Keyboard.addListener("keyboardDidShow", (e) => {
+      if (!enfocada.current) return;
+      setConTeclado(true);
+      setTimeout(() => {
+        const campo = TextInput.State.currentlyFocusedInput();
+        if (!campo) return lista.current?.scrollToEnd({ animated: true });
+        campo.measureInWindow((_x, y, _w, alto) => {
+          const sobra = y + alto + 24 - e.endCoordinates.screenY;
+          if (sobra > 0) lista.current?.scrollTo({ y: desplazado.current + sobra, animated: true });
+        });
+      }, 300);
+    });
+    const cierra = Keyboard.addListener("keyboardDidHide", () => setConTeclado(false));
+    return () => {
+      abre.remove();
+      cierra.remove();
+    };
+  }, []);
   return (
-    <View style={{ flex: 1, backgroundColor: c.fondo }}>
+    // Con el teclado abierto, la pantalla se encoge: el campo y su botón siguen a la vista en Android y en iPhone.
+    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1, backgroundColor: c.fondo }}>
       <ScrollView
+        ref={lista}
+        onScroll={(e) => { desplazado.current = e.nativeEvent.contentOffset.y; }}
+        scrollEventThrottle={64}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         refreshControl={alRefrescar ? <RefreshControl refreshing={Boolean(refrescando)} onRefresh={alRefrescar} tintColor={c.primario} colors={[c.primario]} /> : undefined}
@@ -40,9 +78,9 @@ export function Pantalla({ children, cargando, error, refrescando, alRefrescar, 
           </>
         )}
       </ScrollView>
-      {pie ? (
+      {pie && !conTeclado ? (
         <View style={{ position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: espacio.l, paddingTop: 12, paddingBottom: inset.bottom + 12, backgroundColor: c.fondo, borderTopWidth: 0.5, borderTopColor: c.linea }}>{pie}</View>
       ) : null}
-    </View>
+    </KeyboardAvoidingView>
   );
 }

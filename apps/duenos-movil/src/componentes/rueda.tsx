@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, Modal, Platform, Pressable, Text, View, type NativeScrollEvent, type NativeSyntheticEvent } from "react-native";
 import * as Haptics from "expo-haptics";
-import { fechaLarga, hoyLocal } from "@/lib/formato";
+import { hoyLocal } from "@/lib/formato";
 import { Boton, Chip, Texto } from "./ui";
 import { Icono } from "./icono";
 import { fuentes, radio, useColores } from "@/tema";
@@ -90,6 +90,8 @@ export function MarcoRuedas({ children }: { children: React.ReactNode }) {
 }
 
 const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+/** Con año: aquí se escogen fechas de hace años o de años que vienen. */
+const fechaConAnio = (iso: string) => new Date(`${iso}T12:00:00`).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
 const partes = (iso: string) => iso.split("-").map(Number) as [number, number, number];
 const armar = (a: number, m: number, d: number) => `${a}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 const diasDelMes = (a: number, m: number) => new Date(a, m, 0).getDate();
@@ -156,9 +158,9 @@ export function CampoFechaRuedas({ etiqueta, valor, alCambiar, minimo, maximo, a
   return (
     <View style={{ gap: 6 }}>
       <Texto v="secundario" color={c.texto} style={{ fontFamily: fuentes.media }}>{etiqueta}</Texto>
-      <Pressable onPress={abrir} accessibilityRole="button" accessibilityLabel={`${etiqueta}: ${valor ? fechaLarga(valor) : "sin escoger"}`} style={{ minHeight: 50, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, backgroundColor: c.superficie, borderRadius: radio.control, borderWidth: 1, borderColor: c.linea }}>
+      <Pressable onPress={abrir} accessibilityRole="button" accessibilityLabel={`${etiqueta}: ${valor ? fechaConAnio(valor) : "sin escoger"}`} style={{ minHeight: 50, flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 14, backgroundColor: c.superficie, borderRadius: radio.control, borderWidth: 1, borderColor: c.linea }}>
         <Icono nombre="calendario" tamano={18} color={c.primario} />
-        <Texto color={valor ? c.texto : c.textoTenue} style={{ flex: 1 }}>{valor ? fechaLarga(valor) : "Escoger fecha"}</Texto>
+        <Texto color={valor ? c.texto : c.textoTenue} style={{ flex: 1 }}>{valor ? fechaConAnio(valor) : "Escoger fecha"}</Texto>
         {valor && !sinQuitar ? (
           <Pressable onPress={() => alCambiar(null)} hitSlop={10} accessibilityLabel="Quitar la fecha">
             <Icono nombre="cerrar" tamano={16} color={c.textoTenue} />

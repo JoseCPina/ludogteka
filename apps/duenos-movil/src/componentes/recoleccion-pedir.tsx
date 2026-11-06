@@ -34,6 +34,7 @@ export function RecoleccionPedir({ negocioId, mascotaId, alCambiar }: { negocioI
       const q = r.datos;
       if (q?.sin_tarifa) return { error: "Este negocio todavía no tiene precio de recolección. Pregúntale por WhatsApp." };
       if (q?.km == null || q.precio == null) return { error: "No pudimos calcular la distancia. Da permiso de ubicación desde tu casa o pregúntale al negocio." };
+      if (Number(q.km) > 60) return { error: "Tu ubicación queda a más de 60 km del negocio. Pídela desde la dirección donde pasan por tu mascota." };
       setCotizada({ km: Number(q.km), precio: Number(q.precio) });
       alCambiar({ direccion: direccion.trim(), lat: u?.lat ?? null, lng: u?.lng ?? null, punto: "negocio", km: Number(q.km), hora: null });
       return r;
@@ -53,7 +54,7 @@ export function RecoleccionPedir({ negocioId, mascotaId, alCambiar }: { negocioI
         <Icono nombre="pin" tamano={22} color={c.primario} />
         <View style={{ flex: 1 }}>
           <Texto v="cuerpoFuerte">Incluir recolección</Texto>
-          <Texto v="secundario">Pasan por tu mascota. Se cobra por kilómetro.</Texto>
+          <Texto v="secundario">Pasan por tu mascota. Se cobra por kilómetro, desde donde estás ahora.</Texto>
         </View>
         <View style={{ width: 48, height: 28, borderRadius: 14, backgroundColor: activa ? c.primario : c.linea, justifyContent: "center", paddingHorizontal: 2, alignItems: activa ? "flex-end" : "flex-start" }}>
           <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: "#FFFFFF" }} />
@@ -64,7 +65,7 @@ export function RecoleccionPedir({ negocioId, mascotaId, alCambiar }: { negocioI
           <Campo etiqueta="¿Dónde pasan por ella?" value={direccion} onChangeText={(t) => { setDireccion(t); invalidar(); }} placeholder="Calle, número y colonia" />
           <Mensaje texto={accion.error} />
           {cotizada ? (
-            <Texto v="cuerpoFuerte" color={c.exito}>{cotizada.km} km · {pesos(cotizada.precio)}. Entra a tu cuenta al confirmar.</Texto>
+            <Texto v="cuerpoFuerte" color={c.exito}>{cotizada.km < 1 ? "Menos de 1 km" : `${cotizada.km} km`} · {pesos(cotizada.precio)}. Entra a tu cuenta al confirmar.</Texto>
           ) : (
             <Boton compacto variante="secundario" titulo="Ver cuánto cuesta" alTocar={cotizar} cargando={accion.ocupado} deshabilitado={direccion.trim().length < 5} />
           )}

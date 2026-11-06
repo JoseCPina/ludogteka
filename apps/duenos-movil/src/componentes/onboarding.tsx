@@ -37,7 +37,7 @@ export function Bienvenida() {
     <Modal visible animationType="fade" statusBarTranslucent onRequestClose={terminar}>
       <View testID="bienvenida" style={{ flex: 1, backgroundColor: c.fondo, paddingTop: inset.top + 8, paddingBottom: inset.bottom + 24 }}>
         <View style={{ alignItems: "flex-end", paddingHorizontal: 12 }}>
-          <Boton ancho={false} compacto variante="texto" titulo="Saltar" alTocar={terminar} />
+          <Boton ancho={false} compacto variante="texto" titulo="Saltar" alTocar={terminar} style={{ alignSelf: "flex-end" }} />
         </View>
         <ScrollView ref={carrusel} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={alDeslizar} style={{ flex: 1 }}>
           {PASOS.map((p) => (
