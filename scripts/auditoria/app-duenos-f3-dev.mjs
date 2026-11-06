@@ -10,7 +10,8 @@
 //      esa hora, «ya se ocupó».
 //   3. Confirmar en un toque: C1 confirma su cita; otra vez, «ya estaba confirmada»; C2, rechazado.
 //   4. Reservar con cupo real: la disponibilidad dice el cupo; con cupo 0 ese día se rechaza; con cupo, se crea; la misma
-//      mascota encimada se rechaza (traslape); si el negocio tiene contrato de alta, queda pendiente de firma y C1 lo ve.
+//      mascota encimada se rechaza (traslape); si el negocio tiene contrato de alta, queda pendiente de firma y C1 lo ve
+//      (el contrato NO es requisito para reservar: migración 20261203005000).
 //   5. Pagos pendientes: la cita con precio sale con su saldo para C1 y no para C2; pases sin lo que se pagó.
 //   6. Reseña verificada: sobre la cita reservada, «cuando termine»; finalizada, sí; repetida, no; C2, no; C2 no la lee;
 //      resenas_de_negocio la cuenta.
@@ -57,7 +58,7 @@ const t2 = await tokenDe(C2.profile_id);
 const c1 = enNegocio(t1), c2 = enNegocio(t2), a1 = sinNegocio(t1), a2 = sinNegocio(t2);
 console.log(`Huellitas ${H.slice(0, 8)} · C1 ${C1.nombre} · C2 ${C2.nombre} · hoy ${hoyH} (${zonaH})`);
 
-const creados = { perros: [], solicitudes: [], perro: null, reservas: [], citas: [], estancias: [], contratos: [], resenas: [], cupo: null, ajustes: [] };
+const creados = { perros: [], solicitudes: [], accesos: [], perro: null, reservas: [], citas: [], estancias: [], contratos: [], resenas: [], cupo: null, ajustes: [] };
 const msg = (r) => r.error?.message ?? "";
 try {
   // ── 1. Perro nuevo de C1 (raza con precio en Huellitas: Poodle chico de pelo medio) y su vínculo ───────────────
@@ -216,7 +217,7 @@ try {
   const claves = (r) => (r.data ?? []).map((m) => m.clave);
   const revA = await c1.rpc("portal_requisitos_reserva", argsPL(D2));
   comprobar(!revA.error && claves(revA).includes("evaluacion"), `sin evaluación: lo dice (${JSON.stringify(claves(revA))}) ${msg(revA)}`);
-  comprobar(claves(revA).includes("contrato"), "sin contrato firmado: lo dice");
+  comprobar(!claves(revA).includes("contrato"), "el contrato sin firmar NO es requisito (se firma después de reservar)");
   const conVacuna = (revA.data ?? []).filter((m) => m.clave === "sanitario");
   comprobar(conVacuna.length > 0 && conVacuna.every((m) => m.dato), `sin vacunas: dice cuál falta (${conVacuna.map((m) => m.dato).join(", ")})`);
   const directoPL = await c1.rpc("portal_reservar", { p_perro: perroBPL.id, p_servicio: guarderia.id, p_entrada: D2, p_salida: suma(D2, 1) });
@@ -283,31 +284,19 @@ try {
   comprobar((misTras ?? []).find((s) => s.id === pideVac.data?.id)?.motivo_rechazo?.includes("remodelación"), "el dueño ve el motivo");
   comprobar((await avisoDe(pideVac.data?.id)).some((a) => /remodelación/.test(a.cuerpo)), "y le llega el aviso con el motivo");
 
-  // Por contrato: con vacunas al día, solo falta firmar. Firmado, se reserva directo.
+  // Con vacunas al día no falta nada: el contrato de alta NO es requisito (migración 20261203005000); se reserva directo
+  // y queda por firmar después o ahí mismo, como siempre.
   const { data: tiposSan } = await S.from("tipos_requisito_sanitario").select("id").eq("negocio_id", H).is("deleted_at", null);
   for (const t of tiposSan ?? []) await S.from("requisitos_sanitarios_aplicados").insert({ negocio_id: H, perro_id: perroBPL.id, tipo_requisito_id: t.id, fecha_aplicacion: suma(hoyH, -3), detalle: "Prueba F3" });
   const D4 = suma(D2, 28);
   const revK = await c1.rpc("portal_requisitos_reserva", argsPL(D4));
-  comprobar(JSON.stringify(claves(revK)) === JSON.stringify(["contrato"]), `por contrato: solo falta firmar (${JSON.stringify(claves(revK))}) ${msg(revK)}`);
+  comprobar(Array.isArray(revK.data) && revK.data.length === 0, `con evaluación y vacunas no falta nada, aunque el contrato no esté firmado (${JSON.stringify(claves(revK))}) ${msg(revK)}`);
+  const { data: tiposAltaPL } = await adm.rpc("tipos_contrato_de_alta", { p_tipo: "guarderia_hotel" });
   const sinFirma = await c1.rpc("portal_reservar", { p_perro: perroBPL.id, p_servicio: guarderia.id, p_entrada: D4, p_salida: suma(D4, 1) });
-  comprobar(/firmar el contrato/i.test(msg(sinFirma)), `reservar sin firmar se rechaza («${msg(sinFirma).slice(0, 60)}»)`);
-  const pideK = await c1.rpc("portal_pedir_lugar", { ...argsPL(D4), p_recoleccion: null });
-  comprobar(!pideK.error, `por contrato: deja la solicitud ${msg(pideK)}`);
-  if (pideK.data?.id) creados.solicitudes.push(pideK.data.id);
-  // Aceptada sin excepción (el contrato no la necesita): queda reserva y contrato por firmar.
-  const aceptaK = await recepPL.rpc("solicitud_aceptar", { p_id: pideK.data?.id, p_motivo: null });
-  comprobar(!aceptaK.error && aceptaK.data?.estancia_id, `recepción la aceptaPL sin excepción ${msg(aceptaK)}`);
-  if (aceptaK.data?.estancia_id) { creados.estancias.push(aceptaK.data.estancia_id); creados.reservas.push(aceptaK.data.reserva_id); }
-  const preparados = await c1.rpc("portal_preparar_contratos", { p_perro: perroBPL.id });
-  comprobar(!preparados.error && (preparados.data ?? []).length > 0, `«Firmar aquí» deja el contrato listo (${(preparados.data ?? []).length}) ${msg(preparados)}`);
-  for (const k of preparados.data ?? []) {
-    creados.contratos.push(k.id);
-    const f = await S.from("contratos").update({ estado: "firmado_papel", storage_path: "prueba/f3.pdf", hash_pdf: "prueba", fecha_firma: new Date().toISOString(), subido_por: datos.adminB }).eq("id", k.id);
-    if (f.error) mal(`firmar en papel: ${f.error.message}`);
-  }
+  comprobar(!sinFirma.error && sinFirma.data?.estancia_id, `reservar directo sin contrato firmado SÍ se puede ${msg(sinFirma)}`);
+  if (sinFirma.data?.estancia_id) { creados.estancias.push(sinFirma.data.estancia_id); creados.reservas.push(sinFirma.data.reserva_id); for (const c of sinFirma.data.contratos_por_firmar ?? []) creados.contratos.push(c.id); }
+  if ((tiposAltaPL ?? []).length) comprobar((sinFirma.data?.contratos_por_firmar ?? []).length > 0, "y el contrato queda por firmar (como siempre)");
   const D5 = suma(D2, 42);
-  const yaLibre = await c1.rpc("portal_requisitos_reserva", argsPL(D5));
-  comprobar(Array.isArray(yaLibre.data) && yaLibre.data.length === 0, `con todo al corriente no falta nada (${JSON.stringify(yaLibre.data)}) ${msg(yaLibre)}`);
   const nadaQuePedir = await c1.rpc("portal_pedir_lugar", { ...argsPL(D5), p_recoleccion: null });
   comprobar(Boolean(nadaQuePedir.error) && /reservar directo/i.test(msg(nadaQuePedir)), "y no deja pedir lugar: reserva directo");
   const { count: simuladas } = await S.from("estancias").select("id", { count: "exact", head: true }).eq("perro_id", perroBPL.id).eq("fecha_entrada", D5);
@@ -335,6 +324,120 @@ try {
     comprobar(filaC?.estado === "caducada", "queda caducada");
     comprobar((await avisoDe(pideC.data.id)).some((a) => /caduc/i.test(a.titulo)), "y el dueño recibe el aviso");
   }
+  // ── Solicitud de CITA: lo que bloquea una cita (pelaje sin registrar, en un servicio que cobra por pelaje) deja solicitud; el negocio lo captura y acepta ──
+  seccion("«Pedir lugar»: cita de estética");
+  const { data: perroDPL } = await S.from("perros").insert({ negocio_id: H, cliente_id: C1.cliente_id, nombre: `F3 ${sufijo} D`, raza: "Poodle", raza_id: raza?.id, tamano_id: talla?.id, pelaje_id: null }).select("id").single();
+  creados.perros.push(perroDPL.id);
+  // En Huellitas, «Baño estético rapado» cobra por pelaje: sin pelaje, la cita no se puede y deja solicitud.
+  const esteticaPL = (servicios ?? []).find((x) => x.categoria === "estetica" && /rapado/i.test(x.nombre)) ?? estetica;
+  let diaCitaPL = null, horasPL = null;
+  for (let d = 11; d <= 30 && !diaCitaPL; d++) {
+    const fecha = suma(hoyH, d);
+    const { data } = await c1.rpc("portal_horas_disponibles", { p_servicio: esteticaPL.id, p_fecha: fecha });
+    if (data?.abre && (data.horas ?? []).length > 1) { diaCitaPL = fecha; horasPL = data; }
+  }
+  const inicioPL = horasPL?.horas?.[0]?.inicio;
+  comprobar(Boolean(inicioPL), `hay una hora libre para la cita (${diaCitaPL} ${horasPL?.horas?.[0]?.hora})`);
+  const argsCita = { p_perro: perroDPL.id, p_servicio: esteticaPL.id, p_entrada: null, p_salida: null, p_horas: null, p_inicio: inicioPL };
+  const revCita = await c1.rpc("portal_requisitos_reserva", argsCita);
+  comprobar(!revCita.error && claves(revCita).includes("pelaje"), `cita sin pelaje registrado (servicio que cobra por pelaje): lo dice (${JSON.stringify(claves(revCita))}) ${msg(revCita)}`);
+  comprobar(!JSON.stringify(revCita.data ?? []).includes("contrato"), "y no pide contrato");
+  const pideCita = await c1.rpc("portal_pedir_lugar", { ...argsCita, p_recoleccion: null });
+  comprobar(!pideCita.error && pideCita.data?.estado === "pendiente", `deja la solicitud de cita ${msg(pideCita)}`);
+  const idCita = pideCita.data?.id ?? "00000000-0000-0000-0000-000000000000";
+  if (pideCita.data?.id) creados.solicitudes.push(pideCita.data.id);
+  const { data: filaCita } = await S.from("solicitudes_reserva").select("tipo, inicio, fecha_entrada").eq("id", idCita).maybeSingle();
+  comprobar(filaCita?.tipo === "cita" && Boolean(filaCita?.inicio) && !filaCita?.fecha_entrada, "es de tipo cita, con su hora");
+  const { count: citasD } = await S.from("citas_estetica").select("id", { count: "exact", head: true }).eq("perro_id", perroDPL.id);
+  comprobar(citasD === 0, "no crea la cita todavía");
+  const { data: misCita } = await c1.rpc("mis_solicitudes");
+  comprobar((misCita ?? []).some((x) => x.id === idCita && x.tipo === "cita"), "el dueño la ve entre sus solicitudes");
+  const { data: delNegocio } = await adm.rpc("solicitudes_del_negocio", { p_solo_pendientes: true });
+  comprobar((delNegocio ?? []).some((x) => x.id === idCita), "el negocio la ve en Solicitudes");
+  const aceptaSinPelaje = await adm.rpc("solicitud_aceptar", { p_id: idCita, p_motivo: null });
+  comprobar(Boolean(aceptaSinPelaje.error), `aceptar sin resolver el pelaje: lo dice («${msg(aceptaSinPelaje).slice(0, 70)}»)`);
+  await S.from("perros").update({ pelaje_id: pelo?.id }).eq("id", perroDPL.id);
+  const aceptaCita = await adm.rpc("solicitud_aceptar", { p_id: idCita, p_motivo: null });
+  comprobar(!aceptaCita.error && aceptaCita.data?.estado === "aceptada" && Boolean(aceptaCita.data?.cita_id), `con el pelaje capturado, aceptar la vuelve cita ${msg(aceptaCita)}`);
+  if (aceptaCita.data?.cita_id) { creados.citas.push(aceptaCita.data.cita_id); creados.reservas.push(aceptaCita.data.reserva_id); }
+  const { data: citaFila } = await S.from("citas_estetica").select("empleado_id, precio, estado, inicio").eq("id", aceptaCita.data?.cita_id ?? "00000000-0000-0000-0000-000000000000").maybeSingle();
+  comprobar(Boolean(citaFila?.empleado_id) && Number(citaFila?.precio) > 0 && Date.parse(citaFila?.inicio ?? 0) === Date.parse(inicioPL), `la cita quedó a esa hora, con quien atiende y precio ${citaFila?.precio}`);
+  const { data: visitasTras } = await c1.rpc("mis_visitas");
+  comprobar(JSON.stringify(visitasTras ?? []).includes(aceptaCita.data?.cita_id ?? "nunca"), "y el dueño la ve en sus visitas");
+  comprobar((await avisoDe(idCita)).some((a) => /aceptaron/i.test(a.titulo)), "con su aviso «Aceptaron tu solicitud»");
+
+  // ── Solicitud con recolección: la cotización se consume al pedir y el cargo entra a la cuenta al aceptar ──────────
+  seccion("«Pedir lugar» con recolección");
+  const { data: servRec } = await S.from("servicios").select("id").eq("negocio_id", H).eq("clave", "recoleccion").is("deleted_at", null).maybeSingle();
+  const DIR = `Calle F3 ${sufijo} 12`;
+  let idRec = null;
+  if (!servRec) ok("Huellitas no tiene el servicio «Recolección a domicilio»: se omite (recoleccion-dev lo arma y lo prueba)");
+  else {
+    const D6 = suma(D2, 56);
+    const argsRec = { p_perro: perroCPL.id, p_servicio: guarderia.id, p_entrada: D6, p_salida: suma(D6, 1), p_horas: null, p_inicio: null };
+    const cot = await S.rpc("recoleccion_cotizacion_registrar", { p_cliente: C1.cliente_id, p_direccion: DIR, p_punto: "negocio", p_lat: null, p_lng: null, p_km: 4, p_origen: "estimada" });
+    comprobar(!cot.error && cot.data?.cotizacion_id, `cotización registrada (4 km) ${msg(cot)}`);
+    const sinCot = await c1.rpc("portal_pedir_lugar", { ...argsRec, p_recoleccion: { direccion: `Otra calle ${sufijo} 99`, punto: "negocio", hora: "09:00" } });
+    comprobar(/no está cotizada/i.test(msg(sinCot)), `una dirección sin cotizar se rechaza («${msg(sinCot).slice(0, 60)}»)`);
+    const pideRec = await c1.rpc("portal_pedir_lugar", { ...argsRec, p_recoleccion: { direccion: DIR, punto: "negocio", hora: "09:00", notas: "F3" } });
+    comprobar(!pideRec.error && Boolean(pideRec.data?.id), `deja la solicitud con recolección ${msg(pideRec)}`);
+    idRec = pideRec.data?.id ?? "00000000-0000-0000-0000-000000000000";
+    if (pideRec.data?.id) creados.solicitudes.push(pideRec.data.id);
+    const { data: filaRec } = await S.from("solicitudes_reserva").select("recoleccion").eq("id", idRec).maybeSingle();
+    comprobar(Number(filaRec?.recoleccion?.km) === 4 && filaRec?.recoleccion?.direccion === DIR && filaRec?.recoleccion?.hora === "09:00", "con la dirección, la hora y los km de su cotización");
+    const { data: cotUsada } = await S.from("recoleccion_cotizaciones").select("usada_at").eq("id", cot.data?.cotizacion_id ?? "00000000-0000-0000-0000-000000000000").maybeSingle();
+    comprobar(Boolean(cotUsada?.usada_at), "la cotización se consumió (un solo uso)");
+    const { data: cargosAntes } = await S.from("cargos_aplicados").select("id").eq("perro_id", perroCPL.id).is("deleted_at", null);
+    comprobar((cargosAntes ?? []).length === 0, "sin cargo todavía");
+    const aceptaRec = await adm.rpc("solicitud_aceptar", { p_id: idRec, p_motivo: "Prueba F3: recolección" });
+    comprobar(!aceptaRec.error && Boolean(aceptaRec.data?.estancia_id), `aceptar con excepción la vuelve reserva ${msg(aceptaRec)}`);
+    if (aceptaRec.data?.estancia_id) { creados.estancias.push(aceptaRec.data.estancia_id); creados.reservas.push(aceptaRec.data.reserva_id); }
+    const reservaRec = aceptaRec.data?.reserva_id ?? "00000000-0000-0000-0000-000000000000";
+    const { data: recs } = await S.from("recolecciones").select("*").eq("reserva_id", reservaRec).is("deleted_at", null);
+    comprobar((recs ?? []).length === 1 && Number(recs?.[0]?.km) === 4 && recs?.[0]?.direccion === DIR, `queda la recolección de la reserva (${recs?.length ?? 0}, ${recs?.[0]?.km} km)`);
+    const { data: cargosRec } = await S.from("cargos_aplicados").select("*").eq("perro_id", perroCPL.id).is("deleted_at", null);
+    comprobar((cargosRec ?? []).some((c) => /Recolección a domicilio/i.test(JSON.stringify(c))), `el cargo de recolección entró a la cuenta al aceptar (${(cargosRec ?? []).length} cargo(s))`);
+    const totRec = (await adm.rpc("cuenta_totales_reserva", { p_reserva_id: reservaRec })).data;
+    const t0 = Array.isArray(totRec) ? totRec[0] : totRec;
+    const { data: lineasRec } = await adm.rpc("cuenta_lineas_estancia", { p_reserva_id: reservaRec });
+    comprobar(JSON.stringify(lineasRec ?? []).match(/recolecci/i) && Number(t0?.total_cuenta) === (lineasRec ?? []).reduce((a, l) => a + Number(l.total), 0), `y la cuenta lo suma (total ${t0?.total_cuenta})`);
+  }
+
+  // ── Acceso compartido: C2 con acceso a la mascota de C1 revisa, cotiza y pide lugar igual que el titular ────────────
+  seccion("Acceso compartido");
+  const { data: acceso, error: eAcc } = await S.from("perro_accesos_compartidos").insert({ negocio_id: H, perro_id: perroCPL.id, cliente_id: C2.cliente_id, notas: "Prueba F3", updated_at: new Date().toISOString() }).select("id").single();
+  if (eAcc) mal(`no se pudo dar acceso compartido: ${eAcc.message}`);
+  else {
+    creados.accesos.push(acceso.id);
+    const D7 = suma(D2, 70);
+    const argsC2 = { p_perro: perroCPL.id, p_servicio: guarderia.id, p_entrada: D7, p_salida: suma(D7, 1), p_horas: null, p_inicio: null };
+    const revC2 = await c2.rpc("portal_requisitos_reserva", argsC2);
+    comprobar(!revC2.error && claves(revC2).includes("evaluacion"), `C2 con acceso compartido revisa qué falta (${JSON.stringify(claves(revC2))}) ${msg(revC2)}`);
+    if (servRec) {
+      const DIR2 = `Calle F3 ${sufijo} 34`;
+      const cotC2 = await c2.rpc("recoleccion_cotizar", { p_cliente: C2.cliente_id, p_direccion: DIR2, p_lat: null, p_lng: null, p_punto: "negocio" });
+      comprobar(!cotC2.error, `C2 cotiza la recolección con su propio expediente ${msg(cotC2)}`);
+      const reg2 = await S.rpc("recoleccion_cotizacion_registrar", { p_cliente: C2.cliente_id, p_direccion: DIR2, p_punto: "negocio", p_lat: null, p_lng: null, p_km: 3, p_origen: "estimada" });
+      comprobar(!reg2.error, `cotización de C2 registrada (3 km) ${msg(reg2)}`);
+      const pideC2 = await c2.rpc("portal_pedir_lugar", { ...argsC2, p_recoleccion: { direccion: DIR2, punto: "negocio", hora: "10:00" } });
+      comprobar(!pideC2.error && Boolean(pideC2.data?.id), `C2 pide lugar con la recolección que él cotizó ${msg(pideC2)}`);
+      const idC2 = pideC2.data?.id ?? "00000000-0000-0000-0000-000000000000";
+      if (pideC2.data?.id) creados.solicitudes.push(pideC2.data.id);
+      const { data: filaC2 } = await S.from("solicitudes_reserva").select("cliente_id, recoleccion").eq("id", idC2).maybeSingle();
+      comprobar(filaC2?.cliente_id === C2.cliente_id && Number(filaC2?.recoleccion?.km) === 3, "la solicitud es de C2, con sus km");
+      const cancelC2 = await c2.rpc("portal_cancelar_solicitud", { p_id: idC2 });
+      comprobar(cancelC2.data?.estado === "cancelada", `y C2 la cancela ${msg(cancelC2)}`);
+    } else {
+      const pideC2 = await c2.rpc("portal_pedir_lugar", { ...argsC2, p_recoleccion: null });
+      comprobar(!pideC2.error && Boolean(pideC2.data?.id), `C2 pide lugar para la mascota compartida ${msg(pideC2)}`);
+      if (pideC2.data?.id) creados.solicitudes.push(pideC2.data.id);
+    }
+    await S.from("perro_accesos_compartidos").update({ deleted_at: new Date().toISOString() }).eq("id", acceso.id);
+    const D8 = suma(D2, 84);
+    const sinAcceso = await c2.rpc("portal_requisitos_reserva", { ...argsC2, p_entrada: D8, p_salida: suma(D8, 1) });
+    comprobar(Boolean(sinAcceso.error) && /no es tuya/i.test(msg(sinAcceso)), "sin el acceso, ya no");
+  }
+
   // Anónimo y otro negocio.
   for (const [fn, a] of [["portal_requisitos_reserva", argsPL(D2)], ["portal_pedir_lugar", { ...argsPL(D2), p_recoleccion: null }], ["mis_solicitudes", {}], ["solicitudes_del_negocio", { p_solo_pendientes: false }], ["solicitud_aceptar", { p_id: idEval, p_motivo: null }]]) {
     const r = await anonimo.rpc(fn, a);
@@ -423,6 +526,12 @@ try {
   }
   for (const id of creados.ajustes) await S.from("cuenta_ajustes_precio").delete().eq("id", id);
   for (const id of creados.contratos) await S.from("contratos").delete().eq("id", id);
+  if (creados.perros.length) {
+    await S.from("recolecciones").delete().in("perro_id", creados.perros);
+    await S.from("cargos_aplicados").delete().in("perro_id", creados.perros);
+  }
+  if (creados.accesos.length) await S.from("perro_accesos_compartidos").delete().in("id", creados.accesos);
+  await S.from("recoleccion_cotizaciones").delete().like("direccion_norm", `%f3 ${sufijo.toLowerCase()}%`);
   for (const id of creados.citas) await S.from("citas_estetica").delete().eq("id", id);
   for (const id of creados.estancias) await S.from("estancias").delete().eq("id", id);
   for (const id of creados.reservas) await S.from("reservas").delete().eq("id", id);

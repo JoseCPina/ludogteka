@@ -45,6 +45,11 @@ async function negocioMio(negocioId: string): Promise<string | null> {
   return null;
 }
 
+/** El expediente (cliente) de quien llama en este negocio: el titular o quien tiene acceso compartido a la mascota. */
+async function miClienteEn(supabase: Awaited<ReturnType<typeof supabaseAppEnNegocio>>): Promise<string | null> {
+  const { data } = await supabase.rpc("mi_cliente_id");
+  return typeof data === "string" && UUID.test(data) ? data : null;
+}
 const ZONA_POR_OMISION = "America/Mexico_City";
 async function zonaDe(negocioId: string): Promise<{ zona: string; ciudad: string | null }> {
   const { data } = await createSupabaseAdminClient().from("negocios").select("zona_horaria, ciudad").eq("id", negocioId).maybeSingle();
@@ -117,9 +122,11 @@ export async function cotizarRecoleccionApp(negocioId: string, mascotaId: string
   const v = await vinculoDe(mascotaId, negocioId);
   if (!v) return { error: "Esa mascota no tiene expediente en este negocio." };
   const supabase = await supabaseAppEnNegocio(negocioId);
-  const { data: perro } = await supabase.from("perros").select("cliente_id").eq("id", v.perroId).maybeSingle();
-  if (!perro?.cliente_id) return { error: "No encontramos tu cuenta en este negocio." };
-  const r = await cotizarPorDireccion({ caller: supabase, negocioId, clienteId: perro.cliente_id as string, direccion, punto, esDueno: true });
+  // La cotización es de quien pide (titular o con acceso compartido a la mascota): la base la busca con mi_cliente_id().
+  void v;
+  const clienteId = await miClienteEn(supabase);
+  if (!clienteId) return { error: "No encontramos tu cuenta en este negocio." };
+  const r = await cotizarPorDireccion({ caller: supabase, negocioId, clienteId, direccion, punto, esDueno: true });
   if (r.error) return { error: mensajeParaDueno(r.error) };
   if (Number(r.cotizacion?.km) > 60) return { error: "Esa dirección queda a más de 60 km del negocio. Pregúntale si puede pasar por tu mascota." };
   return { error: null, datos: r.cotizacion as unknown as Record<string, unknown>, lat: r.lat ?? null, lng: r.lng ?? null };
@@ -133,8 +140,10 @@ export async function direccionGuardadaApp(negocioId: string, mascotaId: string)
   const v = await vinculoDe(mascotaId, negocioId);
   if (!v) return { error: "Esa mascota no tiene expediente en este negocio." };
   const supabase = await supabaseAppEnNegocio(negocioId);
-  const { data: perro } = await supabase.from("perros").select("clientes(direccion)").eq("id", v.perroId).maybeSingle();
-  return { error: null, direccion: (perro as unknown as { clientes?: { direccion: string | null } } | null)?.clientes?.direccion ?? null };
+  void v;
+  const clienteId = await miClienteEn(supabase);
+  const { data: cli } = clienteId ? await supabase.from("clientes").select("direccion").eq("id", clienteId).maybeSingle() : { data: null };
+  return { error: null, direccion: (cli as { direccion: string | null } | null)?.direccion ?? null };
 }
 
 /** «¿Usar donde estás ahora?»: propone una dirección; se cotiza hasta que la persona la confirma. */
@@ -145,9 +154,10 @@ export async function direccionDeMiUbicacionApp(negocioId: string, mascotaId: st
   const v = await vinculoDe(mascotaId, negocioId);
   if (!v) return { error: "Esa mascota no tiene expediente en este negocio." };
   const supabase = await supabaseAppEnNegocio(negocioId);
-  const { data: perro } = await supabase.from("perros").select("cliente_id").eq("id", v.perroId).maybeSingle();
-  if (!perro?.cliente_id) return { error: "No encontramos tu cuenta en este negocio." };
-  return direccionDesdeUbicacion(negocioId, perro.cliente_id as string, lat, lng);
+  void v;
+  const clienteId = await miClienteEn(supabase);
+  if (!clienteId) return { error: "No encontramos tu cuenta en este negocio." };
+  return direccionDesdeUbicacion(negocioId, clienteId, lat, lng);
 }
 
 // ── Reservar guardería u hotel (la base valida cupo, requisitos y traslapes; el contrato de alta sale en el mismo flujo) ──

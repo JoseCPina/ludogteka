@@ -124,11 +124,11 @@ try {
   console.log("3b. Pedir lugar");
   {
     const conVinculo = ids.length ? ids : [];
-    let m = null, neg = null, serv = null;
+    let m = null, serv = null;
     for (const mid of conVinculo) {
       const pant = await api("reservar", [mid], token);
       const n = (pant.json?.negocios ?? []).find((x) => x.id === H && x.servicios?.length);
-      if (n) { m = mid; neg = n; serv = n.servicios.find((s) => s.unidad !== "hora") ?? n.servicios[0]; break; }
+      if (n) { m = mid; serv = n.servicios.find((s) => s.unidad !== "hora") ?? n.servicios[0]; break; }
     }
     if (!m) revisa(false, "hay una mascota de C1 con guardería en Huellitas");
     else {
@@ -144,9 +144,8 @@ try {
       const eva = faltan.find((x) => x.clave === "evaluacion");
       if (eva) revisa(/conviva bien/.test(eva.explicacion), "la evaluación explica por qué");
       const vac = faltan.find((x) => x.clave === "sanitario");
-      if (vac) revisa(vac.accion === "cartilla" && /cartilla/.test(vac.explicacion), `la vacuna dice cuál (${vac.titulo}) y que suba la cartilla`);
-      const kon = faltan.find((x) => x.clave === "contrato");
-      if (kon) revisa(kon.accion === "contrato", "el contrato ofrece firmarlo ahí");
+      if (vac) revisa(vac.accion === null && /cartilla|comprobante/.test(vac.explicacion) && !/aquí mismo/.test(vac.explicacion), `la vacuna dice cuál (${vac.titulo}) y que lleve o mande la cartilla, sin prometer que la app la sube al expediente`);
+      revisa(!faltan.some((x) => x.clave === "contrato"), "el contrato de alta no es requisito (se firma después de reservar)");
       if (faltan.length) {
         const pide = await api("pedirLugar", [H, m, serv.id, entrada, salida, null, null, null], token);
         revisa(pide.status === 200 && pide.json?.datos?.estado === "pendiente", `pedirLugar deja la solicitud ${pide.json?.error ?? ""}`);

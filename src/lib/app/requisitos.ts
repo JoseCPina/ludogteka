@@ -1,12 +1,14 @@
 /**
  * El catálogo ÚNICO de lo que falta para reservar o pedir cita, dicho para cada quien. Lo usan la app, el portal, la API
- * y el panel: la base (`portal_requisitos_reserva`, `clave_de_rechazo_reserva`) solo da la clave, y `mensajeParaDueno`
+ * y el panel: la base (`portal_requisitos_reserva`, `clave_de_rechazo_reserva`) solo da la clave. El contrato de alta NO es requisito: se
+ * reserva y se firma después o ahí mismo (`contratos_por_firmar`), y `mensajeParaDueno`
  * traduce con este mismo catálogo cualquier rechazo que llegue como texto. Un `validar_*` nuevo se agrega aquí.
  */
-export type ClaveRequisito = "evaluacion" | "sanitario" | "contrato" | "cupo" | "celo" | "gestante" | "alerta" | "talla" | "pelaje" | "grupo_precio" | "precio" | "fecha" | "cliente_baja" | "otro";
+export type ClaveRequisito = "evaluacion" | "sanitario" | "cupo" | "celo" | "gestante" | "alerta" | "talla" | "pelaje" | "grupo_precio" | "precio" | "fecha" | "cliente_baja" | "otro";
 
 export type MotivoBase = { clave: ClaveRequisito | string; dato?: string | null; estado?: string | null; detalle?: string | null };
-export type AccionRequisito = "cartilla" | "contrato" | null;
+/** Sin acción en pantalla por ahora: lo que falta se resuelve con el negocio (la cartilla de la app no entra sola a su expediente). */
+export type AccionRequisito = null;
 export type RequisitoDueno = { clave: string; titulo: string; explicacion: string; accion: AccionRequisito };
 
 /** «fecha» se arregla escogiendo otro día u hora; «cliente_baja», hablando con el negocio. No dejan solicitud. */
@@ -23,10 +25,8 @@ export function requisitoParaDueno(m: MotivoBase): RequisitoDueno {
     case "sanitario": {
       const que = m.dato ? m.dato : "Una vacuna o desparasitación";
       const como = m.estado === "vencida" ? "está vencida" : "no está registrada";
-      return { clave: m.clave, titulo: que, accion: "cartilla", explicacion: `${que} ${como} en este negocio, y la pide para cuidar a todos los que se quedan. Sube la foto de su cartilla aquí mismo o llévala el día que vayas. ${PIDE_LUGAR}` };
+      return { clave: m.clave, titulo: que, accion: null, explicacion: `${que} ${como} en este negocio, y la pide para cuidar a todos los que se quedan. Lleva su cartilla o el comprobante el día que vayas, o mándaselo al negocio por WhatsApp, para que lo registre en su expediente. ${PIDE_LUGAR}` };
     }
-    case "contrato":
-      return { clave: m.clave, titulo: m.dato ? `Contrato: ${m.dato}` : "Contrato sin firmar", accion: "contrato", explicacion: `El negocio pide firmarlo antes de la primera estancia. Fírmalo aquí con el dedo y reservas directo, o pide tu lugar y lo firmas después.` };
     case "cupo":
       return { clave: m.clave, titulo: "No hay lugar en esas fechas", accion: null, explicacion: `Esos días ya están llenos. ${PIDE_LUGAR.replace("te contacta", "te dice si se puede hacer espacio")}` };
     case "celo":
@@ -56,7 +56,6 @@ export function requisitoParaPersonal(m: MotivoBase): string {
   switch (m.clave) {
     case "evaluacion": return "Sin evaluación de comportamiento";
     case "sanitario": return `${m.dato ?? "Requisito sanitario"}: ${m.estado === "vencida" ? "vencida" : "sin registro"}`;
-    case "contrato": return `Contrato sin firmar${m.dato ? `: ${m.dato}` : ""}`;
     case "cupo": return "Sin cupo en esas fechas";
     case "celo": return "Marcada en celo (sin excepción: quita la marca si ya pasó)";
     case "gestante": return "Marcada como gestante (sin excepción: quita la marca si ya no aplica)";
@@ -85,7 +84,6 @@ export function claveDeMensaje(texto: string): string | null {
   if (/cliente no encontrado/i.test(texto)) return "cliente_baja";
   if (/evaluaci[oó]n previa/i.test(texto)) return "evaluacion";
   if (/requisito sanitario|vigentes? de /i.test(texto)) return "sanitario";
-  if (/falta firmar el contrato/i.test(texto)) return "contrato";
   if (/no hay cupo/i.test(texto)) return "cupo";
   if (/en celo/i.test(texto)) return "celo";
   if (/gestante/i.test(texto)) return "gestante";
