@@ -4,6 +4,42 @@ import type { Articulo } from "../tipos";
 // tal cual en la app: si cambia la pantalla, cambia el artículo.
 export const ARTICULOS_CAJA_Y_ESTETICA: Articulo[] = [
   {
+    slug: "deshacer-o-corregir-una-operacion",
+    titulo: "Cómo deshacer o corregir una operación",
+    resumen: "Un check-in, una salida, un «no llegó», una cancelación, un cargo o una devolución hechos por error se deshacen con motivo y quedan en la bitácora.",
+    grupo: "caja",
+    modulo: null,
+    roles: ["admin", "recepcion"],
+    rutas: ["/reservas/[id]", "/reservas/estancias/[id]/checkin", "/reservas/estancias/[id]/checkout", "/estetica/[id]", "/caja/cobrar/[reservaId]"],
+    palabras: ["deshacer", "corregir", "revertir", "error", "me equivoqué", "reabrir", "reactivar", "anular devolución", "no llegó por error", "check-in por error", "salida por error", "cuenta cancelada por error", "bitácora"],
+    cuerpo: `Toda operación que cambia un estado o dinero se puede deshacer con su acción inversa. Siempre pide un **motivo** (qué pasó), lo hace quien tiene el permiso **Deshacer operaciones** (los admin siempre; a recepción se lo da un admin en Permisos) y queda en la bitácora con tu nombre, la hora, el motivo y lo que cambió.
+
+## Dónde está
+
+- Lo que se hizo hace menos de **24 horas** sale como botón **Deshacer …** en el detalle: al terminar un check-in o una salida, en la estancia dentro de la reserva, en la cita, en la cuenta.
+- Lo más viejo está en el menú **Corregir** del mismo lugar: ábrelo y escoge la operación inversa.
+- Al tocarlo, escribes el motivo y confirmas. La pantalla se pone al día en ese momento.
+
+## Qué deshace cada una
+
+- **Deshacer el check-in**: la estancia vuelve a «reservada» (sigue con su lugar y su pase). Si fue un walk-in por error, escoge **Deshacer el check-in y cancelar**: libera el lugar y el día regresa al pase.
+- **Deshacer la salida**: la estancia vuelve a «en curso» y su cuenta se reabre; si la salida anticipada había bajado la cuenta, esa corrección se anula. Lo cobrado sigue cobrado.
+- **Deshacer «no llegó»** y **Deshacer la cancelación** (estancia): vuelve a «reservada» y ocupa su lugar otra vez (si la fecha no ha pasado, se revisa el cupo); el día de pase que se había devuelto se vuelve a descontar, las correcciones de precio regresan y el saldo a favor que eso había dejado desaparece. Después, si el perro llegó, haz su check-in como siempre.
+- **Reabrir la cita** / **Deshacer «no se presentó»** / **Restaurar la cita**: la cita vuelve a «reservada» en su misma hora (si otra cita ya tomó la hora, no se reabre: reprográmala). Sus correcciones de precio regresan.
+- **Deshacer la finalización** (cita): vuelve a «en curso» y lo que descontó del inventario regresa con un ajuste.
+- **Reactivar el cargo** y **Reactivar el renglón** (venta): vuelven a sumar en la cuenta; un producto se vuelve a descontar del inventario.
+- **Reabrir la cuenta**: una cuenta cancelada vuelve a «por cobrar» con su saldo. Si al cancelarla se cancelaron citas o estancias, esas se regresan una por una desde su detalle.
+- **Anular la devolución**: deja de contar en caja, en la cuenta y en reportes, solo mientras su turno siga abierto; con el corte hecho, lo que no salió se registra como cobro nuevo.
+
+## Lo que no se deshace así
+
+- Un **cobro** no se borra: se anula ([Cómo anular o corregir un cobro](/ayuda/anular-o-corregir-un-cobro)) o se devuelve ([Cómo devolver un cobro](/ayuda/devolver-un-cobro)). Un cobro anulado por error se vuelve a registrar.
+- Un **turno cerrado** no se reabre: una diferencia se anota en el siguiente corte.
+- Una **factura** emitida va por nota de crédito ([Cómo cancelar o sustituir una factura](/ayuda/cancelar-o-sustituir-una-factura)).
+
+En la cuenta, abajo, **Operaciones deshechas en esta cuenta** lista cada una con quién la deshizo, cuándo, por qué y cómo quedó el saldo.`,
+  },
+  {
     slug: "cobrar-una-cuenta",
     titulo: "Cómo cobrar una cuenta",
     resumen: "Cobrar en efectivo, transferencia o tarjeta, con propina y en varios métodos a la vez.",

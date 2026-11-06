@@ -430,7 +430,7 @@ Al cancelar una cuenta en [Caja](/caja), marca la casilla para cancelar también
 - **Confirmar check-in** está apagado y junto a él dice «Falta: escoge quién entrega al perro.»: escoge de la lista (el campo lleva * y «obligatorio»). Con **Otra persona**, si falta el nombre, dice «Falta: el nombre de quien entrega al perro.».
 - Si no tiene reserva, usa **Walk-in (sin reserva)** en la lista de check-in. Si abres el check-in de una reserva de un día que ya pasó, arriba dice «Esta reserva era para el …»: si el perro llegó hoy, regístralo como walk-in (su pase se aplica solo) y en la reserva marca aquel día como «No llegó» o cancélalo; si de verdad es el check-in de aquel día, sigue ahí. Así el día y el pase quedan en la fecha correcta.
 - Un día que el perro no vino (**No llegó**) devuelve su día al pase, igual que cancelar la estancia; la cuenta no queda con saldo a favor.
-- Si el check-in se hizo por error y el perro venía con pase, quien tenga el permiso «Ajustar días de pases» toca **Deshacer este check-in** (ver [Cómo ajustar los días usados de un pase](/ayuda/ajustar-dias-usados-de-un-pase)).`,
+- Si el check-in se hizo por error, toca **Deshacer el check-in** (sale al terminar el check-in y en la estancia de la reserva, las primeras 24 horas; después está en **Corregir**): la estancia vuelve a «reservada» con su pase, o se cancela si fue un walk-in por error. Pide motivo y queda en la bitácora. Lo hace quien tiene el permiso «Deshacer operaciones» (los admin siempre). Ver [Cómo deshacer o corregir una operación](/ayuda/deshacer-o-corregir-una-operacion).`,
   },
   {
     slug: "registrar-check-out-y-cobrar",

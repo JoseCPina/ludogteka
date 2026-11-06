@@ -102,6 +102,12 @@ export const PERMISOS = [
       "Corrige los días usados de un pase de guardería (day pass o mensualidad) con un motivo por escrito que queda en el historial del pase, deshace un check-in hecho por error devolviendo el día al pase, y registra un pase nuevo que ya lleva días usados. No mueve dinero ni la caja. Extender la vigencia de un pase sigue siendo de admin. Viene apagado: dáselo solo a quien deba corregir saldos.",
   },
   {
+    clave: "revertir_operaciones",
+    etiqueta: "Deshacer operaciones",
+    implica:
+      "Deshace lo que se hizo por error, con un motivo por escrito que queda en la bitácora: un check-in (la estancia vuelve a reservada y el día regresa al pase), una salida (vuelve a en curso y la cuenta se reabre), un «no llegó» o una cancelación de estancia o de cita (vuelven a reservada, con su lugar, su pase y sus correcciones de precio), la finalización de una cita (vuelve a en curso y el inventario regresa), un cargo o un renglón de venta cancelados (vuelven a sumar), una cuenta cancelada (vuelve a por cobrar) y una devolución registrada por error (mientras su turno siga abierto). Nunca borra ni mueve cobros: eso sigue siendo «Anular cobros» y «Registrar devoluciones». Viene apagado.",
+  },
+  {
     clave: "anular_cobros",
     etiqueta: "Anular cobros",
     implica:

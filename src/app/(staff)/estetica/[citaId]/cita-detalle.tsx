@@ -28,6 +28,7 @@ import {
 import { SelectorEstilista, type Estilista } from "../selector-estilista";
 import { AvisoVersion, useControlVersion } from "@/components/concurrencia/use-control-version";
 import { Enlace } from "@/components/ui/enlace";
+import { Deshacer } from "@/components/operaciones/deshacer";
 
 export type RecetaItem = {
   insumo_id: string;
@@ -58,6 +59,7 @@ export function CitaDetalle({
   tarifa = null,
   abrirReprogramar = false,
   version = null,
+  puedeRevertir = false,
 }: {
   citaId: string;
   perroNombre: string;
@@ -88,6 +90,8 @@ export function CitaDetalle({
   abrirReprogramar?: boolean;
   /** updated_at de la cita al cargar la pantalla (QA N43). */
   version?: string | null;
+  /** Permiso «Deshacer operaciones»: reabrir una cita cancelada o deshacer su finalización. */
+  puedeRevertir?: boolean;
 }) {
   // QA S63 (N164): el precio que se ve es el de la cuenta; una corrección hecha aquí se pinta al guardar.
   const [precioVivo, setPrecioVivo] = useState<{ precio: number; correccion: number } | null>(null);
@@ -482,6 +486,17 @@ export function CitaDetalle({
       )}
       {(estado === "cancelada" || estado === "no_llego") && (
         <p className="text-sm text-n-600">Esta cita ya está cerrada ({estado === "cancelada" ? "cancelada" : "no llegó"}).</p>
+      )}
+      {["finalizada", "cancelada", "no_llego"].includes(estado) && (
+        <Deshacer
+          puede={puedeRevertir}
+          operaciones={[
+            estado === "finalizada"
+              ? { tipo: "finalizacion_cita", id: citaId, hechoEn: version }
+              : { tipo: estado === "no_llego" ? "no_llego_cita" : "cancelacion_cita", id: citaId, hechoEn: version },
+          ]}
+          onHecho={(op) => setEstado(op.tipo === "finalizacion_cita" ? "en_curso" : "reservada")}
+        />
       )}
 
       {editable && (

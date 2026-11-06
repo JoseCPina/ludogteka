@@ -149,6 +149,7 @@ export const VIDEOS_SIN_ARTICULO: Record<string, string> = {
  * tenga video en VIDEOS_DE_ARTICULO o aparezca aquí: un artículo nuevo sin video se decide a propósito.
  */
 export const ARTICULOS_SIN_VIDEO: Record<string, string> = {
+  "deshacer-o-corregir-una-operacion": "Deshacer / Corregir (5 de noviembre de 2026): se graba cuando se retome la grabación; el artículo explica el botón y el menú.",
   "pacientes-del-qr": "Pendiente de grabar: función nueva (app para dueños, Fase 2); el flujo empieza en un negocio sin PeluDesk que escanea el QR, se graba con la app y un negocio de prueba.",
   "botones-y-enlaces": "Explica cómo se ven y responden todos los botones y enlaces; no es una tarea de una pantalla. Se enseña dentro de los videos de cada pantalla al regrabarlos.",
   "recordatorios-automaticos-por-whatsapp": "Pendiente de grabar: función nueva (recordatorios automáticos por WhatsApp, 25 de octubre de 2026); se graba con un negocio de prueba porque el demo no manda mensajes.",

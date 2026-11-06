@@ -160,6 +160,7 @@ Fases 0 a 18 del roadmap, PeluDesk multi-negocio, integraciones de cobro, bot de
 - docs/redes-y-sitio-publico.md — Al tocar la landing, /veterinaria, legales, cookies, píxel, blog, DNS/correo, redes, videos de producto o el resumen diario.
 - docs/plataforma.md — Al tocar /plataforma, conteos de negocios o el borrado de un negocio.
 - docs/ayuda-y-tutoriales.md — Al cambiar una pantalla (ayuda y videos por actualizar), grabar tutoriales o resembrar el demo.
+- docs/revertir-operaciones.md — Al tocar «Deshacer» / «Corregir», `operaciones_revertidas`, las funciones `revertir_*`/`reabrir_*`, la puerta `app.revertir` o el permiso «Deshacer operaciones»: la regla, el inventario de operaciones (antes y después) y sus pruebas.
 - docs/baja-de-mascotas.md — Al tocar la baja o reactivación de una mascota, `perros.deleted_at`, `perros_bajas`, la solicitud del portal o el traspaso de pases.
 - docs/guarderia-hotel.md — Al tocar estancias, reporte de comportamiento, fotos/videos, políticas por negocio, alta por link o servicios extra.
 - docs/estetica-y-razas.md — Al tocar citas de estética, tarifas, razas o grupos de precio.

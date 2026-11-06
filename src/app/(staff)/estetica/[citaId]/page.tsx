@@ -271,6 +271,7 @@ export default async function CitaDetallePage({
               recargoMotivo={(cita.recargo_motivo as string | null) ?? null}
               puedeRecargo={tienePermiso(sesion, "excepciones_reserva")}
               puedeEliminar={tienePermiso(sesion, "eliminar_citas")}
+              puedeRevertir={tienePermiso(sesion, "revertir_operaciones")}
               abrirReprogramar={abrirReprogramar}
               tarifa={{
                 aplicada: Boolean(cita.tarifa_guarderia),

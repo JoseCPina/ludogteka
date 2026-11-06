@@ -20,6 +20,8 @@ import { cerrarFrase } from "@/lib/texto/frases";
 import { textoPrecioEstancia, type CuentaEstancia } from "@/lib/cuentas/cuenta-estancia";
 import { admiteCargosNuevos, TEXTO_CUENTA_PAGADA_SIN_CARGOS } from "@/lib/caja/cuenta-por-cobrar";
 import { ESTILO_ESTADO, ETIQUETA_ESTADO } from "@/lib/estados/insignias";
+import { Deshacer } from "@/components/operaciones/deshacer";
+import type { OperacionReversible } from "@/lib/operaciones/reversion";
 
 export type FilaEstancia = {
   id: string;
@@ -38,6 +40,10 @@ export type FilaEstancia = {
   version: string | null;
   /** QA S15: «Cancelada por X el …» y el motivo, si se canceló. */
   cancelacion?: { quien: string; cuando: string; motivo: string | null } | null;
+  /** Para «Deshacer» (migración 20261203004300): cuándo entró, salió o se marcó «no llegó»/cancelada. */
+  horaEntradaReal?: string | null;
+  horaSalidaReal?: string | null;
+  canceladaAt?: string | null;
   // Entró con la casa llena (check-in tardío confirmado): en cuánto quedó, por ejemplo «11/10 de día».
   sobrecupo?: string | null;
   // QA N125: lo que se confirmó fuera del horario del negocio (reserva en día cerrado, check-in, check-out).
@@ -56,8 +62,11 @@ export function EstanciaFila({
   cuentaDevuelto = 0,
   cuentaSaldo = 0,
   cuenta,
+  puedeRevertir = false,
 }: {
   fila: FilaEstancia;
+  /** Permiso «Deshacer operaciones»: enseña «Deshacer …» / «Corregir» en la estancia. */
+  puedeRevertir?: boolean;
   // QA R50 (N136): lo que cuesta esta estancia según la base (cuenta_lineas_estancia), con sus cargos y correcciones.
   cuenta: CuentaEstancia | null;
   cargosIniciales: Cargo[];
@@ -98,6 +107,21 @@ export function EstanciaFila({
   const editable = estado === "reservada" || estado === "confirmada";
   const cancelada = estado === "cancelada" || estado === "no_llego";
   const admiteCargos = admiteCargosNuevos(estado, { saldo: cuentaSaldo, cobrado: cuentaCobrado });
+  // Lo que se puede deshacer en este estado (docs/revertir-operaciones.md): el botón sale si fue hace menos de 24 h;
+  // si no, dentro de «Corregir».
+  const operacionesReversibles: OperacionReversible[] =
+    estado === "en_curso"
+      ? [
+          { tipo: "checkin_estancia", id: fila.id, hechoEn: fila.horaEntradaReal ?? null, destino: "reservada" },
+          { tipo: "checkin_estancia", id: fila.id, hechoEn: null, destino: "cancelada" },
+        ]
+      : estado === "finalizada"
+        ? [{ tipo: "checkout_estancia", id: fila.id, hechoEn: fila.horaSalidaReal ?? null }]
+        : estado === "no_llego"
+          ? [{ tipo: "no_llego_estancia", id: fila.id, hechoEn: fila.canceladaAt ?? null }]
+          : estado === "cancelada"
+            ? [{ tipo: "cancelacion_estancia", id: fila.id, hechoEn: fila.canceladaAt ?? null }]
+            : [];
   // precioUnitario es tarifa POR NOCHE/DÍA/HORA, no el total de la
   // estancia (ver tarifas: "el total es N × precio del tramo"). Para
   // guardería por día noches siempre da 1; por hora, la cantidad son las
@@ -220,9 +244,9 @@ export function EstanciaFila({
           {cerrarFrase(`Salió fuera del horario: ${fila.fueraHorario.salida}`)}
         </p>
       )}
-      {estado === "cancelada" && fila.cancelacion && (
+      {(estado === "cancelada" || estado === "no_llego") && fila.cancelacion && (
         <p className="text-sm text-n-700" data-cancelacion-estancia>
-          {cerrarFrase(`Cancelada por ${fila.cancelacion.quien} el ${fila.cancelacion.cuando}`)}
+          {cerrarFrase(`${estado === "no_llego" ? "Marcada «no llegó»" : "Cancelada"} por ${fila.cancelacion.quien} el ${fila.cancelacion.cuando}`)}
           {fila.cancelacion.motivo ? <> Motivo: {fila.cancelacion.motivo}</> : " Sin motivo escrito."}
         </p>
       )}
@@ -235,6 +259,16 @@ export function EstanciaFila({
 
       {!editable && estado === "en_curso" && (
         <p className="text-sm text-n-500">Ya hizo check-in — el check-out se hace desde esa pantalla.</p>
+      )}
+      {!editable && operacionesReversibles.length > 0 && (
+        <Deshacer
+          puede={puedeRevertir}
+          operaciones={operacionesReversibles}
+          onHecho={(op, r) => {
+            const nuevo = typeof r.resultado?.estado === "string" ? (r.resultado.estado as string) : op.tipo === "checkout_estancia" ? "en_curso" : "reservada";
+            setEstado(nuevo);
+          }}
+        />
       )}
 
       {editable && (
@@ -330,6 +364,7 @@ export function EstanciaFila({
 
       <div className="border-t border-border pt-3">
         <CargosSeccion
+          puedeRevertir={puedeRevertir}
           estanciaId={fila.id}
           estado={estado}
           cargosIniciales={cargosIniciales}

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { textoListaVacia } from "@/lib/reservas/lista-vacia";
 import { aplicarCargo, cancelarCargo } from "./cargo-actions";
+import { Deshacer } from "@/components/operaciones/deshacer";
 import { AvisoConflicto } from "@/components/concurrencia/aviso-conflicto";
 import type { Conflicto } from "@/lib/concurrencia/tipos";
 
@@ -53,6 +54,7 @@ export function CargosSeccion({
   cuentaCobrado = 0,
   cuentaDevuelto = 0,
   sinCargosNuevos = null,
+  puedeRevertir = false,
 }: {
   estanciaId: string;
   // QA R59 (N144): sin cargos, «Ninguno todavía» solo mientras la estancia no termina; finalizada, cancelada o «no
@@ -73,6 +75,8 @@ export function CargosSeccion({
   cuentaDevuelto?: number;
   // Estancia finalizada con la cuenta pagada (admiteCargosNuevos): no se ofrece «Aplicar cargo» y se dice por qué.
   sinCargosNuevos?: string | null;
+  /** Permiso «Deshacer operaciones»: «Reactivar el cargo» en uno cancelado. */
+  puedeRevertir?: boolean;
 }) {
   const [cargos, setCargos] = useState(cargosIniciales);
   // QA S41 (N144): la cuenta que se enseña es la de la base; aplicar o cancelar un cargo devuelve la nueva y se pinta con
@@ -246,6 +250,14 @@ export function CargosSeccion({
                 )}
                 {c.cancelado && c.motivoCancelacion && (
                   <p className="mt-1 text-xs text-n-500">Cancelado: {c.motivoCancelacion}</p>
+                )}
+                {c.cancelado && (
+                  <Deshacer
+                    puede={puedeRevertir}
+                    operaciones={[{ tipo: "cargo_cancelado", id: c.id }]}
+                    className="mt-2"
+                    onHecho={() => setCargos((prev) => prev.map((x) => (x.id === c.id ? { ...x, cancelado: false, motivoCancelacion: null } : x)))}
+                  />
                 )}
                 {cancelandoId === c.id && (
                   <div className="mt-2 flex flex-col gap-2 border-t border-border pt-2">

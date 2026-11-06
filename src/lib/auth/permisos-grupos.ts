@@ -22,6 +22,7 @@ export type GrupoPermiso = (typeof GRUPOS_PERMISOS)[number];
 
 const GRUPO_DE: Record<ClavePermiso, GrupoPermiso> = {
   excepciones_reserva: "Recepción y agenda",
+  revertir_operaciones: "Recepción y agenda",
   eliminar_citas: "Recepción y agenda",
   importar_datos: "Recepción y agenda",
   ajustar_pases: "Hotel y guardería",
