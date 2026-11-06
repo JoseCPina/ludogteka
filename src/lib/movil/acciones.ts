@@ -1,4 +1,5 @@
 import { pedirEntrada, estadoEntrada, canjearEntrada, entrarConContrasena, renovarSesionMovil } from "@/lib/app/entrada";
+import { pedirCodigoEntrada, verificarCodigoEntrada } from "@/lib/app/entrada-codigo";
 import { sesionApp } from "@/lib/app/sesion";
 import { leerFotoDeCartilla } from "@/lib/app/cartilla-foto";
 import { registrarDispositivo, quitarDispositivo } from "@/lib/movil/push";
@@ -34,6 +35,9 @@ const origenMovil = { ip: null, userAgent: "PeluDesk app nativa" };
 
 export const ACCIONES: Record<string, Accion> = {
   // ── Entrar (sin sesión) ──
+  pedirCodigoEntrada: { publica: true, fn: (async (telefono: string, canal?: "whatsapp" | "sms") => pedirCodigoEntrada({ telefono, canal, ip: null })) as Accion["fn"] },
+  verificarCodigoEntrada: { publica: true, fn: (async (telefono: string, codigo: string) => verificarCodigoEntrada({ telefono, codigo, destino: "tokens" })) as Accion["fn"] },
+  // Las tres de abajo son del flujo anterior: las sigue usando el APK ya instalado hasta que se actualice.
   pedirCodigo: { publica: true, fn: (async (telefono: string) => pedirEntrada({ telefono, ...origenMovil })) as Accion["fn"] },
   consultarEntrada: { publica: true, fn: (async (id: string) => ({ error: null, entrada: await estadoEntrada(id) })) as Accion["fn"] },
   canjearEntrada: { publica: true, fn: (async (id: string) => canjearEntrada(id, "tokens")) as Accion["fn"] },
@@ -143,6 +147,7 @@ export const ACCIONES: Record<string, Accion> = {
   horas: { fn: negocios.horasApp },
   cupo: { fn: negocios.cupoApp },
   pedirCita: { fn: negocios.pedirCitaApp },
+  cotizarRecoleccion: { fn: negocios.cotizarRecoleccionApp },
   reservarEstancia: { fn: negocios.reservarApp },
   textoContrato: { fn: negocios.textoContratoApp },
   firmarContrato: { fn: negocios.firmarContratoApp },

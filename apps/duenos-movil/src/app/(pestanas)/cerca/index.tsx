@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, FlatList, Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { Image } from "expo-image";
@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type MapView from "react-native-maps";
 import { llamar } from "@/lib/api";
 import { distancia, pesos } from "@/lib/formato";
-import { miUbicacion } from "@/lib/ubicacion";
+import { hayPermisoUbicacion, miUbicacion } from "@/lib/ubicacion";
+import { GuiaSeccion } from "@/componentes/onboarding";
 import { Mapa, Pin, hayMapa, regionDe } from "@/componentes/mapa";
 import { HojaInferior } from "@/componentes/hoja";
 import { Boton, BotonIcono, Chip, Insignia, Mensaje, Texto, Vacio } from "@/componentes/ui";
@@ -51,6 +52,7 @@ export default function Cerca() {
   const lista = useRef<FlatList<Lugar>>(null);
   const [aqui, setAqui] = useState<{ lat: number; lng: number } | null>(null);
   const [sinPermiso, setSinPermiso] = useState(false);
+  const [buscandoGps, setBuscandoGps] = useState(false);
   const [categoria, setCategoria] = useState<Categoria>("veterinaria");
   const [datos, setDatos] = useState<Respuesta | null>(null);
   const [cargando, setCargando] = useState(false);
@@ -79,17 +81,26 @@ export default function Cerca() {
     }
   }, []);
 
+  const reintento = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ubicarRef = useRef<(cat: Categoria) => Promise<void>>(async () => {});
+  useEffect(() => () => { if (reintento.current) clearTimeout(reintento.current); }, []);
   const ubicar = useCallback(async (cat: Categoria) => {
     const u = await miUbicacion({ avisar: false });
     const punto = u ? { lat: u.lat, lng: u.lng } : CENTRO_MX;
-    setSinPermiso(!u);
+    const conPermiso = u ? true : await hayPermisoUbicacion();
+    setSinPermiso(!conPermiso);
+    setBuscandoGps(!u && conPermiso);
     setAqui(punto);
+    // Hay permiso pero el GPS todavía no da señal: se sigue buscando sin molestar.
+    if (!u && conPermiso) reintento.current = setTimeout(() => void ubicarRef.current(cat), 6000);
     if (u) {
       mapa.current?.animateToRegion(regionDe(u.lat, u.lng), 500);
       llamar("guardarZona", [u.lat, u.lng]).catch(() => {}); // su zona (a ~1 km) para avisarle de mascotas perdidas y alertas
     }
     buscar(punto, cat);
   }, [buscar]);
+
+  useEffect(() => { ubicarRef.current = ubicar; }, [ubicar]);
 
   // La ubicación se pide al abrir esta pestaña, nunca antes: una pestaña puede montarse sin que la persona la haya visto.
   const ubicada = useRef(false);
@@ -158,6 +169,7 @@ export default function Cerca() {
         ListHeaderComponent={
           <View style={{ gap: 10 }}>
             {sinPermiso ? <Mensaje tono="info" texto="Sin tu ubicación te enseñamos San Luis Potosí. Para ver lo que hay cerca de ti, da permiso de ubicación." /> : null}
+            {buscandoGps ? <Mensaje tono="info" texto="Buscando tu ubicación…" /> : null}
             <Mensaje texto={error} />
           </View>
         }
@@ -171,6 +183,7 @@ export default function Cerca() {
   if (!hayMapa) {
     return (
       <View style={{ flex: 1, backgroundColor: c.fondo, paddingTop: inset.top + 10, gap: 10 }}>
+        <GuiaSeccion seccion="cerca" />
         {chips}
         {encabezado}
         <View style={{ flex: 1 }}>{contenido}</View>
@@ -180,6 +193,7 @@ export default function Cerca() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.fondo }}>
+      <GuiaSeccion seccion="cerca" />
       <Mapa ref={mapa} style={{ flex: 1 }} initialRegion={regionDe((aqui ?? CENTRO_MX).lat, (aqui ?? CENTRO_MX).lng, 6)} onPress={() => elegido && setElegido(null)} mapPadding={{ top: inset.top + 60, right: 0, bottom: 0, left: 0 }}>
         {lugares.map((l) => (
           <Pin key={l.id} coordenada={{ latitude: l.lat, longitude: l.lng }} color={l.enPeluDesk ? coloresLugar.peludesk : coloresLugar[l.tipo]} icono={icono(l)} peludesk={l.enPeluDesk} elegido={elegido?.id === l.id} alTocar={() => elegir(l)} titulo={l.nombre} />

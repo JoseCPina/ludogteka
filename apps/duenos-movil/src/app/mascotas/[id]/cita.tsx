@@ -7,10 +7,11 @@ import { usePantalla, useAccion } from "@/lib/datos";
 import { pesos, sumarDias } from "@/lib/formato";
 import { Pantalla } from "@/componentes/pantalla";
 import { Boton, Chip, Fila, Grupo, Mensaje, Texto, Vacio } from "@/componentes/ui";
+import { RecoleccionPedir, type RecoleccionPedida } from "@/componentes/recoleccion-pedir";
 import { fuentes, radio, useColores } from "@/tema";
 
 type Servicio = { id: string; nombre: string; duracionMinutos: number | null };
-type Negocio = { id: string; nombre: string; zona: string; hoy: string; servicios: Servicio[] };
+type Negocio = { id: string; nombre: string; zona: string; hoy: string; servicios: Servicio[]; recoleccion?: boolean };
 type Datos = { mascota: { id: string; nombre: string; sexo: string | null }; enLinea: Negocio[]; porWhatsApp: { nombre: string; wa: string | null }[]; toca: { nombre: string; proximaDosis: string }[] };
 type Horas = { abre: boolean; horas: { inicio: string; hora: string }[] };
 
@@ -31,6 +32,7 @@ export default function Cita() {
   const [dia, setDia] = useState<string | null>(null);
   const [horas, setHoras] = useState<Horas | null>(null);
   const [hora, setHora] = useState<{ inicio: string; hora: string } | null>(null);
+  const [recoleccion, setRecoleccion] = useState<RecoleccionPedida | null>(null);
   const [hecha, setHecha] = useState<{ atiende: string | null; total: number | null } | null>(null);
   const cargaHoras = useAccion();
   const pedir = useAccion();
@@ -51,7 +53,7 @@ export default function Cita() {
 
   const confirmar = async () => {
     if (!negocio || !servicio || !hora) return;
-    const r = await pedir.ejecutar(() => llamar<{ datos?: { atiende?: string | null; precio?: number | null; total_cuenta?: number | null } }>("pedirCita", [negocio.id, id, servicio.id, hora.inicio]));
+    const r = await pedir.ejecutar(() => llamar<{ datos?: { atiende?: string | null; precio?: number | null; total_cuenta?: number | null } }>("pedirCita", [negocio.id, id, servicio.id, hora.inicio, recoleccion]));
     if (r?.datos) setHecha({ atiende: r.datos.atiende ?? null, total: r.datos.total_cuenta != null ? Number(r.datos.total_cuenta) : r.datos.precio != null ? Number(r.datos.precio) : null });
     else if (r?.error && /ocup/i.test(r.error)) verHoras(negocio, servicio, dia); // la hora se ocupó: se vuelve a leer el día
   };
@@ -118,6 +120,7 @@ export default function Cita() {
                       );
                     })}
                   </View>
+                  {negocio?.recoleccion && hora ? <RecoleccionPedir negocioId={negocio.id} mascotaId={id} alCambiar={setRecoleccion} /> : null}
                   <Mensaje texto={cargaHoras.error ?? pedir.error} />
                 </View>
               ) : null}

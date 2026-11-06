@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <queries>
+    <package android:name="com.whatsapp" />
+    <package android:name="com.whatsapp.w4b" />
+  </queries>
+  <application>
+    <!-- El botón «Autocompletar» de la plantilla de autenticación de WhatsApp entrega aquí el código. -->
+    <receiver android:name="mx.peludesk.codigoautomatico.CodigoDeWhatsAppReceiver" android:exported="true">
+      <intent-filter>
+        <action android:name="com.whatsapp.otp.OTP_RETRIEVED" />
+      </intent-filter>
+    </receiver>
+  </application>
+</manifest>

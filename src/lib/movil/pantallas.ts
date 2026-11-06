@@ -1,4 +1,5 @@
 import { sesionApp } from "@/lib/app/sesion";
+import { supabaseAppEnNegocio } from "@/lib/app/en-negocio";
 import { misMascotas, miMascota, misNegocios, misAvisos, edadTexto, nombreEspecie } from "@/lib/app/datos";
 import { cartillaDe, proximas, hoyMx, diasEntre } from "@/lib/app/cartilla";
 import { aAtencionDelDueno } from "@/lib/app/atenciones";
@@ -18,6 +19,13 @@ import { hoyNegocio } from "@/lib/formato";
  * del dueño (lo mismo que la web: saldo de sus cuentas y precio de lo que él reserva).
  */
 const sinSesion = async () => (await sesionApp()) === null;
+
+/** ¿Este negocio ofrece recolección a domicilio? (módulo prendido) */
+async function ofreceRecoleccion(negocioId: string): Promise<boolean> {
+  const supabase = await supabaseAppEnNegocio(negocioId);
+  const { data } = await supabase.rpc("modulo_activo", { p_modulo: "recoleccion" });
+  return data === true;
+}
 
 export async function pantallaInicio() {
   const s = await sesionApp();
@@ -194,7 +202,7 @@ export async function pantallaCita(id: string) {
         const servicios = (await serviciosApp(v.negocioId)).filter((s) => s.categoria === "estetica");
         if (!servicios.length) return null;
         const zona = datos.get(v.negocioId)?.zona ?? "America/Mexico_City";
-        return { id: v.negocioId, nombre: v.negocioNombre, zona, hoy: hoyNegocio(zona), servicios };
+        return { id: v.negocioId, nombre: v.negocioNombre, zona, hoy: hoyNegocio(zona), servicios, recoleccion: await ofreceRecoleccion(v.negocioId) };
       })
     )
   ).filter(Boolean);
@@ -229,7 +237,7 @@ export async function pantallaReservar(id: string) {
       m.vinculos.map(async (v) => {
         const servicios = (await serviciosApp(v.negocioId)).filter((s) => s.categoria === "guarderia" || s.categoria === "hotel");
         if (!servicios.length) return null;
-        return { id: v.negocioId, nombre: v.negocioNombre, hoy: hoyNegocio(datos.get(v.negocioId)?.zona ?? "America/Mexico_City"), servicios };
+        return { id: v.negocioId, nombre: v.negocioNombre, hoy: hoyNegocio(datos.get(v.negocioId)?.zona ?? "America/Mexico_City"), servicios, recoleccion: await ofreceRecoleccion(v.negocioId) };
       })
     )
   ).filter(Boolean);

@@ -9,6 +9,7 @@ import { Mapa, Pin, hayMapa, regionDe } from "@/componentes/mapa";
 import { Boton, Mensaje, Segmentos, Vacio, sombra } from "@/componentes/ui";
 import { TIPO_ALERTA, TarjetaAlerta, type AlertaLista } from "@/componentes/alerta";
 import { coloresLugar, useColores } from "@/tema";
+import { GuiaSeccion } from "@/componentes/onboarding";
 
 const CENTRO_MX = { lat: 22.1565, lng: -100.9855 };
 
@@ -39,6 +40,7 @@ export default function Alertas() {
   const activas = (alertas ?? []).filter((a) => a.estado === "sigue_ahi" || a.estado === "ya_no_esta");
   return (
     <>
+      <GuiaSeccion seccion="alertas" />
       <Stack.Screen options={{ headerTitle: "Alertas", headerTransparent: vista === "mapa", headerStyle: vista === "mapa" ? { backgroundColor: "transparent" } : { backgroundColor: c.fondo } }} />
       <View style={{ flex: 1, backgroundColor: c.fondo }}>
         {vista === "mapa" ? (

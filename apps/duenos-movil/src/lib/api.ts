@@ -56,6 +56,17 @@ export async function cargarSesion(): Promise<Tokens | null> {
   return tokens;
 }
 
+/** De quién es la sesión (el «sub» del token), para recordar cosas por cuenta. Null sin sesión. */
+export function cuentaDeLaSesion(): string | null {
+  const parte = tokens?.accessToken.split(".")[1];
+  if (!parte) return null;
+  try {
+    return (JSON.parse(atob(parte.replace(/-/g, "+").replace(/_/g, "/"))) as { sub?: string }).sub ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export const abrirSesion = (t: Tokens) => guardar(t);
 export const cerrarSesion = () => guardar(null);
 

@@ -3,11 +3,11 @@ import { KeyboardAvoidingView, Platform, Pressable, View } from "react-native";
 import { router } from "expo-router";
 import { llamar } from "@/lib/api";
 import { useAccion } from "@/lib/datos";
-import { hoyLocal } from "@/lib/formato";
+
 import { preguntarOrigen, tomarFoto, type FotoLista } from "@/lib/fotos";
 import { Pantalla } from "@/componentes/pantalla";
 import { AvatarMascota, Boton, Campo, Mensaje, Segmentos, Texto } from "@/componentes/ui";
-import { CampoFecha } from "@/componentes/fecha";
+import { SelectorEdad } from "@/componentes/edad";
 import { Icono } from "@/componentes/icono";
 import { useColores } from "@/tema";
 
@@ -62,7 +62,7 @@ export default function NuevaMascota() {
           <Texto v="secundario" color={c.texto} style={{ fontFamily: "Outfit_500Medium" }}>Sexo</Texto>
           <Segmentos valor={sexo} alCambiar={setSexo} opciones={[{ valor: "hembra", texto: "Hembra" }, { valor: "macho", texto: "Macho" }]} />
         </View>
-        <CampoFecha etiqueta="Fecha de nacimiento" valor={nacimiento} alCambiar={setNacimiento} maximo={hoyLocal()} ayuda="Si no la sabes exacta, una aproximada sirve." />
+        <SelectorEdad alCambiar={setNacimiento} />
         {especie !== "otro" ? <Campo etiqueta="Raza (opcional)" value={raza} onChangeText={setRaza} placeholder={especie === "gato" ? "Doméstico, siamés…" : "Mestizo, labrador…"} maxLength={60} /> : null}
         <Mensaje texto={accion.error} />
       </Pantalla>

@@ -8,6 +8,7 @@ import { Pantalla } from "@/componentes/pantalla";
 import { AvatarMascota, BotonIcono, Fila, Grupo, Insignia, Texto, Vacio, Boton, sombra } from "@/componentes/ui";
 import { Icono } from "@/componentes/icono";
 import { fuentes, radio, useColores } from "@/tema";
+import { GuiaSeccion } from "@/componentes/onboarding";
 
 type Mascota = { id: string; nombre: string; especieTexto: string; edad: string | null; razaTexto: string | null; fotoUrl: string | null; fallecido: boolean; perdidaAt: string | null; encontradaAt: string | null; vinculos: { negocioNombre: string }[] };
 type DatosInicio = {
@@ -33,6 +34,7 @@ export default function Inicio() {
 
   return (
     <>
+      <GuiaSeccion seccion="mascotas" />
       <Stack.Screen options={{ headerRight: () => <BotonIcono icono="agregar" etiqueta="Agregar mascota" alTocar={() => router.push("/mascotas/nueva")} tamano={36} /> }} />
       <Pantalla cargando={p.cargando} error={p.error} refrescando={p.refrescando} alRefrescar={p.refrescar} alReintentar={p.refrescar} sinMargen style={{ paddingTop: 8 }}>
         {d ? (

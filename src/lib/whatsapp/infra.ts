@@ -561,6 +561,14 @@ export class ClienteWA implements SalidaWA {
    * (el seguimiento de pruebas). UN solo intento de red: el reintento, si toca,
    * lo decide quien llama (una sola vez, en otra corrida) para no mandar dos veces.
    */
+  /** Plantilla de autenticación: el código va en el cuerpo y en su botón («Autocompletar» / «Copiar código»). Un solo intento. */
+  plantillaDeCodigo(a: string, nombre: string, codigo: string) {
+    return this.enviar(
+      { messaging_product: "whatsapp", recipient_type: "individual", to: a, type: "template", template: { name: nombre, language: { code: "es_MX" }, components: [{ type: "body", parameters: [{ type: "text", text: codigo }] }, { type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: codigo }] }] } },
+      { intentos: 1 },
+    );
+  }
+
   plantillaConParametros(a: string, nombre: string, parametros: string[], payloadsBotones: string[], contexto?: ContextoEnvio) {
     const components: Record<string, unknown>[] = [];
     if (parametros.length > 0) components.push({ type: "body", parameters: parametros.map((text) => ({ type: "text", text })) });

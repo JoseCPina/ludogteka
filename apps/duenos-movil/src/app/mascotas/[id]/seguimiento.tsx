@@ -6,7 +6,7 @@ import { usePantalla, useAccion } from "@/lib/datos";
 import { fechaCorta, hoyLocal, pesos } from "@/lib/formato";
 import { Pantalla } from "@/componentes/pantalla";
 import { Boton, Campo, Chip, Fila, Grupo, Mensaje, Segmentos, Texto, Vacio } from "@/componentes/ui";
-import { CampoFecha } from "@/componentes/fecha";
+import { CampoFechaRuedas } from "@/componentes/rueda";
 import { radio, tipo as tipografia, useColores } from "@/tema";
 
 type Datos = {
@@ -128,7 +128,7 @@ export default function Seguimiento() {
               {vista === "peso" ? (
                 <>
                   <Campo etiqueta="Peso en kg" value={peso} onChangeText={setPeso} keyboardType="decimal-pad" placeholder="12.5" style={tipografia.encabezado} />
-                  <CampoFecha etiqueta="Fecha" valor={fecha} alCambiar={setFecha} maximo={hoyLocal()} />
+                  <CampoFechaRuedas etiqueta="Fecha" valor={fecha} alCambiar={setFecha} maximo={hoyLocal()} />
                 </>
               ) : vista === "medicinas" ? (
                 <>
@@ -138,7 +138,7 @@ export default function Seguimiento() {
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                     {HORAS.map((h) => <Chip key={h} texto={h} activo={horas.includes(h)} alTocar={() => setHoras((x) => (x.includes(h) ? x.filter((y) => y !== h) : [...x, h]))} />)}
                   </View>
-                  <CampoFecha etiqueta="Hasta (opcional)" valor={hasta} alCambiar={setHasta} minimo={hoyLocal()} />
+                  <CampoFechaRuedas etiqueta="Hasta (opcional)" valor={hasta} alCambiar={setHasta} minimo={hoyLocal()} />
                 </>
               ) : (
                 <>
@@ -147,7 +147,7 @@ export default function Seguimiento() {
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                     {CATEGORIAS.map(([v, t]) => <Chip key={v} texto={t} activo={categoria === v} alTocar={() => setCategoria(v)} />)}
                   </View>
-                  <CampoFecha etiqueta="Fecha" valor={fecha} alCambiar={setFecha} maximo={hoyLocal()} />
+                  <CampoFechaRuedas etiqueta="Fecha" valor={fecha} alCambiar={setFecha} maximo={hoyLocal()} />
                 </>
               )}
               <Mensaje texto={accion.error} />
