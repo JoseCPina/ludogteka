@@ -23,15 +23,14 @@ export async function probarConexionGoogle(): Promise<EstadoDiagnostico> {
   const negocio = await negocioActual();
   const supabase = await createSupabaseServerClient();
 
-  const [{ data: sucursal }, { data: cupo }] = await Promise.all([
+  const [{ data: sucursal }, { data: cupoData }] = await Promise.all([
     supabase.from("sucursales").select("direccion, lat, lng").eq("activo", true).limit(1).maybeSingle(),
-    supabase
-      .from("cupo_configuracion")
-      .select("base_direccion, base_lat, base_lng")
-      .order("vigencia_desde", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+    // La misma fila vigente que usa el cotizador y «Ubicar en el mapa» (varias
+    // filas pueden compartir vigencia_desde: un order por fecha a secas tomaba
+    // otra y la prueba medía base = sucursal, sin ruta).
+    supabase.rpc("resolver_cupo_configuracion"),
   ]);
+  const cupo = (Array.isArray(cupoData) ? cupoData[0] : cupoData) as { base_lat: number | null; base_lng: number | null } | null;
 
   if (!sucursal?.lat || !sucursal?.lng) {
     return {
