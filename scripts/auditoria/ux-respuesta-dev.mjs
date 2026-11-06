@@ -138,6 +138,7 @@ try {
     let noCargo = 0;
     while (cola.length && pantallas < MAX) {
       const ruta = cola.shift();
+      console.log(`  → ${ruta}`);
       try {
         const resp = await abrir(ruta);
         if (!resp || resp.status() >= 500 || !(await p.locator("header").count())) throw new Error(`no cargó (${resp?.status() ?? "sin respuesta"})`);
