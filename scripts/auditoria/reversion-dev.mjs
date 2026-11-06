@@ -60,6 +60,8 @@ const hoy = (await rpc(tAdmin, "fecha_negocio")).cuerpo;
 const suma = (dias) => new Date(new Date(`${hoy}T12:00:00Z`).getTime() + dias * 86400000).toISOString().slice(0, 10);
 const MARCA = `reversion-${String(Date.now()).slice(-6)}`;
 const MOTIVO = `Prueba ${MARCA}: se hizo por error`;
+// Otra hora en cada corrida: una corrida cortada deja citas que chocan con la estilista a la misma hora.
+const HORA_CITA = `${15 + Math.floor(Math.random() * 7)}:${String(Math.floor(Math.random() * 6) * 10).padStart(2, "0")}`;
 
 // ── Catálogo ──────────────────────────────────────────────────────────────────────────────────────────────────
 const { data: guarderiaDia } = await SB.from("servicios").select("id").eq("negocio_id", B).eq("categoria", "guarderia").eq("unidad", "dia").is("deleted_at", null).limit(1).single();
@@ -187,7 +189,7 @@ try {
   else {
     const perro5 = await nuevoPerro();
     rCita = (await SB.from("reservas").insert({ negocio_id: B, cliente_id: perro5.cliente_id }).select("id").single()).data.id;
-    const c5 = await SB.from("citas_estetica").insert({ negocio_id: B, reserva_id: rCita, perro_id: perro5.id, servicio_id: estetica.id, empleado_id: datos.esteticaB, inicio: new Date(`${suma(2)}T16:00:00Z`).toISOString(), precio: 450, precio_base: 450, servicio_nombre: estetica.nombre }).select("id").single();
+    const c5 = await SB.from("citas_estetica").insert({ negocio_id: B, reserva_id: rCita, perro_id: perro5.id, servicio_id: estetica.id, empleado_id: datos.esteticaB, inicio: new Date(`${suma(2)}T${HORA_CITA}:00Z`).toISOString(), precio: 450, precio_base: 450, servicio_nombre: estetica.nombre }).select("id").single();
     if (c5.error) hallazgo(`no se pudo crear la cita: ${c5.error.message}`);
     else {
       citaId = c5.data.id;
