@@ -38,7 +38,8 @@ export default function Reservar() {
   const negocio = d?.negocios.find((n) => n.id === negocioId) ?? d?.negocios[0] ?? null;
   const esHotel = servicio?.categoria === "hotel";
   const porHora = servicio?.unidad === "hora";
-  const salidaReal = esHotel ? salida : entrada;
+  // Una guardería ocupa un día: la base guarda la estancia hasta el día siguiente.
+  const salidaReal = esHotel ? salida : entrada ? sumarDias(entrada, 1) : null;
 
   const verCupo = () =>
     ver.ejecutar(async () => {
