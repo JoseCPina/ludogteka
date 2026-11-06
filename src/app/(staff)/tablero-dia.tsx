@@ -237,6 +237,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
     ajustes: pieza(general, "ajustes"),
     cobro: pieza(dinero, "cobro"),
     saldosAFavor: pieza(dinero, "saldos_a_favor"),
+    mapsTope: pieza(dinero, "maps_tope"),
     cfdi: pieza(general, "cfdi"),
   };
 
@@ -463,6 +464,13 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       href: saldos.length === 1 ? `/caja/cobrar/${saldos[0].reservaId}` : "/recepcion/saldos",
       ...masViejo(saldos.map((c) => c.salioEl), hoy, zona, "a"),
     });
+  }
+
+  // Se llegó al tope de Google Maps del mes: las recolecciones se están cotizando en línea recta × 1.3.
+  {
+    const { data: tope } = await previas.mapsTope;
+    const t = tope as { usadas: number; tope: number } | null;
+    if (t) atencion.push({ clave: "maps-tope", texto: `Se usaron las ${t.tope} consultas de Google Maps del mes`, detalle: "Las recolecciones se cotizan en línea recta × 1.3 hasta el mes que entra: revisa los km antes de cobrar.", href: "/recolecciones", accion: "Ver" });
   }
 
   // QA S62 (N162): cuentas con saldo a favor del cliente (se cobró más de lo que quedó en la cuenta). Cada una con su

@@ -148,6 +148,8 @@ export const ACCIONES: Record<string, Accion> = {
   cupo: { fn: negocios.cupoApp },
   pedirCita: { fn: negocios.pedirCitaApp },
   cotizarRecoleccion: { fn: negocios.cotizarRecoleccionApp },
+  direccionGuardada: { fn: negocios.direccionGuardadaApp },
+  direccionDeMiUbicacion: { fn: negocios.direccionDeMiUbicacionApp },
   reservarEstancia: { fn: negocios.reservarApp },
   textoContrato: { fn: negocios.textoContratoApp },
   firmarContrato: { fn: negocios.firmarContratoApp },

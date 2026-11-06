@@ -566,7 +566,7 @@ Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y despué
 1. En **Nueva reserva** (Guardería u Hotel) o en **Agendar cita** (Estética), prende **Incluir recolección**.
 2. Escoge la dirección: **La guardada** del cliente o **Otra dirección** (puedes guardarla en su ficha).
 3. En **Sale desde** escoge **El local** o **La base de la camioneta** (la base la configura un admin en su panel, en la sección «Ubicación»); pon la **Hora estimada** y, si quieres, una nota para quien recoge.
-4. Toca **Cotizar recolección**: ves los kilómetros (la distancia guardada, o la que calcula el mapa para una dirección nueva, o los que escribas a mano si el mapa no puede) y el precio con tu tarifa por kilómetro.
+4. Toca **Cotizar recolección**: ves los kilómetros: la distancia guardada del cliente o, para una dirección nueva, la ruta en coche que calcula el mapa desde el punto de salida (si no puede, los escribes a mano) y el precio con tu tarifa por kilómetro.
 5. Crea la reserva o agenda la cita. La recolección queda ligada a ella y su cargo entra a la cuenta en ese momento.
 
 Si la reserva o la cita se mueve de fecha, la recolección se mueve; si se cancela o el perro no llega, la recolección y su cargo se cancelan solos.
@@ -588,7 +588,8 @@ Si la reserva o la cita se mueve de fecha, la recolección se mueve; si se cance
 
 - «Falta ubicar la dirección del negocio en el mapa…»: el admin escribe la dirección en [Perfil y página web](/admin/perfil) y aprieta **Ubicar en el mapa** en Configuración, en la sección «Ubicación para recolección». Mientras, pon la distancia a mano.
 - La ruta sale de la dirección del negocio. Si la camioneta sale de otro lado, el admin escribe ese **Punto de salida de recolección (solo si es distinto a la dirección del negocio)** en Ubicación para recolección.
-- «Tu negocio ya usó las … consultas de Google Maps de este mes.»: captura los kilómetros a mano; el mes que entra vuelve a calcularse solo.`,
+- «Tu negocio ya usó las … consultas de Google Maps de este mes.»: los km salen en línea recta × 1.3 hasta el mes que entra, también en lo que pidan tus clientes desde la app, y te lo avisa Necesita atención. Revísalos antes de cobrar o escríbelos a mano.
+- Cuando un cliente la pide desde la app: escribe la dirección o usa su dirección guardada, y los km se calculan por esa dirección, nunca por dónde está su celular. No puede cambiar los km, y más de 60 km no se aceptan.`,
   },
   {
     slug: "botones-y-enlaces",

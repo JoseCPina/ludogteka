@@ -217,7 +217,7 @@ export async function probarGoogleMaps(
   const intermedio = geo.ok && !geo.simulado
     ? extraerPunto(geo.detalle) ?? negocio
     : negocio;
-  const rutas = await probarRoutes(base, intermedio, negocio, key);
+  const rutas = await probarRoutes(base, intermedio, negocio, process.env.GOOGLE_RUTAS_API_KEY || key);
 
   return [geo, rutas];
 }

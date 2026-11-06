@@ -46,7 +46,7 @@ o su compilación en EAS. El porqué está en `PLAN.md` («La app es nativa»); 
 ## Onboarding y fechas
 - `src/lib/onboarding.tsx`: lo visto se guarda por cuenta y por dispositivo (almacén seguro). `Bienvenida` (tres pasos, una vez) y `GuiaSeccion` (una hoja por pestaña; «No volver a mostrar» apaga las de todas), `src/componentes/onboarding.tsx`.
 - `src/componentes/rueda.tsx`: ruedas propias, iguales en Android y iPhone, con el tema. `CampoFechaRuedas` para la cartilla y el seguimiento (`conAtajos`: Hoy, Ayer, Hace una semana, Hace un mes); la próxima dosis se propone sola: vacuna 12 meses, desparasitación 3. `SelectorEdad` (`edad.tsx`) para el nacimiento. Citas y reservas siguen con su propio selector.
-- Recolección al pedir cita y reservar: `RecoleccionPedir`, con `cotizarRecoleccion` y el campo `recoleccion` de las pantallas `cita` y `reservar`.
+- Recolección al pedir cita y reservar: `RecoleccionPedir`, con `cotizarRecoleccion` (por la dirección; docs/guarderia-hotel.md), `direccionGuardada`, `direccionDeMiUbicacion` («¿Usar donde estás ahora?», solo propone) y el campo `recoleccion` de las pantallas `cita` y `reservar`.
 
 ## Notificaciones nativas
 - `expo-notifications` pide permiso, crea los canales de Android («Avisos de tus mascotas» y «Alertas de animales cerca») y

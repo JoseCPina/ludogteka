@@ -81,7 +81,7 @@ export function IncluirRecoleccion({
     const r = await cotizando.ejecutar(() => cotizarRecoleccion(clienteId, dir, punto, km));
     if (r.error && !r.cotizacion) {
       setError(r.error);
-      if (/km a mano/i.test(r.error)) setPedirKm(true);
+      if (r.pedirKm || /km a mano/i.test(r.error)) setPedirKm(true);
       return;
     }
     const c = r.cotizacion!;
@@ -105,7 +105,8 @@ export function IncluirRecoleccion({
       guardarDireccion: !usarGuardada && guardarDireccion,
     };
     const desde = c.punto_direccion ? ` desde ${punto === "base" ? "la base" : "el local"}` : "";
-    setResumen(`${c.km} km${desde}${c.origen_km === "guardada" ? " (distancia guardada del cliente)" : c.origen_km === "calculada" ? " (calculados por el mapa)" : " (a mano)"} · ${c.precio != null ? dinero(c.precio) : "sin precio"}${c.precio_km != null ? ` (${dinero(c.precio_km)} por km)` : ""}${r.simulado ? " · coordenadas simuladas (sin llave de Google en este ambiente)" : ""}`);
+    setResumen(`${c.km} km${desde}${c.origen_km === "guardada" ? " (distancia guardada del cliente)" : c.origen_km === "ruta" || c.origen_km === "calculada" ? " (por ruta)" : c.origen_km === "estimada" ? " (estimados: línea recta × 1.3)" : " (a mano)"} · ${c.precio != null ? dinero(c.precio) : "sin precio"}${c.precio_km != null ? ` (${dinero(c.precio_km)} por km)` : ""}${r.simulado ? " · coordenadas simuladas (sin llave de Google en este ambiente)" : ""}`);
+    if (r.aviso) setError(r.aviso);
     onChange({ activa: true, pedido, cotizada: true });
   }
 

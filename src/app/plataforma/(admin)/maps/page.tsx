@@ -35,8 +35,8 @@ export default async function MapsPlataforma({ searchParams }: { searchParams: P
       <div>
         <h1 className="text-2xl font-bold text-n-900">Google Maps</h1>
         <p className="mt-1 text-n-600">
-          Una llave (la de PeluDesk) para todos los negocios. Cada negocio tiene un tope de consultas al mes; al llegar, su recepción
-          captura los kilómetros a mano. Mes: {mes.slice(0, 7)} · <a className="font-semibold text-morado underline" href="?">este mes</a>
+          Una llave (la de PeluDesk) para todos los negocios. Cada negocio tiene un tope de consultas al mes; al llegar, sus recolecciones
+          se cotizan en línea recta × 1.3 y se le avisa en «Necesita atención». Mes: {mes.slice(0, 7)} · <a className="font-semibold text-morado underline" href="?">este mes</a>
         </p>
       </div>
       {error && <Alert variante="error" titulo="No pudimos cargar el consumo">{error.message}</Alert>}

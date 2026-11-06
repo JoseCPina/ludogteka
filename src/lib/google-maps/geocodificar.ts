@@ -4,6 +4,9 @@ import { geocodificarSimulado } from "./simulado";
 // GOOGLE_MAPS_API_KEY es facturable, expuesta en el navegador cualquiera
 // la consume contra la cuenta del negocio — mismo criterio que
 // src/lib/supabase/admin.ts con la secret key.
+// Fuera de producción, GOOGLE_API_URL apunta a un doble de pruebas (recoleccion-dev).
+const baseGeocoding = () => (process.env.VERCEL_ENV !== "production" && process.env.GOOGLE_API_URL?.replace(/\/$/, "")) || "https://maps.googleapis.com";
+
 export type ResultadoGeocodificar =
   | { ok: true; lat: number; lng: number; simulado: boolean }
   | { ok: false; error: string };
@@ -28,7 +31,7 @@ export function direccionConCiudad(direccion: string, ciudad: string | null | un
 
 export async function geocodificarDireccion(
   direccion: string,
-  opciones: { ciudad?: string | null; centro?: { lat: number; lng: number } | null } = {}
+  opciones: { ciudad?: string | null; centro?: { lat: number; lng: number } | null; exacta?: boolean } = {}
 ): Promise<ResultadoGeocodificar> {
   const key = process.env.GOOGLE_MAPS_API_KEY;
   const completa = direccionConCiudad(direccion, opciones.ciudad);
@@ -37,7 +40,7 @@ export async function geocodificarDireccion(
     return { ok: true, lat, lng, simulado: true };
   }
 
-  const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
+  const url = new URL(`${baseGeocoding()}/maps/api/geocode/json`);
   url.searchParams.set("address", completa);
   url.searchParams.set("region", "mx");
   url.searchParams.set("key", key);
@@ -68,6 +71,28 @@ export async function geocodificarDireccion(
     return { ok: false, error: `Geocodificación falló: ${datos.status ?? "sin respuesta"}.` };
   }
 
+  // Para cobrar por km no basta «en algún lado de la ciudad»: el centro de una colonia o ciudad no es una dirección.
+  if (opciones.exacta && datos.results[0].geometry.location_type === "APPROXIMATE") {
+    return { ok: false, error: "Esa dirección está muy general: agrega calle, número y colonia." };
+  }
   const ubicacion = datos.results[0].geometry.location;
   return { ok: true, lat: ubicacion.lat, lng: ubicacion.lng, simulado: false };
+}
+
+/** La dirección de unas coordenadas (geocodificación inversa): para proponerla, nunca para cobrar. */
+export async function direccionDeCoordenadas(lat: number, lng: number): Promise<{ ok: true; direccion: string } | { ok: false; error: string }> {
+  const key = process.env.GOOGLE_MAPS_API_KEY;
+  if (!key) return { ok: true, direccion: `Calle simulada ${Math.abs(Math.round(lat * 1000))}, Centro` };
+  const url = new URL(`${baseGeocoding()}/maps/api/geocode/json`);
+  url.searchParams.set("latlng", `${lat},${lng}`);
+  url.searchParams.set("language", "es");
+  url.searchParams.set("result_type", "street_address|premise");
+  url.searchParams.set("key", key);
+  try {
+    const datos = await (await fetch(url, { signal: AbortSignal.timeout(12000) })).json();
+    const d = datos.results?.[0]?.formatted_address;
+    return typeof d === "string" ? { ok: true, direccion: d } : { ok: false, error: datos.status ?? "sin resultados" };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "sin respuesta" };
+  }
 }
