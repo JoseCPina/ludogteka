@@ -23,6 +23,8 @@ declare
   end if;
 $b$;
 begin
+  -- Sin retornos de carro: el archivo puede llegar con CRLF (Windows) y la definición guardada no los trae.
+  v_bloque := replace(v_bloque, E'\r', '');
   select replace(pg_get_functiondef('public.portal_reservar(uuid, uuid, date, date, int)'::regprocedure), E'\r', '') into v_def;
   if position(v_bloque in v_def) = 0 then
     raise exception 'portal_reservar no trae el bloque del contrato que se quería quitar (20261203004900).';

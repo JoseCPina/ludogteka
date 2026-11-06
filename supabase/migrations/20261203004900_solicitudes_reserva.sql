@@ -257,18 +257,20 @@ declare
   v_ancla text := $a$  insert into public.reservas (negocio_id, cliente_id) values (v_neg, v_cliente) returning id into v_reserva;
   insert into public.estancias (negocio_id, reserva_id, perro_id, servicio_id, fecha_entrada, fecha_salida, horas)$a$;
 begin
+  -- Sin retornos de carro: el archivo puede llegar con CRLF (Windows) y la definición guardada no los trae.
+  v_ancla := replace(v_ancla, E'\r', '');
   select replace(pg_get_functiondef('public.portal_reservar(uuid, uuid, date, date, int)'::regprocedure), E'\r', '') into v_def;
   if position(v_ancla in v_def) = 0 then
     raise exception 'portal_reservar cambió: no encuentro dónde exigir el contrato.';
   end if;
-  v_def := replace(v_def, v_ancla, $b$  select t.tipo_nombre into v_t from public.tipos_contrato_de_alta('guarderia_hotel') t
+  v_def := replace(v_def, v_ancla, replace($b$  select t.tipo_nombre into v_t from public.tipos_contrato_de_alta('guarderia_hotel') t
   where not exists (select 1 from public.contratos c join public.plantillas_contrato pl on pl.id = c.plantilla_id
                     where c.perro_id = p_perro and c.deleted_at is null and pl.tipo_contrato_id = t.tipo_contrato_id and c.estado in ('firmado_digital', 'firmado_papel'))
   limit 1;
   if found then
     raise exception 'Falta firmar el contrato «%» antes de reservar.', v_t.tipo_nombre;
   end if;
-$b$ || v_ancla);
+$b$, E'\r', '') || v_ancla);
   execute v_def;
 end $$;
 
