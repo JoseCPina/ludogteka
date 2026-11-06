@@ -55,6 +55,8 @@ export const SECCIONES_STAFF: ItemNav[] = [
   { etiqueta: "Guardería", href: "/guarderia", grupo: "dia", roles: ["admin", "recepcion"], modulo: "guarderia" },
   { etiqueta: "Hotel", href: "/hotel", grupo: "dia", roles: ["admin", "recepcion"], modulo: "hotel" },
   // Ocupación por día contra el cupo y la lista de próximas reservas de guardería y hotel.
+  // Lo que los dueños piden cuando les falta un requisito para reservar (docs/app-duenos/FASE-3.md).
+  { etiqueta: "Solicitudes", href: "/solicitudes", grupo: "dia", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel", "estetica"] },
   { etiqueta: "Calendario", href: "/reservas/calendario", grupo: "dia", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },
   // Los que están adentro, con fotos, videos y el reporte del día.
   { etiqueta: "Adentro ahora", href: "/adentro", grupo: "dia", roles: ["admin", "recepcion"], modulo: ["guarderia", "hotel"] },

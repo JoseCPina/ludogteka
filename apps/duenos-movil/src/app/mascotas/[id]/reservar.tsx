@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { View } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { llamar } from "@/lib/api";
 import { usePantalla, useAccion } from "@/lib/datos";
 import { fechaCorta, pesos, sumarDias } from "@/lib/formato";
@@ -8,6 +8,7 @@ import { Pantalla } from "@/componentes/pantalla";
 import { Boton, Campo, Chip, Fila, Grupo, Insignia, Mensaje, Texto, Vacio } from "@/componentes/ui";
 import { CampoFecha } from "@/componentes/fecha";
 import { RecoleccionPedir, type RecoleccionPedida } from "@/componentes/recoleccion-pedir";
+import { Requisitos, type Revision } from "@/componentes/requisitos";
 import { useColores } from "@/tema";
 
 type Servicio = { id: string; nombre: string; categoria: "hotel" | "guarderia"; unidad: string };
@@ -32,6 +33,8 @@ export default function Reservar() {
   const [cupo, setCupo] = useState<Cupo | null>(null);
   const [hecha, setHecha] = useState<Hecha | null>(null);
   const [recoleccion, setRecoleccion] = useState<RecoleccionPedida | null>(null);
+  const [revision, setRevision] = useState<Revision | null>(null);
+  const [pedido, setPedido] = useState(false);
   const ver = useAccion();
   const reservar = useAccion();
   const d = p.datos;
@@ -41,17 +44,43 @@ export default function Reservar() {
   // Una guardería ocupa un día: la base guarda la estancia hasta el día siguiente.
   const salidaReal = esHotel ? salida : entrada ? sumarDias(entrada, 1) : null;
 
+  const argsReserva = () => [negocio!.id, id, servicio!.id, entrada, salidaReal, porHora ? Number(horas) || null : null] as const;
+  const revisar = async () => {
+    const q = await llamar<{ datos?: Revision }>("revisarReserva", [...argsReserva(), null]);
+    if (q.datos) setRevision(q.datos);
+    return q;
+  };
   const verCupo = () =>
     ver.ejecutar(async () => {
       const r = await llamar<{ datos?: Cupo }>("cupo", [negocio!.id, servicio!.id, entrada, salidaReal]);
       setCupo(r.datos ?? null);
-      return r;
+      if (r.error) return r;
+      return revisar();
     });
+  // Al volver de firmar el contrato o de subir la cartilla, se revisa otra vez.
+  useFocusEffect(useCallback(() => {
+    if (cupo && negocio && servicio) revisar().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cupo]));
+  const pedirLugar = async () => {
+    const r = await reservar.ejecutar(() => llamar<{ datos?: { id: string } }>("pedirLugar", [...argsReserva(), null, recoleccion]));
+    if (r?.datos) setPedido(true);
+  };
+  const faltan = (revision?.faltan.length ?? 0) > 0;
 
   const confirmar = async () => {
     const r = await reservar.ejecutar(() => llamar<{ datos?: Hecha }>("reservarEstancia", [negocio!.id, id, servicio!.id, entrada, salidaReal, porHora ? Number(horas) || null : null, recoleccion]));
     if (r?.datos) setHecha(r.datos);
+    else revisar().catch(() => {});
   };
+
+  if (pedido && negocio) {
+    return (
+      <Pantalla>
+        <Vacio icono="listo" titulo="Listo, pediste su lugar" texto={`${negocio.nombre} lo revisa y te avisa aquí. Todavía no se cobra ni se aparta. Si no contesta en 3 días, la solicitud caduca y te avisamos.`} accion={<Boton titulo="Ver mis solicitudes" alTocar={() => router.replace("/visitas")} />} />
+      </Pantalla>
+    );
+  }
 
   if (hecha && negocio) {
     const contratos = hecha.contratos_por_firmar ?? [];
@@ -78,7 +107,7 @@ export default function Reservar() {
       cargando={p.cargando}
       error={p.error}
       alReintentar={p.refrescar}
-      pie={listo ? (cupo?.hayCupo ? <Boton titulo="Reservar" alTocar={confirmar} cargando={reservar.ocupado} /> : <Boton titulo="Ver si hay lugar" variante={cupo ? "secundario" : "primario"} alTocar={verCupo} cargando={ver.ocupado} />) : undefined}
+      pie={listo ? (cupo && faltan ? (revision?.puedePedirLugar ? <Boton titulo="Pedir lugar" alTocar={pedirLugar} cargando={reservar.ocupado} /> : undefined) : cupo?.hayCupo ? <Boton titulo="Reservar" alTocar={confirmar} cargando={reservar.ocupado} /> : <Boton titulo="Ver si hay lugar" variante={cupo ? "secundario" : "primario"} alTocar={verCupo} cargando={ver.ocupado} />) : undefined}
     >
       {d ? (
         d.negocios.length === 0 ? (
@@ -87,21 +116,21 @@ export default function Reservar() {
           <>
             {d.negocios.length > 1 ? (
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {d.negocios.map((n) => <Chip key={n.id} texto={n.nombre} activo={negocio?.id === n.id} alTocar={() => { setNegocioId(n.id); setServicio(null); setCupo(null); }} />)}
+                {d.negocios.map((n) => <Chip key={n.id} texto={n.nombre} activo={negocio?.id === n.id} alTocar={() => { setNegocioId(n.id); setServicio(null); setCupo(null); setRevision(null); }} />)}
               </View>
             ) : (
               <Texto v="encabezado">{negocio?.nombre}</Texto>
             )}
             <Grupo titulo="¿Qué servicio?">
               {negocio?.servicios.map((s, i) => (
-                <Fila key={s.id} icono={s.categoria === "hotel" ? "hotel" : "guarderia"} titulo={s.nombre} detalle={s.categoria === "hotel" ? "Por noche" : s.unidad === "hora" ? "Por hora" : "Por día"} alTocar={() => { setServicio(s); setCupo(null); if (!entrada) setEntrada(negocio.hoy); }} derecha={servicio?.id === s.id ? <Texto v="cuerpoFuerte" color={c.primario}>✓</Texto> : undefined} ultima={i === negocio.servicios.length - 1} />
+                <Fila key={s.id} icono={s.categoria === "hotel" ? "hotel" : "guarderia"} titulo={s.nombre} detalle={s.categoria === "hotel" ? "Por noche" : s.unidad === "hora" ? "Por hora" : "Por día"} alTocar={() => { setServicio(s); setCupo(null); setRevision(null); if (!entrada) setEntrada(negocio.hoy); }} derecha={servicio?.id === s.id ? <Texto v="cuerpoFuerte" color={c.primario}>✓</Texto> : undefined} ultima={i === negocio.servicios.length - 1} />
               ))}
             </Grupo>
             {servicio && negocio ? (
               <View style={{ gap: 14 }}>
-                <CampoFecha etiqueta={esHotel ? "Llega" : "Día"} valor={entrada} alCambiar={(v) => { setEntrada(v); setCupo(null); if (esHotel && v && (!salida || salida <= v)) setSalida(sumarDias(v, 1)); }} minimo={negocio.hoy} />
-                {esHotel ? <CampoFecha etiqueta="Sale" valor={salida} alCambiar={(v) => { setSalida(v); setCupo(null); }} minimo={entrada ? sumarDias(entrada, 1) : negocio.hoy} /> : null}
-                {porHora ? <Campo etiqueta="¿Cuántas horas?" value={horas} onChangeText={setHoras} keyboardType="number-pad" placeholder="4" /> : null}
+                <CampoFecha etiqueta={esHotel ? "Llega" : "Día"} valor={entrada} alCambiar={(v) => { setEntrada(v); setCupo(null); setRevision(null); if (esHotel && v && (!salida || salida <= v)) setSalida(sumarDias(v, 1)); }} minimo={negocio.hoy} />
+                {esHotel ? <CampoFecha etiqueta="Sale" valor={salida} alCambiar={(v) => { setSalida(v); setCupo(null); setRevision(null); }} minimo={entrada ? sumarDias(entrada, 1) : negocio.hoy} /> : null}
+                {porHora ? <Campo etiqueta="¿Cuántas horas?" value={horas} onChangeText={(t) => { setHoras(t); setCupo(null); setRevision(null); }} keyboardType="number-pad" placeholder="4" /> : null}
               </View>
             ) : null}
             {cupo ? (
@@ -111,6 +140,7 @@ export default function Reservar() {
                 ))}
               </Grupo>
             ) : null}
+            {cupo && revision && faltan && negocio ? <Requisitos revision={revision} negocioId={negocio.id} mascotaId={id} /> : null}
             {servicio && negocio?.recoleccion ? <RecoleccionPedir negocioId={negocio.id} mascotaId={id} alCambiar={setRecoleccion} /> : null}
             <Mensaje texto={ver.error ?? reservar.error} />
           </>

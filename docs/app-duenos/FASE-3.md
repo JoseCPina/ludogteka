@@ -159,3 +159,17 @@ Migración `20261203002300`:
 - Los mensajes de `validar_estancia`/`validar_cita_estetica` hablan al personal; la pantalla del dueño los traduce.
 - Las ausencias del personal se excluyen solo si `ausencias.estado = 'aprobada'`; si el catálogo de estados es otro, se
   ajusta `portal_horas_disponibles` y `portal_pedir_cita`.
+
+## «Pedir lugar»: un requisito nunca es una pared (migración `20261203004900`)
+- **Regla:** lo que falta para reservar o pedir cita se explica en palabras del dueño y se ofrece «Pedir lugar» en vez de «Reservar». Vale en la app, el portal web (`/app`) y la API.
+- **Un solo catálogo:** `src/lib/app/requisitos.ts`. La base solo da la clave (`portal_requisitos_reserva`, `clave_de_rechazo_reserva`); `requisitoParaDueno` y `requisitoParaPersonal` dan el texto, y `mensajeParaDueno` traduce con él cualquier rechazo que llegue como texto. Un `validar_*` nuevo se agrega ahí y a `clave_de_rechazo_reserva`.
+- **Qué revisa:** estancia: celo, gestación, alerta, evaluación, requisitos sanitarios (uno por uno, con su nombre), contratos de alta sin firmar, día cerrado y cupo; con todo al corriente, un simulacro (insertar y deshacer) atrapa lo demás (talla, precio). Cita: el simulacro de `portal_pedir_cita`.
+- **`fecha` no deja solicitud** (día cerrado, hora ocupada, fuera de horario, otra cita ese día): se arregla escogiendo otra.
+- **Contrato:** `portal_reservar` ahora exige los contratos de alta firmados. «Firmar aquí» los prepara (`portal_preparar_contratos`) y, firmados, se reserva directo. Al aceptar una solicitud sin contrato firmado, queda pendiente de firma.
+- **`solicitudes_reserva`:** solo la lee el personal; el dueño la ve por `mis_solicitudes()`, sin montos. No crea reserva, cargo ni cupo. Con recolección, consume la cotización y guarda sus km; el cargo entra al aceptar.
+- **Negocio:** `/solicitudes`, «Necesita atención» (`tablero_atencion.solicitudes`), agenda de Estética, Hotel y Guardería (`SolicitudesEnAgenda`), y WhatsApp a los admins con `peludesk_solicitud_reserva_v1` (la tarea diaria la manda a aprobar; sin aprobar, no se manda). Acciones: `solicitud_aceptar`, `solicitud_rechazar`, `solicitud_agendar_evaluacion`, y «Contactar» por wa.me. La evaluación se anota en la solicitud: no hay agenda de evaluaciones.
+- **Dueño:** avisos en `app_avisos` con push (`solicitud_avisar_dueno`, también desde la tarea, por eso no usa `aviso_del_negocio_al_dueno`), y la lista en Visitas con «Cancelar solicitud».
+- **Caducidad:** `expira_at` a 3 días, o la fecha pedida si es antes; agendar la evaluación la extiende. `/api/cron/solicitudes` cada hora.
+- **Cliente dado de baja:** `app_mis_vinculos` ya no lo cuenta como expediente; de ahí salía «Cliente no encontrado» al cotizar la recolección.
+- **Límites:** 5 solicitudes pendientes por cliente y negocio; no se repite la misma.
+- **Pruebas:** `app-duenos-f3-dev.mjs`, `app-movil-api-dev.mjs`, `recoleccion-dev.mjs`, `permisos-pantalla-dev.mjs`, `columnas-internas-dev.mjs`, `dinero-cliente.mjs`.

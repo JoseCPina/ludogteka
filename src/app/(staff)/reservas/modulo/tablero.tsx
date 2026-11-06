@@ -12,6 +12,7 @@ import { LlegadasAtrasadas, type LlegadaAtrasada } from "./llegadas-atrasadas";
 import { zonaActual } from "@/lib/negocio/actual";
 import { Enlace } from "@/components/ui/enlace";
 import { MovimientosDia } from "@/components/estancias/movimientos-dia";
+import { SolicitudesEnAgenda } from "@/components/solicitudes/en-agenda";
 import { Camera, LogIn, LogOut, CalendarPlus, Repeat } from "lucide-react";
 
 const DIAS_CALENDARIO = 14;
@@ -115,6 +116,7 @@ export async function TableroModulo({ modulo }: { modulo: ModuloEstancia }) {
           </Enlace>
         </div>
       </div>
+      <SolicitudesEnAgenda tipo="estancia" />
 
       {error ? (
         <Alert variante="error" titulo="No pudimos cargar la información">

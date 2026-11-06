@@ -1,0 +1,14 @@
+{
+  "nombre": "peludesk_solicitud_reserva_v1",
+  "idioma": "es_MX",
+  "categoria": "UTILITY",
+  "cuerpo": "Hola {{1}}. {{2}} pidió lugar para {{3}}: {{4}}. Antes de confirmarlo falta: {{5}}. Revisa la solicitud y responde en tu panel: {{6}} Si no contestas en 3 días, caduca sola.",
+  "ejemplos": [
+    "Ludogteka",
+    "Ana López",
+    "Firulais",
+    "Hotel, 12/11 al 14/11",
+    "evaluación de comportamiento",
+    "https://ludogteka.mx/solicitudes"
+  ]
+}

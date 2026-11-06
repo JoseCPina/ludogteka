@@ -1,3 +1,4 @@
+import { requisitoParaPersonal, type MotivoBase } from "@/lib/app/requisitos";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { dinero as formatoDinero } from "@/lib/dinero";
 import { negocioActual } from "@/lib/negocio/actual";
@@ -224,6 +225,7 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
   // Ya son promesas en marcha (grupoAtencion nunca rechaza: un error de red deja la parte vacía).
   const previas = {
     bajas: pieza(general, "bajas"),
+    solicitudes: pieza(general, "solicitudes"),
     evaluacionExigida: pieza(general, "evaluacion_exigida"),
     saldos: sinSesion.saldos,
     razas: general.then((d): [Dato, Dato] => [{ data: d.razas_sin_grupo ?? null }, { data: d.razas_propuestas ?? null }]),
@@ -320,6 +322,19 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
       detalle: `Motivo: ${nombreMotivoBaja(b.motivo).toLowerCase()}. Confírmalo o recházalo en su expediente`,
       href: `/perros/${b.perro_id}`,
       ...masViejo([b.created_at], hoy, zona, "a"),
+    });
+  }
+
+  // «Pedir lugar»: lo que los dueños dejaron pedido porque les falta un requisito.
+  const { data: solicitudes } = await previas.solicitudes;
+  for (const s of (solicitudes ?? []) as { id: string; perro_nombre: string; cliente_nombre: string; servicio_nombre: string; motivos: MotivoBase[]; created_at: string }[]) {
+    atencion.push({
+      clave: `solicitud-${s.id}`,
+      texto: `${s.cliente_nombre} pidió lugar para ${s.perro_nombre}`,
+      detalle: `${s.servicio_nombre}. Falta: ${s.motivos.map(requisitoParaPersonal).join(", ")}`,
+      href: "/solicitudes",
+      accion: "Revisar",
+      ...masViejo([s.created_at], hoy, zona, "a"),
     });
   }
 

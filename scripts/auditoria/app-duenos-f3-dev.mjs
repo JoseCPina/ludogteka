@@ -57,7 +57,7 @@ const t2 = await tokenDe(C2.profile_id);
 const c1 = enNegocio(t1), c2 = enNegocio(t2), a1 = sinNegocio(t1), a2 = sinNegocio(t2);
 console.log(`Huellitas ${H.slice(0, 8)} · C1 ${C1.nombre} · C2 ${C2.nombre} · hoy ${hoyH} (${zonaH})`);
 
-const creados = { perro: null, reservas: [], citas: [], estancias: [], contratos: [], resenas: [], cupo: null, ajustes: [] };
+const creados = { perros: [], solicitudes: [], perro: null, reservas: [], citas: [], estancias: [], contratos: [], resenas: [], cupo: null, ajustes: [] };
 const msg = (r) => r.error?.message ?? "";
 try {
   // ── 1. Perro nuevo de C1 (raza con precio en Huellitas: Poodle chico de pelo medio) y su vínculo ───────────────
@@ -157,6 +157,14 @@ try {
   while (new Date(`${D}T12:00:00Z`).getUTCDay() !== 3) D = suma(D, 1);
   const disp = await c1.rpc("portal_disponibilidad_estancia", { p_servicio: guarderia.id, p_entrada: D, p_salida: suma(D, 1) });
   comprobar(!disp.error && disp.data?.dias?.length === 1, `la disponibilidad dice el cupo del ${D}: ${disp.error ? msg(disp) : JSON.stringify(disp.data.dias[0])}`);
+  // Reservar directo exige el contrato de alta firmado; «Firmar aquí» lo deja listo.
+  const prep = await c1.rpc("portal_preparar_contratos", { p_perro: perro.id });
+  const contratosPrep = prep.data ?? [];
+  for (const k of contratosPrep) {
+    creados.contratos.push(k.id);
+    const f = await S.from("contratos").update({ estado: "firmado_papel", storage_path: "prueba/f3.pdf", hash_pdf: "prueba", fecha_firma: new Date().toISOString(), subido_por: datos.adminB }).eq("id", k.id);
+    if (f.error) mal(`firmar en papel: ${f.error.message}`);
+  }
   // Cupo 0 ese día: una configuración de cupo que empieza ese día (y se quita al terminar).
   const { data: cupoHoy } = await adm.rpc("resolver_cupo_configuracion", { p_fecha: D });
   const cfg = Array.isArray(cupoHoy) ? cupoHoy[0] : cupoHoy;
@@ -188,14 +196,152 @@ try {
   comprobar(Boolean(encimada.error), `la misma mascota encimada se rechaza («${msg(encimada).slice(0, 90)}»)`);
   const { data: tiposAlta } = await adm.rpc("tipos_contrato_de_alta", { p_tipo: "guarderia_hotel" });
   if ((tiposAlta ?? []).length) {
-    comprobar((res.data?.contratos_por_firmar ?? []).length > 0, "el negocio tiene contrato de alta y quedó pendiente de firma en el mismo flujo");
-    const { data: misContratos } = await c1.from("contratos").select("id, estado").eq("estado", "pendiente_firma").is("deleted_at", null);
-    comprobar((misContratos ?? []).some((c) => (res.data?.contratos_por_firmar ?? []).some((x) => x.id === c.id)), "C1 lo ve entre sus contratos por firmar");
-    const { data: ajenos } = await c2.from("contratos").select("id").in("id", (res.data?.contratos_por_firmar ?? []).map((x) => x.id));
+    comprobar(contratosPrep.length > 0, "el negocio tiene contrato de alta: «Firmar aquí» lo deja listo antes de reservar");
+    const { data: misContratos } = await c1.from("contratos").select("id, estado").in("id", contratosPrep.map((x) => x.id)).is("deleted_at", null);
+    comprobar((misContratos ?? []).length === contratosPrep.length, "C1 ve su contrato");
+    const { data: ajenos } = await c2.from("contratos").select("id").in("id", contratosPrep.map((x) => x.id));
     comprobar((ajenos ?? []).length === 0, "C2 no lo ve");
   } else ok("Huellitas no tiene contrato de alta para guardería/hotel: no hay contrato que generar (correcto)");
   const resC2 = await c2.rpc("portal_reservar", { p_perro: perro.id, p_servicio: guarderia.id, p_entrada: suma(D, 7), p_salida: suma(D, 8) });
   comprobar(Boolean(resC2.error) && /no es tuya/i.test(msg(resC2)), `C2 no reserva para el perro de C1 («${msg(resC2)}»)`);
+
+  // ── «Pedir lugar»: un requisito nunca es una pared ──────────────────────────────────────────────────────────────
+  seccion("«Pedir lugar»");
+  const { data: perroBPL, error: ePB } = await S.from("perros").insert({ negocio_id: H, cliente_id: C1.cliente_id, nombre: `F3 ${sufijo} B`, raza: "Poodle", raza_id: raza?.id, tamano_id: talla?.id, pelaje_id: pelo?.id }).select("id").single();
+  if (ePB) throw new Error(`perro B: ${ePB.message}`);
+  creados.perros.push(perroBPL.id);
+  let D2 = suma(hoyH, 520 + Math.floor(Math.random() * 40));
+  while (new Date(`${D2}T12:00:00Z`).getUTCDay() !== 3) D2 = suma(D2, 1);
+  const argsPL = (entrada) => ({ p_perro: perroBPL.id, p_servicio: guarderia.id, p_entrada: entrada, p_salida: suma(entrada, 1), p_horas: null, p_inicio: null });
+  const claves = (r) => (r.data ?? []).map((m) => m.clave);
+  const revA = await c1.rpc("portal_requisitos_reserva", argsPL(D2));
+  comprobar(!revA.error && claves(revA).includes("evaluacion"), `sin evaluación: lo dice (${JSON.stringify(claves(revA))}) ${msg(revA)}`);
+  comprobar(claves(revA).includes("contrato"), "sin contrato firmado: lo dice");
+  const conVacuna = (revA.data ?? []).filter((m) => m.clave === "sanitario");
+  comprobar(conVacuna.length > 0 && conVacuna.every((m) => m.dato), `sin vacunas: dice cuál falta (${conVacuna.map((m) => m.dato).join(", ")})`);
+  const directoPL = await c1.rpc("portal_reservar", { p_perro: perroBPL.id, p_servicio: guarderia.id, p_entrada: D2, p_salida: suma(D2, 1) });
+  comprobar(Boolean(directoPL.error), `reservar directo sigue rechazado («${msg(directoPL).slice(0, 70)}»)`);
+  const cupoAntes = (await c1.rpc("portal_disponibilidad_estancia", { p_servicio: guarderia.id, p_entrada: D2, p_salida: suma(D2, 1) })).data?.dias?.[0]?.ocupado;
+
+  const pideEval = await c1.rpc("portal_pedir_lugar", { ...argsPL(D2), p_recoleccion: null });
+  comprobar(!pideEval.error && pideEval.data?.estado === "pendiente", `por evaluación: deja la solicitud ${msg(pideEval)}`);
+  const idEval = pideEval.data?.id;
+  if (idEval) creados.solicitudes.push(idEval);
+  const { count: estanciasB } = await S.from("estancias").select("id", { count: "exact", head: true }).eq("perro_id", perroBPL.id);
+  comprobar(estanciasB === 0, "no crea estancia");
+  const { count: cargosB } = await S.from("cargos_aplicados").select("id", { count: "exact", head: true }).eq("perro_id", perroBPL.id);
+  comprobar(cargosB === 0, "no cobra nada");
+  const cupoDespues = (await c1.rpc("portal_disponibilidad_estancia", { p_servicio: guarderia.id, p_entrada: D2, p_salida: suma(D2, 1) })).data?.dias?.[0]?.ocupado;
+  comprobar(cupoAntes === cupoDespues, `no ocupa cupo (${cupoAntes} → ${cupoDespues})`);
+  const repetidaPL = await c1.rpc("portal_pedir_lugar", { ...argsPL(D2), p_recoleccion: null });
+  comprobar(Boolean(repetidaPL.error), `la misma solicitud no se repite («${msg(repetidaPL).slice(0, 50)}»)`);
+  const deC2 = await c2.rpc("portal_pedir_lugar", { ...argsPL(suma(D2, 7)), p_recoleccion: null });
+  comprobar(Boolean(deC2.error) && /no es tuya/i.test(msg(deC2)), "otro dueño no pide lugar para esa mascota");
+  const { data: misC1 } = await c1.rpc("mis_solicitudes");
+  const { data: misC2 } = await c2.rpc("mis_solicitudes");
+  comprobar((misC1 ?? []).some((s) => s.id === idEval) && !(misC2 ?? []).some((s) => s.id === idEval), "cada dueño ve solo las suyas");
+  comprobar(!JSON.stringify(misC1 ?? []).match(/precio|monto|total|saldo/i), "sin montos en lo que ve el dueño");
+  const tablaDueno = await c1.from("solicitudes_reserva").select("id").eq("id", idEval);
+  comprobar((tablaDueno.data ?? []).length === 0, "el dueño no lee la tabla");
+  const noDueno = await c1.rpc("solicitud_aceptar", { p_id: idEval, p_motivo: null });
+  comprobar(noDueno.error?.code === "42501", `el dueño no se la aceptaPL (${noDueno.error?.code ?? "¡lo dejó!"})`);
+  const recepPL = enNegocio(await tokenDe(datos.recepcionB));
+
+  // Lo ve el negocio.
+  const { data: tabGeneral } = await adm.rpc("tablero_atencion", { p_grupo: "general" });
+  comprobar((tabGeneral?.solicitudes ?? []).some((s) => s.id === idEval), "sale en «Necesita atención»");
+  const sinMotivo = await adm.rpc("solicitud_aceptar", { p_id: idEval, p_motivo: null });
+  comprobar(Boolean(sinMotivo.error), `«Aceptar» sin resolver lo que falta: lo dice («${msg(sinMotivo).slice(0, 70)}»)`);
+  const agendaPL = await adm.rpc("solicitud_agendar_evaluacion", { p_id: idEval, p_cuando: new Date(Date.now() + 10 * 86400000).toISOString() });
+  comprobar(!agendaPL.error && agendaPL.data?.evaluacion_agendada_at && Date.parse(agendaPL.data.expira_at) > Date.now() + 12 * 86400000, `agendar la evaluación extiende la caducidad ${msg(agendaPL)}`);
+  const avisoDe = async (id) => (await A.from("app_avisos").select("titulo, cuerpo, datos").eq("dueno_id", C1.profile_id).eq("datos->>origen_id", id)).data ?? [];
+  comprobar((await avisoDe(idEval)).some((a) => /evaluaci/i.test(a.titulo)), "el dueño recibe el aviso de su evaluación");
+
+  // Aceptar con excepción: reserva normal, con los motivos en la estancia.
+  const aceptaPL = await adm.rpc("solicitud_aceptar", { p_id: idEval, p_motivo: "Prueba: ya la conozco" });
+  comprobar(!aceptaPL.error && aceptaPL.data?.estado === "aceptada" && aceptaPL.data?.estancia_id, `aceptar con excepción la vuelve reserva ${msg(aceptaPL)}`);
+  if (aceptaPL.data?.estancia_id) { creados.estancias.push(aceptaPL.data.estancia_id); creados.reservas.push(aceptaPL.data.reserva_id); }
+  const { data: estB } = await S.from("estancias").select("estado, bloqueo_comportamiento_superado, motivo_excepcion_comportamiento, bloqueo_sanitario_superado").eq("id", aceptaPL.data?.estancia_id ?? "00000000-0000-0000-0000-000000000000").maybeSingle();
+  comprobar(estB?.bloqueo_comportamiento_superado && estB?.bloqueo_sanitario_superado && /conozco/.test(estB?.motivo_excepcion_comportamiento ?? ""), "con su excepción y su motivo en la estancia");
+  comprobar((await avisoDe(idEval)).some((a) => /aceptaron/i.test(a.titulo)), "el dueño recibe «Aceptaron tu solicitud» en Avisos, con push pendiente");
+  const otraVezPL = await adm.rpc("solicitud_aceptar", { p_id: idEval, p_motivo: "otra" });
+  comprobar(Boolean(otraVezPL.error), "no se aceptaPL dos veces");
+
+  // Por vacuna: ya con evaluación.
+  await adm.rpc("marcar_evaluacion_comportamiento", { p_perro_id: perroBPL.id, p_fecha: hoyH, p_notas: "prueba F3" });
+  const D3 = suma(D2, 14);
+  const revV = await c1.rpc("portal_requisitos_reserva", argsPL(D3));
+  comprobar(claves(revV).includes("sanitario") && !claves(revV).includes("evaluacion"), `por vacuna: ya solo falta lo sanitario (${JSON.stringify(claves(revV))})`);
+  const pideVac = await c1.rpc("portal_pedir_lugar", { ...argsPL(D3), p_recoleccion: null });
+  comprobar(!pideVac.error, `por vacuna: deja la solicitud ${msg(pideVac)}`);
+  if (pideVac.data?.id) creados.solicitudes.push(pideVac.data.id);
+  const sinMotivoRechazo = await recepPL.rpc("solicitud_rechazar", { p_id: pideVac.data?.id, p_motivo: " " });
+  comprobar(Boolean(sinMotivoRechazo.error), "rechazar pide motivo");
+  const rechazoPL = await recepPL.rpc("solicitud_rechazar", { p_id: pideVac.data?.id, p_motivo: "Esa semana cerramos por remodelación" });
+  comprobar(!rechazoPL.error && rechazoPL.data?.estado === "rechazada", `recepción la rechaza ${msg(rechazoPL)}`);
+  const { data: misTras } = await c1.rpc("mis_solicitudes");
+  comprobar((misTras ?? []).find((s) => s.id === pideVac.data?.id)?.motivo_rechazo?.includes("remodelación"), "el dueño ve el motivo");
+  comprobar((await avisoDe(pideVac.data?.id)).some((a) => /remodelación/.test(a.cuerpo)), "y le llega el aviso con el motivo");
+
+  // Por contrato: con vacunas al día, solo falta firmar. Firmado, se reserva directo.
+  const { data: tiposSan } = await S.from("tipos_requisito_sanitario").select("id").eq("negocio_id", H).is("deleted_at", null);
+  for (const t of tiposSan ?? []) await S.from("requisitos_sanitarios_aplicados").insert({ negocio_id: H, perro_id: perroBPL.id, tipo_requisito_id: t.id, fecha_aplicacion: suma(hoyH, -3), detalle: "Prueba F3" });
+  const D4 = suma(D2, 28);
+  const revK = await c1.rpc("portal_requisitos_reserva", argsPL(D4));
+  comprobar(JSON.stringify(claves(revK)) === JSON.stringify(["contrato"]), `por contrato: solo falta firmar (${JSON.stringify(claves(revK))}) ${msg(revK)}`);
+  const sinFirma = await c1.rpc("portal_reservar", { p_perro: perroBPL.id, p_servicio: guarderia.id, p_entrada: D4, p_salida: suma(D4, 1) });
+  comprobar(/firmar el contrato/i.test(msg(sinFirma)), `reservar sin firmar se rechaza («${msg(sinFirma).slice(0, 60)}»)`);
+  const pideK = await c1.rpc("portal_pedir_lugar", { ...argsPL(D4), p_recoleccion: null });
+  comprobar(!pideK.error, `por contrato: deja la solicitud ${msg(pideK)}`);
+  if (pideK.data?.id) creados.solicitudes.push(pideK.data.id);
+  // Aceptada sin excepción (el contrato no la necesita): queda reserva y contrato por firmar.
+  const aceptaK = await recepPL.rpc("solicitud_aceptar", { p_id: pideK.data?.id, p_motivo: null });
+  comprobar(!aceptaK.error && aceptaK.data?.estancia_id, `recepción la aceptaPL sin excepción ${msg(aceptaK)}`);
+  if (aceptaK.data?.estancia_id) { creados.estancias.push(aceptaK.data.estancia_id); creados.reservas.push(aceptaK.data.reserva_id); }
+  const preparados = await c1.rpc("portal_preparar_contratos", { p_perro: perroBPL.id });
+  comprobar(!preparados.error && (preparados.data ?? []).length > 0, `«Firmar aquí» deja el contrato listo (${(preparados.data ?? []).length}) ${msg(preparados)}`);
+  for (const k of preparados.data ?? []) {
+    creados.contratos.push(k.id);
+    const f = await S.from("contratos").update({ estado: "firmado_papel", storage_path: "prueba/f3.pdf", hash_pdf: "prueba", fecha_firma: new Date().toISOString(), subido_por: datos.adminB }).eq("id", k.id);
+    if (f.error) mal(`firmar en papel: ${f.error.message}`);
+  }
+  const D5 = suma(D2, 42);
+  const yaLibre = await c1.rpc("portal_requisitos_reserva", argsPL(D5));
+  comprobar(Array.isArray(yaLibre.data) && yaLibre.data.length === 0, `con todo al corriente no falta nada (${JSON.stringify(yaLibre.data)}) ${msg(yaLibre)}`);
+  const nadaQuePedir = await c1.rpc("portal_pedir_lugar", { ...argsPL(D5), p_recoleccion: null });
+  comprobar(Boolean(nadaQuePedir.error) && /reservar directo/i.test(msg(nadaQuePedir)), "y no deja pedir lugar: reserva directo");
+  const { count: simuladas } = await S.from("estancias").select("id", { count: "exact", head: true }).eq("perro_id", perroBPL.id).eq("fecha_entrada", D5);
+  comprobar(simuladas === 0, "revisar no dejó nada guardado");
+
+  // Caducidad: a los 3 días, sola, con aviso; ya no se puede aceptar.
+  const { data: perroCPL } = await S.from("perros").insert({ negocio_id: H, cliente_id: C1.cliente_id, nombre: `F3 ${sufijo} C`, raza: "Poodle", raza_id: raza?.id, tamano_id: talla?.id, pelaje_id: pelo?.id }).select("id").single();
+  creados.perros.push(perroCPL.id);
+  const pideC = await c1.rpc("portal_pedir_lugar", { p_perro: perroCPL.id, p_servicio: guarderia.id, p_entrada: D3, p_salida: suma(D3, 1), p_horas: null, p_inicio: null, p_recoleccion: null });
+  comprobar(!pideC.error, `otra solicitud ${msg(pideC)}`);
+  if (pideC.data?.id) {
+    creados.solicitudes.push(pideC.data.id);
+    const horasFaltan = (Date.parse(pideC.data.expira_at) - Date.now()) / 3600000;
+    comprobar(horasFaltan > 71 && horasFaltan <= 72, `caduca a los 3 días (${horasFaltan.toFixed(1)} h)`);
+    const anonCad = await anonimo.rpc("solicitudes_caducar");
+    comprobar(Boolean(anonCad.error), "la llave anónima no corre la caducidad");
+    const admCad = await adm.rpc("solicitudes_caducar");
+    comprobar(Boolean(admCad.error), "ni alguien con sesión");
+    await S.from("solicitudes_reserva").update({ expira_at: new Date(Date.now() - 60000).toISOString() }).eq("id", pideC.data.id);
+    const vencida = await adm.rpc("solicitud_aceptar", { p_id: pideC.data.id, p_motivo: "tarde" });
+    comprobar(/caduc/i.test(msg(vencida)), `una vencida ya no se aceptaPL («${msg(vencida)}»)`);
+    const cadPL = await S.rpc("solicitudes_caducar");
+    comprobar(!cadPL.error && Number(cadPL.data) >= 1, `la tarea la caduca (${cadPL.data}) ${msg(cadPL)}`);
+    const { data: filaC } = await S.from("solicitudes_reserva").select("estado").eq("id", pideC.data.id).single();
+    comprobar(filaC?.estado === "caducada", "queda caducada");
+    comprobar((await avisoDe(pideC.data.id)).some((a) => /caduc/i.test(a.titulo)), "y el dueño recibe el aviso");
+  }
+  // Anónimo y otro negocio.
+  for (const [fn, a] of [["portal_requisitos_reserva", argsPL(D2)], ["portal_pedir_lugar", { ...argsPL(D2), p_recoleccion: null }], ["mis_solicitudes", {}], ["solicitudes_del_negocio", { p_solo_pendientes: false }], ["solicitud_aceptar", { p_id: idEval, p_motivo: null }]]) {
+    const r = await anonimo.rpc(fn, a);
+    comprobar(Boolean(r.error), `anónimo: ${fn} rechazada`);
+  }
+  const anonSol = await anonimo.from("solicitudes_reserva").select("id").limit(1);
+  comprobar(Boolean(anonSol.error) || (anonSol.data ?? []).length === 0, "anónimo: solicitudes_reserva sin filas");
 
   // ── 5. Pagos pendientes y pases ─────────────────────────────────────────────────────────────────────────────
   seccion("5. Pagos pendientes y pases");
@@ -270,12 +416,23 @@ try {
   // Limpieza (lo que creó esta corrida; nada más).
   const ahora = new Date().toISOString();
   for (const id of creados.resenas) await S.from("resenas").delete().eq("id", id);
+  if (creados.solicitudes.length) {
+    await S.from("solicitudes_reserva").update({ reserva_id: null, estancia_id: null, cita_id: null }).in("id", creados.solicitudes);
+    await A.from("app_avisos").delete().in("datos->>origen_id", creados.solicitudes);
+    await S.from("solicitudes_reserva").update({ deleted_at: ahora, estado: "cancelada" }).in("id", creados.solicitudes);
+  }
   for (const id of creados.ajustes) await S.from("cuenta_ajustes_precio").delete().eq("id", id);
   for (const id of creados.contratos) await S.from("contratos").delete().eq("id", id);
   for (const id of creados.citas) await S.from("citas_estetica").delete().eq("id", id);
   for (const id of creados.estancias) await S.from("estancias").delete().eq("id", id);
   for (const id of creados.reservas) await S.from("reservas").delete().eq("id", id);
   if (creados.cupo) await S.from("cupo_configuracion").delete().eq("id", creados.cupo);
+  for (const id of creados.perros) {
+    await S.from("contratos").delete().eq("perro_id", id);
+    await S.from("requisitos_sanitarios_aplicados").delete().eq("perro_id", id);
+    await S.from("perros_evaluaciones").delete().eq("perro_id", id);
+    await S.from("perros").update({ deleted_at: ahora }).eq("id", id);
+  }
   if (creados.perro) {
     await S.from("requisitos_sanitarios_aplicados").delete().eq("perro_id", creados.perro);
     await S.from("perros_evaluaciones").delete().eq("perro_id", creados.perro);
