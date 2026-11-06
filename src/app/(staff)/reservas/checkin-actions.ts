@@ -49,11 +49,25 @@ export type CamposCheckin = {
 // «El negocio está cerrado hoy; ¿registrar de todos modos?» y con `fueraHorario` se guarda y queda anotado.
 export type ConfirmacionesEntradaSalida = { sobrecupo?: boolean; fueraHorario?: boolean };
 
+/** Lo que el pase del perro cubrió al entrar (migración 20260923161648: aplicar_bono_a_estancia). */
+export type PaseAlEntrar = { nombre: string; usados: number; restantes: number; total: number; ilimitado: boolean };
+
+// Caso Raya (5 de noviembre de 2026): si ESTE perro tiene un pase vigente con saldo que cubre el día y la estancia quedó
+// suelta (se reservó sin pase, el pase se compró después, o nadie tocó «Usar el pase»), el check-in lo aplica solo y lo
+// dice. La base decide con la misma regla de siempre; si no aplica (hotel, por hora, sin pase, ya cubierta) no pasa nada.
+async function aplicarPaseAlEntrar(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, estanciaId: string): Promise<PaseAlEntrar | null> {
+  const { data, error } = await supabase.rpc("aplicar_bono_a_estancia", { p_estancia_id: estanciaId });
+  if (error) return null;
+  const r = data as { aplicado?: boolean; nombre?: string; usados?: number; restantes?: number; total?: number; ilimitado?: boolean } | null;
+  if (!r?.aplicado) return null;
+  return { nombre: r.nombre ?? "pase", usados: Number(r.usados ?? 1), restantes: Number(r.restantes ?? 0), total: Number(r.total ?? 0), ilimitado: Boolean(r.ilimitado) };
+}
+
 export async function confirmarCheckin(
   estanciaId: string,
   campos: CamposCheckin,
   confirma: ConfirmacionesEntradaSalida = {}
-): Promise<EstadoAccion & { sobrecupo?: string; fueraHorario?: string; quedo?: string | null; quedoFueraHorario?: string | null }> {
+): Promise<EstadoAccion & { sobrecupo?: string; fueraHorario?: string; quedo?: string | null; quedoFueraHorario?: string | null; pase?: PaseAlEntrar | null }> {
   if (!campos.entregadoPorNombre.trim()) {
     return { error: "Registra quién entrega al perro." };
   }
@@ -81,10 +95,12 @@ export async function confirmarCheckin(
   // Sin revalidatePath: con él la respuesta esperaba a que el navegador volviera a pedir la página antes de soltar el
   // botón (1.2 s en celular; 31 s en acciones-pantalla-dev con la recarga retrasada). La pantalla pinta «Check-in
   // registrado» con esta respuesta y refresca después; las listas de Hotel y Guardería se leen frescas al abrirlas.
+  const pase = await aplicarPaseAlEntrar(supabase, estanciaId);
   return {
     error: null,
     quedo: (data?.checkin_sobrecupo as string | null | undefined) ?? null,
     quedoFueraHorario: (data?.checkin_fuera_horario as string | null | undefined) ?? null,
+    pase,
     registros: await registrosDe(supabase, [{ t: "estancias", i: estanciaId }]),
   };
 }

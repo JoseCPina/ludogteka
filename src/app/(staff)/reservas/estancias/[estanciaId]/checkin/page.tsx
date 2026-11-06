@@ -7,7 +7,8 @@ import {
   resumenVacio,
   type ContratoResumen,
 } from "@/app/(staff)/perros/contrato-estado-banner";
-import { formatearFechaCalendario, formatearFecha, horaLocalDeInstante } from "@/lib/formato";
+import { formatearFechaCalendario, formatearFecha, horaLocalDeInstante, hoyNegocio } from "@/lib/formato";
+import { Alert } from "@/components/ui/alert";
 import { moduloDeCategoria } from "@/lib/modulos";
 import { CheckinForm } from "./checkin-form";
 import { PaseCheckin, type EstadoPaseCheckin } from "./pase-checkin";
@@ -90,6 +91,10 @@ export default async function CheckinEstanciaPage({
 
   const yaHizoCheckin = estancia.estado !== "reservada" && estancia.estado !== "confirmada";
   const esGuarderia = servicio?.categoria === "guarderia";
+  // Caso Raya (4 de noviembre de 2026): la llegada de hoy se registró sobre la reserva de hace dos semanas y el día quedó
+  // en la fecha equivocada (y el pase sin descontar). Una reserva de un día pasado que apenas entra se dice antes.
+  const hoy = hoyNegocio(zona);
+  const llegadaDeOtroDia = !yaHizoCheckin && esGuarderia && estancia.fecha_entrada < hoy;
 
   // ¿Viene con pase o paga el día? Solo para guardería de día completo:
   // lo que ya cubrió un bono (movimientos_bono) y, si no hay nada, si ESTE
@@ -181,6 +186,21 @@ export default async function CheckinEstanciaPage({
           {servicio?.nombre} · {esGuarderia ? formatearFechaCalendario(estancia.fecha_entrada) : `${formatearFechaCalendario(estancia.fecha_entrada)} — ${formatearFechaCalendario(estancia.fecha_salida)}`}
         </p>
       </div>
+
+      {llegadaDeOtroDia && (
+        <Alert variante="advertencia" titulo={`Esta reserva era para el ${formatearFechaCalendario(estancia.fecha_entrada)}`} data-checkin-otro-dia>
+          Si {perro.nombre} llegó hoy, no uses esta reserva: regístralo como llegada de hoy en{" "}
+          <Enlace href={modulo ? `${modulo.base}/walkin` : "/guarderia/walkin"} enTexto>
+            Walk-in (sin reserva)
+          </Enlace>{" "}
+          (su pase, si tiene, se aplica solo) y en{" "}
+          <Enlace href={`/reservas/${estancia.reserva_id as string}`} enTexto>
+            la reserva
+          </Enlace>{" "}
+          marca este día como «No llegó» o cancélalo. Así el día y el pase quedan en la fecha correcta. Si de verdad es el
+          check-in de aquel día, sigue aquí: quedará con la fecha de la reserva.
+        </Alert>
+      )}
 
       <PaseCheckin
         estanciaId={estanciaId}

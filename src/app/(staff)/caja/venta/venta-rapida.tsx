@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useEspera } from "@/hooks/use-espera";
 import { BuscadorClientes } from "@/components/buscador-clientes";
@@ -11,7 +11,8 @@ import { Alert } from "@/components/ui/alert";
 import { AccionesFormulario } from "@/components/ui/acciones-formulario";
 import { formatearTelefono } from "@/lib/telefono";
 import type { ClienteBuscable } from "@/lib/clientes/buscables";
-import { crearVentaRapida } from "./venta-actions";
+import { crearVentaRapida, pasesVigentesDeCliente, type PaseVigente } from "./venta-actions";
+import { formatearFechaCalendario } from "@/lib/formato";
 import { dinero } from "@/lib/dinero";
 import { Enlace } from "@/components/ui/enlace";
 
@@ -42,6 +43,17 @@ export function VentaRapida({
   const [productoElegido, setProductoElegido] = useState("");
   const [notas, setNotas] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Caso Raya (5 de noviembre de 2026): Ludogteka cobra guarderías como conceptos de venta; si el cliente tiene pase
+  // vigente, aquí se le recuerda antes de cobrarle un día que el pase ya pagó.
+  const [pasesDe, setPasesDe] = useState<{ clienteId: string; lista: PaseVigente[] } | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    if (!cliente?.id) return;
+    const id = cliente.id;
+    pasesVigentesDeCliente(id).then((lista) => { if (vivo) setPasesDe({ clienteId: id, lista }); }).catch(() => { if (vivo) setPasesDe({ clienteId: id, lista: [] }); });
+    return () => { vivo = false; };
+  }, [cliente?.id]);
+  const pases = cliente && pasesDe?.clienteId === cliente.id ? pasesDe.lista : [];
 
   const porId = new Map(productos.map((p) => [p.id, p]));
   const precioDe = (r: Renglon) => (r.insumoId ? porId.get(r.insumoId)?.precio ?? 0 : Number(r.precio) || 0);
@@ -82,6 +94,15 @@ export function VentaRapida({
             abre el turno
           </Enlace>
           .
+        </Alert>
+      )}
+
+      {cliente && pases.length > 0 && (
+        <Alert variante="advertencia" titulo="Este cliente tiene pase vigente" data-aviso-pase-venta>
+          {pases
+            .map((p) => `${p.perro}: ${p.nombre}${p.ilimitado ? "" : ` (le ${p.restantes === 1 ? "queda 1 día" : `quedan ${p.restantes} días`} de ${p.total})`}${p.vence ? `, vence el ${formatearFechaCalendario(p.vence)}` : ""}`)
+            .join(" · ")}
+          . {pases.some((p) => p.incluye) ? `Un día de ${pases.find((p) => p.incluye)?.incluye?.toLowerCase()} no se vende aquí: regístralo como reserva o walk-in de guardería y el pase se descuenta solo.` : "Antes de cobrarle un día de guardería, revisa si el pase lo cubre."}
         </Alert>
       )}
 
