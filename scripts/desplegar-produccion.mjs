@@ -526,7 +526,7 @@ if (EN_NUBE) {
 } else {
   let salidaSeco;
   try {
-    salidaSeco = supabase("db", "push", "--dry-run", "--db-url", DB_URL);
+    salidaSeco = supabase("db", "push", "--dry-run", ...(INCLUIR_TODAS ? ["--include-all"] : []), "--db-url", DB_URL);
   } catch (e) {
     abortar("el dry-run de las migraciones falló", sinSecreto(e.salida || e.message));
   }
@@ -650,7 +650,7 @@ for (let intento = 1; EN_NUBE && intento <= REINTENTOS_MIGRACION && !migrado; in
 for (let intento = 1; !EN_NUBE && intento <= REINTENTOS_MIGRACION && !migrado; intento += 1) {
   console.log(`   intento ${intento} de ${REINTENTOS_MIGRACION}…`);
   try {
-    const salida = supabase("db", "push", "--db-url", DB_URL);
+    const salida = supabase("db", "push", ...(INCLUIR_TODAS ? ["--include-all"] : []), "--db-url", DB_URL);
     console.log(sinSecreto(salida).trim());
     migrado = migracionOk(salida);
     if (!migrado) {

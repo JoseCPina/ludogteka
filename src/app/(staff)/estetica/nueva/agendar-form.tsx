@@ -28,6 +28,8 @@ import type { HorarioSemana, PropuestaHorario } from "@/lib/estetica/aviso-horar
 import { cerrarFrase } from "@/lib/texto/frases";
 import { usePuedeAbrir } from "@/components/acceso-contexto";
 import { Enlace } from "@/components/ui/enlace";
+import { IncluirRecoleccion, SIN_RECOLECCION, type ValorRecoleccion } from "@/components/recoleccion/incluir-recoleccion";
+import { guardarRecoleccion } from "@/app/(staff)/recolecciones/actions";
 
 type Perro = {
   id: string;
@@ -254,6 +256,8 @@ export function AgendarForm({
   // N30: un mismo perro con otra cita ese día pide confirmar; y la confirmación de una cita agendada se lleva a la vista.
   const [duplicada, setDuplicada] = useState<string | null>(null);
   const [exitoAgendar, setExitoAgendar] = useState<string | null>(null);
+  // «Incluir recolección»: se cotiza antes de agendar y se guarda junto con la cita (el cargo entra a su cuenta).
+  const [recoleccion, setRecoleccion] = useState<ValorRecoleccion>(SIN_RECOLECCION);
   // QA S53 (N158): tras «Cita agendada» el formulario se colapsa y queda solo el aviso con «Agregar otro perrito» y
   // «Listo, ir a la agenda»; «Agregar otro perrito» lo vuelve a abrir limpio.
   const [formularioCerrado, setFormularioCerrado] = useState(false);
@@ -318,6 +322,11 @@ export function AgendarForm({
       return;
     }
     setExitoAgendar(cerrarFrase(`Cita agendada: ${perroElegido?.nombre ?? "la mascota"}, ${servicioActual?.nombre ?? "servicio"}, ${formatearFecha(instanteDeHoraLocal(fechaHora, zona), zona)} ${horaLocalDeInstante(instanteDeHoraLocal(fechaHora, zona), zona)}`));
+    if (recoleccion.activa && recoleccion.pedido && res.reservaId && res.citaId) {
+      const rec = await conTope(guardarRecoleccion({ reservaId: res.reservaId, citaId: res.citaId }, { ...recoleccion.pedido, hora: recoleccion.pedido.hora ?? fechaHora.slice(11, 16) }));
+      if (rec.error) setError(`La cita se agendó, pero la recolección no: ${rec.error}`);
+      else setRecoleccion(SIN_RECOLECCION);
+    }
     // En vez de salirse: se anota la cita y se ofrece agregar a otro perrito del mismo dueño.
     setAgendadas((prev) => [
       ...prev,
@@ -795,10 +804,18 @@ export function AgendarForm({
               </Alert>
             </div>
           )}
+          <IncluirRecoleccion
+            clienteId={perroElegido?.cliente_id ?? clienteId}
+            fechaTexto={`la cita del ${formatearFecha(instanteDeHoraLocal(fechaHora, zona), zona)}`}
+            horaInicial={fechaHora.slice(11, 16)}
+            valor={recoleccion}
+            onChange={setRecoleccion}
+          />
+          {recoleccion.activa && !recoleccion.cotizada && <p className="text-sm text-n-600" data-motivo-recoleccion>Cotiza la recolección antes de agendar.</p>}
           <AccionesFormulario error={error} exito={exitoAgendar}>
             <Button
               type="button"
-              disabled={enviando.cargando || Boolean(motivoNoAgendar)}
+              disabled={enviando.cargando || Boolean(motivoNoAgendar) || (recoleccion.activa && !recoleccion.cotizada)}
               onClick={() => enviar()}
             >
               {enviando.cargando ? "Agendando…" : "Agendar cita"}

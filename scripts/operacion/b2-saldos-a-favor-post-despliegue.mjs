@@ -65,6 +65,7 @@ const tb = await totales(RES_BANO);
 log(`  cancelación: ${cc ? (cc.deleted_at ? "reabierta" : `vigente (${cc.motivo}, ${dinero(cc.saldo_cancelado)})`) : "no hay"} · cuenta ${cuenta(tb)}`);
 if (Math.abs(tb.saldo) < 0.01) log("  ✔ ya está pagada");
 else if (!APLICAR) log("  haría: reabrir_cuenta + registrar_cobro $190 transferencia (turno abierto)");
+else if (!(await R.leer("turnos_caja?estado=eq.abierto&select=id&limit=1")).length) log("  ✖ sin turno de caja abierto: no se toca la cuenta; correr otra vez cuando lo haya (los pasos hechos no se repiten)");
 else {
   if (cc && !cc.deleted_at) {
     const r = await R.rpc("reabrir_cuenta", { p_reserva: RES_BANO, p_motivo: "La cuenta no era un error de captura: el baño exprés de Bruno ($190) se pagó el 12 de octubre dentro de la transferencia de $255 que se registró completa en la cuenta de la cañada. Se reabre para registrar su parte (plataforma, a petición del dueño)." });

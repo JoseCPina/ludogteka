@@ -3,6 +3,7 @@ import { TableroDia } from "../tablero-dia";
 import { EsqueletoTableroDia } from "../tablero-esqueleto";
 import { VideosInicio } from "@/components/ayuda/videos-inicio";
 import { ExtrasTablero } from "@/components/extras/extras-tablero";
+import { RecoleccionesTablero } from "@/components/recoleccion/recolecciones-tablero";
 
 // El inicio de recepción: el tablero del día de toda la casa. Guardería,
 // Hotel y Estética siguen teniendo su propia pantalla filtrada; esta es
@@ -15,6 +16,7 @@ export default async function RecepcionPage() {
       <Suspense fallback={<EsqueletoTableroDia />}>
         <TableroDia />
         <ExtrasTablero />
+        <RecoleccionesTablero />
       </Suspense>
     </div>
   );

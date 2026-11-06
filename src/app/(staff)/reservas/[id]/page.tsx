@@ -22,6 +22,8 @@ import { unirNombres } from "@/lib/texto/frases";
 import { diasEntre, hora12 } from "@/lib/web-negocio/horario";
 import { cuentasPorEstancia } from "@/lib/cuentas/cuenta-estancia";
 import { Enlace } from "@/components/ui/enlace";
+import { RecoleccionSeccion } from "@/components/recoleccion/recoleccion-seccion";
+import { recoleccionesDeReserva, puntosDePartida } from "@/lib/recoleccion/servidor";
 
 const fechaLarga = (iso: string) => new Intl.DateTimeFormat("es-MX", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" }).format(new Date(`${iso}T12:00:00Z`));
 
@@ -51,6 +53,8 @@ export default async function DetalleReservaPage({
   }
 
   const cliente = Array.isArray(reserva.clientes) ? reserva.clientes[0] : reserva.clientes;
+  // Recolección a domicilio ligada a esta reserva (y su punto de partida, para «Cómo llegar»).
+  const [recolecciones, puntosRec] = await Promise.all([recoleccionesDeReserva(supabase, id), puntosDePartida(supabase)]);
 
   const { data: estancias, error: errorEstancias } = await supabase
     .from("estancias")
@@ -256,6 +260,10 @@ export default async function DetalleReservaPage({
           </div>
         </div>
       </div>
+
+      {recolecciones.map((r) => (
+        <RecoleccionSeccion key={r.id} inicial={r} puntoDireccion={(r.punto_partida === "base" ? puntosRec.base : puntosRec.negocio)?.direccion ?? null} puedeEditar />
+      ))}
 
       {errorEstancias ? (
         <Alert variante="error" titulo="No pudimos cargar las estancias">

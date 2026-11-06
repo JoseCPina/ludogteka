@@ -561,7 +561,23 @@ Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y despué
 2. En **Dirección y distancia de recolección**, escribe la **Dirección** y toca **Guardar y calcular**.
 3. Si la distancia no cuadra, toca **Ajustar distancia a mano**, escribe la **Distancia correcta (km)** y toca **Guardar ajuste**.
 
-## Cobrarla
+## Incluirla al reservar o agendar
+
+1. En **Nueva reserva** (Guardería u Hotel) o en **Agendar cita** (Estética), prende **Incluir recolección**.
+2. Escoge la dirección: **La guardada** del cliente o **Otra dirección** (puedes guardarla en su ficha).
+3. En **Sale desde** escoge **El local** o **La base de la camioneta** (la base la configura un admin en su panel, en la sección «Ubicación»); pon la **Hora estimada** y, si quieres, una nota para quien recoge.
+4. Toca **Cotizar recolección**: ves los kilómetros (la distancia guardada, o la que calcula el mapa para una dirección nueva, o los que escribas a mano si el mapa no puede) y el precio con tu tarifa por kilómetro.
+5. Crea la reserva o agenda la cita. La recolección queda ligada a ella y su cargo entra a la cuenta en ese momento.
+
+Si la reserva o la cita se mueve de fecha, la recolección se mueve; si se cancela o el perro no llega, la recolección y su cargo se cancelan solos.
+
+## La ruta del día
+
+- En el tablero de Recepción e Inicio sale **Recolecciones de hoy**: hora, perro, dirección y **Cómo llegar** (abre el mapa con la ruta desde el punto de partida).
+- En **Recolecciones** (en el menú) está la ruta completa del día, en orden de cercanía al punto de partida: **Salir a recoger**, **Recogido**, avisar por WhatsApp cuando vas en camino, y **Cancelar recolección** con motivo (el cargo sale de la cuenta). También se ve ayer, mañana o cualquier fecha.
+- En la reserva y en la cita, el bloque **Recolección a domicilio** tiene lo mismo para esa visita.
+
+## Cobrarla sin reserva (cargo suelto)
 
 1. Abre la reserva o el check-out del perro.
 2. En **Aplicar cargo**, escoge **Recolección a domicilio**.

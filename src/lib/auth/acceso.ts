@@ -49,6 +49,8 @@ export const ZONAS: Zona[] = [
   // Servicios extra (Hotel y guardería): el catálogo es de admin o de quien tenga el permiso.
   { prefijo: "/extras/catalogo", roles: ["admin"], permisos: ["editar_catalogo_extras"] },
   { prefijo: "/extras", roles: ["admin", "recepcion"] },
+  // Recolecciones del día (recepción y admin).
+  { prefijo: "/recolecciones", roles: ["admin", "recepcion"] },
   // Con qué cobra el negocio y sus credenciales: solo admin, nunca se delega.
   { prefijo: "/admin/pagos", roles: ["admin"] },
   // La plantilla del reporte de guardería y los días de retención: solo admin.
