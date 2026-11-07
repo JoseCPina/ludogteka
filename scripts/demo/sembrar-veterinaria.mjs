@@ -151,6 +151,16 @@ for (const v of VACUNAS) {
   if (!ya) exigir(await V.rpc("registrar_vacuna", { p_perro_id: id[v.perro], p_biologico: v.bio, p_tipo_requisito_id: null, p_insumo_id: null, p_lote_id: null, p_lote_texto: v.lote, p_laboratorio: "Laboratorio de ejemplo", p_fecha: v.fecha, p_proxima: v.prox, p_medico_id: med.mvz.medico, p_dosis: "1 mL", p_notas: null, p_descontar: false }), `vacuna ${v.bio} de ${v.perro}`);
 }
 
+// 6b. El precio de cada tipo de consulta: desde el 29 de octubre de 2026 una consulta no se firma sin precio
+// (migración 20261029000000), y el demo puede quedarse sin él (el video 93 lo borra para enseñar «Poner el precio»).
+for (const [clave, precio] of [["vet_consulta_general", 800], ["vet_consulta_urgencia", 1200], ["vet_revision_seguimiento", 400], ["vet_aplicacion_vacuna", 250]]) {
+  const { data: sv } = await S.from("servicios").select("id").eq("negocio_id", NEG).eq("clave", clave).is("deleted_at", null).maybeSingle();
+  if (!sv) continue;
+  const { data: tv } = await S.from("tarifas").select("id").eq("negocio_id", NEG).eq("servicio_id", sv.id).is("deleted_at", null).is("tamano_id", null).is("pelaje_id", null).limit(1);
+  if (tv?.length) continue;
+  exigir(await S.from("tarifas").insert({ negocio_id: NEG, servicio_id: sv.id, precio, no_aplica: false, cantidad_desde: 1, vigencia_desde: hoy(-30), updated_at: new Date().toISOString() }), `precio de ${clave}`);
+}
+
 // 7. Historial: dos consultas firmadas (una por cada médico).
 const HISTORIAL = [
   { perro: "Bruno", medico: "mvz", datos: { motivo: "Chequeo anual", anamnesis: "Sin molestias. Come y bebe normal. Paseos diarios.", plan: "Vacunas al día. Control de peso en 6 meses.", peso_kg: 29.5, temperatura_c: 38.5, diagnosticos: [{ ref_id: null, origen: "libre", nombre: "Control de rutina", tipo: "definitivo", nota: "" }] } },

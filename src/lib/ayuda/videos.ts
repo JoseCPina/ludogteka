@@ -46,6 +46,7 @@ export const VIDEOS_DE_ARTICULO: Record<string, string[]> = {
   "reprogramar-o-cancelar-cita-de-estetica": ["63"],
   "agregar-otro-perrito-en-estetica": ["63"],
   "tarifa-cliente-de-guarderia": ["64"],
+  "cambiar-estilista-cita-estetica": ["96", "23"],
 
   // ── Guardería y hotel ──
   "reservar-guarderia": ["25", "27", "28", "95"],
@@ -58,6 +59,7 @@ export const VIDEOS_DE_ARTICULO: Record<string, string[]> = {
   "llenar-el-reporte-de-comportamiento": ["31"],
   "enviar-fotos-y-videos": ["31"],
   "cotizar-y-cobrar-recoleccion": ["54"],
+  "solicitudes-de-lugar": ["101", "05"],
   "agregar-servicios-extra": ["89"],
   "servicios-extra-del-dia-y-traslados": ["89"],
   "catalogo-de-servicios-extra": ["89"],
@@ -80,6 +82,9 @@ export const VIDEOS_DE_ARTICULO: Record<string, string[]> = {
   "aplicar-descuento": ["37"],
   "cobrar-varios-servicios-juntos": ["57"],
   "anular-o-corregir-un-cobro": ["61"],
+  "deshacer-o-corregir-una-operacion": ["102"],
+  "factura-global-publico-en-general": ["98"],
+  "iva-y-claves-sat-de-productos-y-servicios": ["99"],
 
   // ── Facturación ──
   "configurar-la-facturacion": ["65"],
@@ -133,7 +138,7 @@ export const VIDEOS_DE_ARTICULO: Record<string, string[]> = {
   "entrar-a-una-teleconsulta-como-dueno": ["92"],
   "cobrar-una-consulta-veterinaria": ["93"],
 
-  "corregir-un-cobro-con-terminal-mal-marcado": ["38"],
+  "corregir-un-cobro-con-terminal-mal-marcado": ["97", "38"],
 };
 
 /**
@@ -149,14 +154,10 @@ export const VIDEOS_SIN_ARTICULO: Record<string, string> = {
  * tenga video en VIDEOS_DE_ARTICULO o aparezca aquí: un artículo nuevo sin video se decide a propósito.
  */
 export const ARTICULOS_SIN_VIDEO: Record<string, string> = {
-  "deshacer-o-corregir-una-operacion": "Deshacer / Corregir (5 de noviembre de 2026): se graba cuando se retome la grabación; el artículo explica el botón y el menú.",
   "pacientes-del-qr": "Pendiente de grabar: función nueva (app para dueños, Fase 2); el flujo empieza en un negocio sin PeluDesk que escanea el QR, se graba con la app y un negocio de prueba.",
   "botones-y-enlaces": "Explica cómo se ven y responden todos los botones y enlaces; no es una tarea de una pantalla. Se enseña dentro de los videos de cada pantalla al regrabarlos.",
   "recordatorios-automaticos-por-whatsapp": "Pendiente de grabar: función nueva (recordatorios automáticos por WhatsApp, 25 de octubre de 2026); se graba con un negocio de prueba porque el demo no manda mensajes.",
   "alguien-mas-cambio-lo-que-editabas": "Pendiente de grabar: el aviso solo sale con dos personas editando lo mismo a la vez; se graba con dos sesiones del demo.",
-  "cambiar-estilista-cita-estetica": "Pendiente de grabar: el guion del video 96 está listo; la grabación está en pausa.",
-  "factura-global-publico-en-general": "Pendiente de grabar: el guion del video 98 está listo; la grabación está en pausa.",
-  "iva-y-claves-sat-de-productos-y-servicios": "Pendiente de grabar: el guion del video 99 está listo; la grabación está en pausa.",
   "primeros-pasos-para-operar": "Pendiente de grabar: la bienvenida por giro (QA S16) cambió; se graba con un negocio de prueba nuevo, no con el demo.",
   "requisitos-para-hospedar": "Pendiente de grabar: pantalla nueva de la bienvenida (QA S16).",
   "ver-mis-facturas": "Pendiente de grabar: ningún video muestra las facturas en el portal del dueño. El folio 100 necesita que `tutoriales.numero` admita tres dígitos (migración).",

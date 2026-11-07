@@ -20,7 +20,7 @@ export default {
     },
     {
       titulo: "Qué más puede aparecer",
-      dice: "También te avisa de comprobantes de vacunas por revisar, citas de estética con una estilista ausente, cuentas por vincular, reembolsos, razas sin grupo de precio, un turno de caja sin abrir y gastos por vencer. Cada aviso trae su enlace directo.",
+      dice: "También te avisa de comprobantes de vacunas por revisar, citas de estética con una estilista ausente, cuentas por vincular, solicitudes de lugar de los dueños, saldos a favor, reembolsos, razas sin grupo de precio, un turno de caja sin abrir y gastos por vencer. Cada aviso trae su enlace directo.",
       pasos: [["ir", "/recepcion"], ["resaltar", "Necesita atención", 3000], ["zoom", "con una estilista ausente", 1.4, 3000]],
     },
   ],
