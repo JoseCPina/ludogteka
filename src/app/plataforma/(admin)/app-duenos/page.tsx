@@ -22,6 +22,7 @@ export default async function AppDuenosPlataforma() {
   const hace30 = haceDias(30);
   const { data: alertas } = await db.rpc("app_alertas_metricas");
   const al = (alertas ?? {}) as { total?: number; activas?: number; rescatados?: number; reunidos?: number; caducadas?: number; escondidas?: number; ultimos_30_dias?: number };
+  const { data: cierres, count: cierres30 } = await db.from("app_errores").select("id, mensaje, pantalla, version, modelo, sistema, fatal, ocurrido_at", { count: "exact" }).gte("created_at", hace30).order("created_at", { ascending: false }).limit(50);
   const [escaneos, escaneos30, sinRegistro, atenciones30, { count: duenos }, { count: mascotas }, filas] = await Promise.all([
     db.from("app_qr_escaneos").select("id", { count: "exact", head: true }).is("deleted_at", null),
     db.from("app_qr_escaneos").select("id", { count: "exact", head: true }).is("deleted_at", null).gte("created_at", hace30),
@@ -81,6 +82,29 @@ export default async function AppDuenosPlataforma() {
         {tarjeta("Dueños en la app", duenos ?? 0, `${mascotas ?? 0} mascotas`)}
         {tarjeta("Negocios que registraron", tabla.length)}
       </div>
+      <section className="flex flex-col gap-3" data-cierres-app>
+        <h2 className="text-lg font-bold text-n-900">Cierres de la app</h2>
+        <p className="text-sm text-n-600">{cierres30 ?? 0} en los últimos 30 días. Cada celular los manda al siguiente arranque. Los cierres nativos solo llegan a EAS Observe.</p>
+        {(cierres ?? []).length > 0 && (
+          <TablaResponsiva>
+            <thead>
+              <tr><th>Error</th><th>Pantalla</th><th>Versión</th><th>Modelo</th><th>Fecha</th></tr>
+            </thead>
+            <tbody>
+              {(cierres ?? []).map((c) => (
+                <tr key={c.id as string}>
+                  <td>{c.fatal ? "Cierre: " : ""}{c.mensaje as string}</td>
+                  <td>{(c.pantalla as string | null) ?? "—"}</td>
+                  <td>{c.version as string}</td>
+                  <td>{(c.modelo as string | null) ?? "—"}{c.sistema ? ` · ${c.sistema as string}` : ""}</td>
+                  <td>{formatearFecha(c.ocurrido_at as string, ZONA)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </TablaResponsiva>
+        )}
+      </section>
+
       <section className="flex flex-col gap-3" data-metricas-alertas>
         <h2 className="text-lg font-bold text-n-900">Alertas de la calle</h2>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
