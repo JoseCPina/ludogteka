@@ -36,13 +36,13 @@ export function avisarSolicitudAlNegocio(o: { negocioId: string; solicitudId: st
       const db = createSupabaseAdminClient(o.negocioId);
       const { data: s } = await db
         .from("solicitudes_reserva")
-        .select("tipo, fecha_entrada, fecha_salida, inicio, motivos, clientes(nombre), perros(nombre), servicios(nombre), negocios(nombre, zona_horaria, slug, dominio, url_publica)")
+        .select("tipo, fecha_entrada, fecha_salida, inicio, motivos, datos_compartidos, clientes(nombre), perros(nombre), servicios(nombre), negocios(nombre, zona_horaria, slug, dominio, url_publica)")
         .eq("id", o.solicitudId)
         .eq("negocio_id", o.negocioId)
         .maybeSingle();
       if (!s) return;
       const f = s as unknown as {
-        tipo: string; fecha_entrada: string | null; fecha_salida: string | null; inicio: string | null; motivos: MotivoBase[];
+        datos_compartidos: { nombre?: string; mascota?: { nombre?: string } } | null; tipo: string; fecha_entrada: string | null; fecha_salida: string | null; inicio: string | null; motivos: MotivoBase[];
         clientes: { nombre: string } | null; perros: { nombre: string } | null; servicios: { nombre: string } | null; negocios: { nombre: string; zona_horaria: string | null; slug: string; dominio: string | null; url_publica: string | null } | null;
       };
       const zona = f.negocios?.zona_horaria ?? "America/Mexico_City";
@@ -59,8 +59,8 @@ export function avisarSolicitudAlNegocio(o: { negocioId: string; solicitudId: st
         if (!tel) continue;
         await wa.plantillaConParametros(`52${tel}`, plantilla.nombre, [
           limpiarVariable(f.negocios?.nombre ?? "tu negocio"),
-          limpiarVariable(f.clientes?.nombre ?? "Un cliente"),
-          limpiarVariable(f.perros?.nombre ?? "su mascota"),
+          limpiarVariable(f.clientes?.nombre ?? f.datos_compartidos?.nombre ?? "Un cliente"),
+          limpiarVariable(f.perros?.nombre ?? f.datos_compartidos?.mascota?.nombre ?? "su mascota"),
           limpiarVariable(`${f.servicios?.nombre ?? "Servicio"}, ${cuando}`),
           limpiarVariable(faltan),
           enlace,

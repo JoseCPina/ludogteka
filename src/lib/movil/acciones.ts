@@ -1,6 +1,7 @@
 import { pedirEntrada, estadoEntrada, canjearEntrada, entrarConContrasena, renovarSesionMovil } from "@/lib/app/entrada";
 import { pedirCodigoEntrada, verificarCodigoEntrada } from "@/lib/app/entrada-codigo";
 import { registrarErroresApp } from "@/lib/movil/errores";
+import * as clienteNuevo from "@/app/app/(sesion)/negocios/acciones-cliente-nuevo";
 import { sesionApp } from "@/lib/app/sesion";
 import { leerFotoDeCartilla } from "@/lib/app/cartilla-foto";
 import { registrarDispositivo, quitarDispositivo } from "@/lib/movil/push";
@@ -154,6 +155,13 @@ export const ACCIONES: Record<string, Accion> = {
   direccionDeMiUbicacion: { fn: negocios.direccionDeMiUbicacionApp },
   reservarEstancia: { fn: negocios.reservarApp },
   revisarReserva: { fn: negocios.revisarReservaApp },
+  clienteNuevo: { fn: P.pantallaClienteNuevo },
+  cupoClienteNuevo: { fn: clienteNuevo.cupoClienteNuevoApp },
+  horasClienteNuevo: { fn: clienteNuevo.horasClienteNuevoApp },
+  cotizarRecoleccionNuevo: { fn: clienteNuevo.cotizarRecoleccionNuevoApp },
+  direccionDeUbicacionNuevo: { fn: clienteNuevo.direccionDeUbicacionNuevoApp },
+  pedirClienteNuevo: { fn: clienteNuevo.pedirClienteNuevoApp },
+  cancelarClienteNuevo: { fn: clienteNuevo.cancelarClienteNuevoApp },
   pedirLugar: { fn: negocios.pedirLugarApp },
   cancelarSolicitud: { fn: negocios.cancelarSolicitudApp },
   prepararContratos: { fn: negocios.prepararContratosApp },

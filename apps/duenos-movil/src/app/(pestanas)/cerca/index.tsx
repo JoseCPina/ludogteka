@@ -19,7 +19,7 @@ type Categoria = "veterinaria" | "abiertas" | "urgencias" | "estetica" | "guarde
 type Lugar = {
   id: string; fuente: "directorio" | "google"; nombre: string; tipo: keyof typeof coloresLugar; subtipo: string | null; lat: number; lng: number; distanciaM: number; direccion: string | null;
   calificacion: number | null; resenas: number | null; telefono: string | null; whatsapp: string | null; abiertoAhora: boolean | null; enPeluDesk: boolean; negocioId: string | null;
-  mascotasConVinculo: string[]; cupoEstaNoche: { hayCupo: boolean; disponible: number } | null; googlePlaceId: string | null; mapsUri: string | null; fichaUrl: string | null;
+  aceptaClientes?: boolean; mascotasConVinculo: string[]; cupoEstaNoche: { hayCupo: boolean; disponible: number } | null; googlePlaceId: string | null; mapsUri: string | null; fichaUrl: string | null;
 };
 type Respuesta = { lugares: Lugar[]; precio: { servicio: string; desde: number; hasta: number; lugar: string } | null; atribucionGoogle: boolean };
 type Ficha = { google: { horario: string[]; resumen: string | null; fotos: { uri: string; autor: string | null }[]; opiniones: { autor: string; calificacion: number; texto: string; cuando: string | null }[] } | null; resenasPeluDesk: { total: number; promedio: number | null; ultimas: { estrellas: number; texto: string | null; quien: string }[] } | null };
@@ -249,6 +249,8 @@ function FichaLugar({ l, ficha }: { l: Lugar; ficha: Ficha | null }) {
   const accionPrincipal = l.enPeluDesk
     ? mascota
       ? { titulo: reservable ? "Reservar" : "Pedir cita", alTocar: () => router.push(`/mascotas/${mascota}/${reservable ? "reservar" : "cita"}`) }
+      : l.negocioId && l.aceptaClientes
+        ? { titulo: reservable ? "Reservar" : "Pedir cita", alTocar: () => router.push(`/negocios/${l.negocioId}/pedir?tipo=${reservable ? "estancia" : "cita"}`) }
       : l.whatsapp
         ? { titulo: reservable ? "Reservar por WhatsApp" : "Pedir cita por WhatsApp", alTocar: () => Linking.openURL(`https://wa.me/${l.whatsapp}?text=${encodeURIComponent(`Hola, los encontré en la app PeluDesk. Quiero ${reservable ? "reservar" : "pedir una cita"} para mi mascota.`)}`) }
         : l.fichaUrl
@@ -260,6 +262,7 @@ function FichaLugar({ l, ficha }: { l: Lugar; ficha: Ficha | null }) {
       <Texto v="secundario">{[l.subtipo ? SUBTIPO[l.subtipo] : null, distancia(l.distanciaM), l.direccion].filter(Boolean).join(" · ")}</Texto>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         {l.enPeluDesk ? <Insignia texto="Negocio PeluDesk" tono="primario" /> : null}
+        {l.enPeluDesk && !mascota && !l.aceptaClientes && l.whatsapp ? <Texto v="secundario">Este negocio recibe clientes nuevos por WhatsApp.</Texto> : null}
         {l.cupoEstaNoche ? <Insignia texto={l.cupoEstaNoche.hayCupo ? `Hay cupo esta noche` : "Lleno esta noche"} tono={l.cupoEstaNoche.hayCupo ? "exito" : "peligro"} /> : null}
         {l.abiertoAhora === true ? <Insignia texto="Abierto ahora" tono="exito" /> : null}
       </View>

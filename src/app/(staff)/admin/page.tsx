@@ -4,6 +4,7 @@ import { InvitarStaff } from "./invitar-staff";
 import { ListaCuentas, type Cuenta } from "./lista-cuentas";
 import { DescuentoConfig } from "./descuento-config";
 import { DiagnosticoGoogle } from "./diagnostico-google";
+import { AjusteClientesApp } from "./ajuste-clientes-app";
 import { UbicacionNegocio } from "./ubicacion-negocio";
 import { usaEstancias } from "@/lib/plan/modulos";
 import { ConfiguracionNegocio, type ConfiguracionVigente } from "./configuracion-negocio";
@@ -172,6 +173,7 @@ async function SeccionesAdmin() {
 
       {esAdmin && (
       <>
+      <AjusteClientesApp />
       <section className="rounded-lg border border-border bg-card shadow-tarjeta p-5">
         <h2 className="mb-4 text-lg font-semibold text-foreground">Tope de descuentos de recepción</h2>
         <DescuentoConfig

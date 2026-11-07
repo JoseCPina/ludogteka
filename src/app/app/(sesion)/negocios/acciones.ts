@@ -7,7 +7,7 @@ import type { RegistroFinal } from "@/lib/concurrencia/tipos";
 import { sesionApp } from "@/lib/app/sesion";
 import { supabaseAppEnNegocio } from "@/lib/app/en-negocio";
 import { cotizarPorDireccion, direccionDesdeUbicacion } from "@/lib/recoleccion/distancia";
-import { dejaSolicitud, requisitoParaDueno, type MotivoBase, type RequisitoDueno } from "@/lib/app/requisitos";
+import { dejaSolicitud, requisitosParaDueno, type MotivoBase, type RequisitoDueno } from "@/lib/app/requisitos";
 import { avisarSolicitudAlNegocio } from "@/lib/app/solicitudes";
 import { vinculoDe, vinculosApp } from "@/lib/app/negocios";
 import { firmarContratoCon, ipDeFirma } from "@/lib/contratos/firmar";
@@ -199,7 +199,7 @@ export async function revisarReservaApp(negocioId: string, mascotaId: string, se
   const { data, error } = await supabase.rpc("portal_requisitos_reserva", { p_perro: v.perroId, p_servicio: servicioId, p_entrada: entrada, p_salida: salida, p_horas: horas && horas > 0 ? Math.round(horas) : null, p_inicio: inicioIso ? new Date(inicioIso).toISOString() : null });
   if (error) return { error: rechazoDeLaBase(error) };
   const motivos = (data ?? []) as MotivoBase[];
-  return { error: null, datos: { faltan: motivos.map(requisitoParaDueno), puedePedirLugar: motivos.length > 0 && motivos.every((m) => dejaSolicitud(m.clave)) } };
+  return { error: null, datos: { faltan: requisitosParaDueno(motivos), puedePedirLugar: motivos.length > 0 && motivos.every((m) => dejaSolicitud(m.clave)) } };
 }
 
 /** Deja la solicitud (sin cobrar ni ocupar cupo) y le avisa al negocio. La base vuelve a revisar qué falta. */

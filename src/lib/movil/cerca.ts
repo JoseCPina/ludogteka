@@ -34,6 +34,7 @@ export type LugarMapa = {
   resenas: number | null;
   telefono: string | null;
   whatsapp: string | null;
+  aceptaClientes?: boolean;
   abiertoAhora: boolean | null;
   enPeluDesk: boolean;
   negocioId: string | null;
@@ -228,6 +229,13 @@ export async function cercaDeMi(lat: number, lng: number, categoria: Categoria):
   const yaEstan = new Set(dir.lugares.map((l) => l.negocioId).filter(Boolean));
   dir.lugares.push(...peludesk.filter((p) => !yaEstan.has(p.negocioId)));
   await ponerCupo(dir.lugares);
+  // Quién recibe clientes nuevos desde la app (docs/app-duenos/FASE-3.md).
+  const conNegocio = [...new Set(dir.lugares.map((l) => l.negocioId).filter(Boolean))] as string[];
+  if (conNegocio.length) {
+    const { data: aceptan } = await createSupabaseAdminClient().from("negocios").select("id, acepta_clientes_app").in("id", conNegocio);
+    const siAcepta = new Set(((aceptan ?? []) as { id: string; acepta_clientes_app: boolean }[]).filter((n) => n.acepta_clientes_app).map((n) => n.id));
+    for (const l of dir.lugares) l.aceptaClientes = Boolean(l.negocioId && siAcepta.has(l.negocioId));
+  }
   // Un lugar de Google que ya está en el directorio se queda con la ficha del directorio (y su marca PeluDesk).
   const porPlace = new Map(dir.lugares.filter((l) => l.googlePlaceId).map((l) => [l.googlePlaceId!, l]));
   for (const g of google) {

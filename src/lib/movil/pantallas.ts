@@ -269,3 +269,26 @@ export async function pantallaContratos() {
   if (await sinSesion()) return null;
   return { contratos: await contratosPorFirmarApp() };
 }
+
+/** Hacerse cliente de un negocio: quien pide no es miembro, así que lo del negocio se lee con el servidor (sin precios). */
+export async function pantallaClienteNuevo(negocioId: string) {
+  const s = await sesionApp();
+  if (!s || !/^[0-9a-f-]{36}$/i.test(negocioId)) return null;
+  const db = createSupabaseAdminClient(negocioId);
+  const { data: n } = await db.from("negocios").select("id, nombre, zona_horaria, acepta_clientes_app, landing").eq("id", negocioId).is("deleted_at", null).maybeSingle();
+  if (!n) return null;
+  const [{ data: servicios }, { data: recoleccion }, mascotas] = await Promise.all([
+    db.from("servicios").select("id, nombre, categoria, unidad, duracion_minutos").eq("negocio_id", negocioId).in("categoria", ["guarderia", "hotel", "estetica"]).is("deleted_at", null).order("nombre").order("id"),
+    db.rpc("modulo_activo", { p_modulo: "recoleccion" }),
+    misMascotas(),
+  ]);
+  const libres = mascotas.filter((m) => !m.vinculos.some((v) => v.negocioId === negocioId));
+  const conteos = await Promise.all(libres.map(async (m) => (await cartillaDe(m.id)).length));
+  const wa = ((n.landing as { telefono_wa?: string | null } | null)?.telefono_wa ?? "").replace(/\D/g, "");
+  return {
+    negocio: { id: n.id, nombre: n.nombre, hoy: hoyNegocio(n.zona_horaria ?? "America/Mexico_City"), recoleccion: recoleccion === true, acepta: n.acepta_clientes_app === true, whatsapp: wa ? (wa.length === 10 ? `52${wa}` : wa) : null },
+    servicios: (servicios ?? []).map((v) => ({ id: v.id, nombre: v.nombre, categoria: v.categoria, unidad: v.unidad, duracionMinutos: v.duracion_minutos })),
+    mascotas: libres.map((m, i) => ({ id: m.id, nombre: m.nombre, especie: nombreEspecie(m), raza: m.razaTexto ?? null, fechaNacimiento: m.fechaNacimiento ?? null, fotoUrl: m.fotoUrl, vacunas: conteos[i] })),
+    yo: { nombre: s.dueno.nombre, telefono: s.dueno.telefono },
+  };
+}

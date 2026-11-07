@@ -573,6 +573,15 @@ Cuando un dueño quiere reservar o pedir cita desde su cuenta y le falta un requ
 
 Al aceptar o rechazar, el dueño recibe el aviso en su app. Sin respuesta en 3 días, la solicitud caduca sola y también se le avisa.
 
+### Clientes nuevos desde la app
+
+Un dueño que encuentra tu negocio en «Cerca de mí» de la app y todavía no es tu cliente también puede pedir su lugar. Antes de enviar ve qué datos te comparte: su nombre y teléfono, y de la mascota su nombre, especie, raza, fecha de nacimiento, foto y cartilla. Te llega como **Cliente nuevo**, con esa ficha, y no cobra ni ocupa cupo.
+
+- **Aceptar**: escoge la talla y el pelaje si el precio depende de ellos. Crea al cliente y el expediente con esos datos, liga la mascota de la app, crea la reserva o la cita y deja el contrato de alta por firmar. Si le falta evaluación o vacunas, queda como excepción y la tiene que aceptar un admin o quien tenga el permiso «Excepciones al reservar». La cartilla es lo que dice el dueño: no se registra sola en sus requisitos.
+- **Contactar** y **Rechazar**, igual que las demás.
+
+Se apaga en tu Inicio, en la sección «Clientes nuevos desde la app»: la app dirá que recibes clientes nuevos por WhatsApp.
+
 ## Incluirla al reservar o agendar
 
 1. En **Nueva reserva** (Guardería u Hotel) o en **Agendar cita** (Estética), prende **Incluir recolección**.

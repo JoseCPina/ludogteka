@@ -60,6 +60,7 @@ function Pilas() {
         </Stack.Protected>
         <Stack.Protected guard={conSesion}>
           <Stack.Screen name="(pestanas)" options={{ headerShown: false }} />
+          <Stack.Screen name="negocios/[negocio]/pedir" options={{ title: "Pedir tu lugar" }} />
           <Stack.Screen name="mascotas/nueva" options={{ title: "Nueva mascota", presentation: "modal" }} />
           <Stack.Screen name="mascotas/[id]/index" options={{ title: "" }} />
           <Stack.Screen name="mascotas/[id]/cartilla" options={{ title: "Cartilla" }} />

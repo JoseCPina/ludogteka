@@ -84,3 +84,6 @@ Dueños activos a 30 y 90 días; mascotas con cartilla y por qué entrada (foto,
 - La app nativa no habla con Supabase directo: todo por `/api/movil` (una función de la web por acción). Una acción nueva de la app se agrega a la lista cerrada de `src/lib/movil/acciones.ts` y a su auditoría (`app-movil-api-dev.mjs`, `app-movil-cerca-alertas-dev.mjs`).
 - Cada fase se despliega sola con el procedimiento normal, con su auditoría de punta a punta en desarrollo y verificación en producción con los clientes de la demo.
 - Ayuda, bot y docs se actualizan con cada fase; CLAUDE.md lleva el índice.
+
+## Hacerse cliente desde la app (6 de noviembre de 2026)
+Un dueño sin expediente en un negocio PeluDesk pide su reserva o cita desde «Cerca de mí», ve qué datos se comparten y confirma. Sin cobro ni cupo hasta que el negocio acepte; al aceptar se crea el expediente y se liga la misma mascota. Sin comisión por cliente. El negocio lo puede apagar y recibirlos por WhatsApp. Detalle: FASE-3.md, «Cliente nuevo».

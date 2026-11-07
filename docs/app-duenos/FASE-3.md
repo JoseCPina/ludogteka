@@ -175,3 +175,14 @@ Migración `20261203002300`:
 - **Cliente dado de baja:** `app_mis_vinculos` ya no lo cuenta como expediente; de ahí salía «Cliente no encontrado» al cotizar la recolección.
 - **Límites:** 5 solicitudes pendientes por cliente y negocio; no se repite la misma.
 - **Pruebas:** `app-duenos-f3-dev.mjs`, `app-movil-api-dev.mjs`, `recoleccion-dev.mjs`, `permisos-pantalla-dev.mjs`, `columnas-internas-dev.mjs`, `dinero-cliente.mjs`.
+
+## «Cliente nuevo»: hacerse cliente desde la app (migración `20261203005200`)
+- **Flujo:** Cerca de mí → negocio PeluDesk donde la mascota no tiene expediente → `/negocios/<id>/pedir` (mascota, servicio, fecha, cupo u horas, recolección) → «Antes de enviar», con lo que se comparte → «Compartir y enviar». Sin cobro ni cupo.
+- **Lo que se comparte, y nada más:** `solicitudes_reserva.datos_compartidos`, una foto fija de ese momento: nombre y teléfono; de la mascota nombre, especie, raza, fecha de nacimiento y foto; y su cartilla. El negocio no lee la mascota global ni otra mascota.
+- **Quien pide no es miembro:** la RLS no le deja leer nada del negocio. `acciones-cliente-nuevo.ts` comprueba su sesión y corre con la secret key atada al negocio; `app_pedir_cliente_nuevo` y `app_cancelar_cliente_nuevo` solo las ejecuta `service_role`. Los km se recalculan por la dirección al enviar.
+- **Límites:** 5 al día por dueño, una pendiente por mascota y negocio, 30 cotizaciones de recolección al día; caduca a los 3 días o en la fecha pedida.
+- **Aceptar** (`solicitud_aceptar`): reutiliza al cliente de su membresía o de su teléfono, o lo crea; crea el perro con la bandera `app.sin_vincular` (sin ella, `perros_app_vincular` nacería OTRA mascota global), pone el vínculo a la mascota que ya existe, crea la membresía, la reserva o cita, la recolección y el contrato de alta pendiente. La foto se copia a `perros-archivos` desde la acción. La talla y el pelaje se escogen al aceptar: el dueño no los comparte y sin ellos un servicio con precio por talla no se puede crear. La cartilla compartida no llena los requisitos del negocio.
+- **Requisitos:** quien tiene `excepciones_reserva` acepta con la excepción de lo que falte y queda el motivo; sin ese permiso, la base lo rechaza y lo tiene que aceptar un admin. Celo, gestación y alertas no aplican a un expediente recién creado.
+- **Ajuste:** `negocios.acepta_clientes_app` (prendido por omisión), en `/admin`. Apagado, la app dice «Este negocio recibe clientes nuevos por WhatsApp». Solo el flujo de la app nativa; `/app` en la web sigue por WhatsApp.
+- **Aviso:** la misma plantilla `peludesk_solicitud_reserva_v1`; sin aprobar, solo en el panel. El dueño recibe push y Avisos al aceptar, rechazar o caducar (`solicitud_avisar`, por `dueno_id` porque todavía no hay vínculo).
+- **Pruebas:** `app-duenos-f3-dev.mjs`, `app-movil-api-dev.mjs`, `columnas-internas-dev.mjs`, `dinero-cliente.mjs`, `permisos-pantalla-dev.mjs`.

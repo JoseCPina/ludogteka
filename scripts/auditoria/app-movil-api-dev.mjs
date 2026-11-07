@@ -186,6 +186,40 @@ try {
     }
   }
 
+  console.log("3c. Cliente nuevo");
+  {
+    // La mascota de C2 no tiene expediente en la demo... se usa Huellitas con una mascota nueva de C1 sin vínculo.
+    const nombre = `Sin expediente ${Date.now()}`;
+    const { data: nueva } = await A.from("mascotas").insert({ dueno_id: C1.profile_id, nombre, especie: "perro", raza_texto: "Poodle", origen: "app" }).select("id").single();
+    const pant = await api("clienteNuevo", [H], token);
+    revisa(pant.status === 200 && pant.json?.mascotas?.some((x) => x.id === nueva.id), "la pantalla ofrece la mascota sin expediente en ese negocio");
+    revisa(!pant.json?.mascotas?.some((x) => ids.includes(x.id) && x.id !== nueva.id && false), "sin mezclar mascotas");
+    revisa(!/precio|tarifa/i.test(JSON.stringify(pant.json?.servicios ?? [])), "los servicios van sin precio");
+    revisa((await api("clienteNuevo", [H])).status === 401, "sin sesión, 401");
+    const serv = (pant.json?.servicios ?? []).find((s) => s.categoria === "guarderia" && s.unidad !== "hora");
+    const f = new Date(Date.now() + (680 + Math.floor(Math.random() * 30)) * 86400000);
+    while (f.getUTCDay() !== 3) f.setUTCDate(f.getUTCDate() + 1);
+    const entrada = f.toISOString().slice(0, 10), salida = new Date(f.getTime() + 86400000).toISOString().slice(0, 10);
+    const cupo = await api("cupoClienteNuevo", [H, serv.id, entrada, salida], token);
+    revisa(Array.isArray(cupo.json?.datos?.dias), `lee el cupo sin ser miembro ${cupo.json?.error ?? ""}`);
+    const sinOk = await api("pedirClienteNuevo", [H, nueva.id, serv.id, entrada, salida, null, null, null, false], token);
+    revisa(Boolean(sinOk.json?.error), "sin confirmar qué se comparte, no se envía");
+    const ajena2 = await api("pedirClienteNuevo", [H, mascotaAjena, serv.id, entrada, salida, null, null, null, true], token);
+    revisa(Boolean(ajena2.json?.error), "con una mascota ajena, no");
+    const pide = await api("pedirClienteNuevo", [H, nueva.id, serv.id, entrada, salida, null, null, null, true], token);
+    const lugar = pide.json?.datos?.id;
+    // C1 ya es cliente de Huellitas: si no tiene nombre o teléfono en su cuenta, la base lo dice.
+    if (lugar) {
+      revisa(pide.json?.datos?.estado === "pendiente", "deja la solicitud");
+      const vis = await api("visitas", [], token);
+      revisa((vis.json?.solicitudes ?? []).some((s) => s.id === lugar && s.esClienteNuevo), "sale en sus visitas");
+      const cancela = await api("cancelarClienteNuevo", [H, lugar], token);
+      revisa(cancela.json?.datos?.estado === "cancelada", `él la cancela ${cancela.json?.error ?? ""}`);
+      await servicioH.from("solicitudes_reserva").update({ deleted_at: new Date().toISOString(), dueno_id: null, mascota_id: null, es_cliente_nuevo: false, cliente_id: C1.cliente_id, perro_id: null }).eq("id", lugar).then(() => null, () => null);
+    } else revisa(false, `pedirClienteNuevo: ${pide.json?.error ?? pide.status}`);
+    await A.from("mascotas").delete().eq("id", nueva.id).then(() => null, () => null);
+  }
+
   console.log("4. Notificaciones nativas");
   const malo = await api("registrarDispositivo", [{ token: "no-es-un-token", plataforma: "android" }], token);
   revisa(Boolean(malo.json?.error), "un token que no es de Expo se rechaza");

@@ -51,9 +51,19 @@ export function requisitoParaDueno(m: MotivoBase): RequisitoDueno {
   }
 }
 
+/** La lista para enseñar al dueño: las vacunas y desparasitaciones van juntas, sin repetir la misma explicación. */
+export function requisitosParaDueno(motivos: MotivoBase[]): RequisitoDueno[] {
+  const sanitarios = motivos.filter((m) => m.clave === "sanitario");
+  const otros = motivos.filter((m) => m.clave !== "sanitario").map(requisitoParaDueno);
+  if (sanitarios.length < 2) return [...otros, ...sanitarios.map(requisitoParaDueno)];
+  const lista = sanitarios.map((m) => m.dato).filter(Boolean).join(", ");
+  return [...otros, { clave: "sanitario", titulo: "Vacunas y desparasitaciones", accion: null, explicacion: `Este negocio no tiene vigentes: ${lista}. Las pide para cuidar a todos los que se quedan. Lleva su cartilla o el comprobante el día que vayas, o mándaselos al negocio por WhatsApp, para que los registre en su expediente. ${PIDE_LUGAR}` }];
+}
+
 /** Lo mismo, dicho al personal: qué revisar en la solicitud. */
 export function requisitoParaPersonal(m: MotivoBase): string {
   switch (m.clave) {
+    case "cliente_nuevo": return "Cliente nuevo: todavía no tiene expediente";
     case "evaluacion": return "Sin evaluación de comportamiento";
     case "sanitario": return `${m.dato ?? "Requisito sanitario"}: ${m.estado === "vencida" ? "vencida" : "sin registro"}`;
     case "cupo": return "Sin cupo en esas fechas";

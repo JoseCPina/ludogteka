@@ -249,7 +249,7 @@ try {
         const d = u.searchParams.get("address") ?? "";
         if (/inexistente/i.test(d)) return j(200, { status: "ZERO_RESULTS", results: [] });
         const lejos = /lejana/i.test(d);
-        return j(200, { status: "OK", results: [{ geometry: { location_type: /colonia general/i.test(d) ? "APPROXIMATE" : "ROOFTOP", location: { lat: origen.lat + (lejos ? 5 : 0.05 + hash(d.toLowerCase()) / 100000), lng: origen.lng } } }] });
+        return j(200, { status: "OK", results: [{ types: /colonia general/i.test(d) ? ["neighborhood", "political"] : ["street_address"], geometry: { location_type: /colonia general/i.test(d) ? "APPROXIMATE" : "ROOFTOP", location: { lat: origen.lat + (lejos ? 5 : 0.05 + hash(d.toLowerCase()) / 100000), lng: origen.lng } } }] });
       }
       if (u.pathname.endsWith(":computeRoutes")) {
         llamadas.ruta++;

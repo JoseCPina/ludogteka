@@ -58,7 +58,7 @@ const t2 = await tokenDe(C2.profile_id);
 const c1 = enNegocio(t1), c2 = enNegocio(t2), a1 = sinNegocio(t1), a2 = sinNegocio(t2);
 console.log(`Huellitas ${H.slice(0, 8)} · C1 ${C1.nombre} · C2 ${C2.nombre} · hoy ${hoyH} (${zonaH})`);
 
-const creados = { perros: [], solicitudes: [], accesos: [], perro: null, reservas: [], citas: [], estancias: [], contratos: [], resenas: [], cupo: null, ajustes: [] };
+const creados = { cuentas: [], clientes: [], mascotasNuevas: [], perros: [], solicitudes: [], accesos: [], perro: null, reservas: [], citas: [], estancias: [], contratos: [], resenas: [], cupo: null, ajustes: [] };
 const msg = (r) => r.error?.message ?? "";
 try {
   // ── 1. Perro nuevo de C1 (raza con precio en Huellitas: Poodle chico de pelo medio) y su vínculo ───────────────
@@ -446,6 +446,125 @@ try {
   const anonSol = await anonimo.from("solicitudes_reserva").select("id").limit(1);
   comprobar(Boolean(anonSol.error) || (anonSol.data ?? []).length === 0, "anónimo: solicitudes_reserva sin filas");
 
+  // ── Cliente nuevo: hacerse cliente desde la app ─────────────────────────────────────────────────────────────────
+  seccion("Cliente nuevo");
+  {
+    const telNuevo = `4429${String(Date.now()).slice(-6)}`;
+    const { data: uNuevo, error: eU } = await A.auth.admin.createUser({ email: `t${telNuevo}@telefono.ludogteka.mx`, email_confirm: true, user_metadata: { nombre_completo: `F3 Nuevo ${sufijo}` } });
+    if (eU) throw new Error(`cuenta nueva: ${eU.message}`);
+    const idNuevo = uNuevo.user.id;
+    creados.cuentas.push(idNuevo);
+    await A.from("duenos").upsert({ id: idNuevo, telefono: telNuevo, nombre: `F3 Nuevo ${sufijo}` });
+    const { data: maNueva, error: eM } = await A.from("mascotas").insert({ dueno_id: idNuevo, nombre: `Nueva ${sufijo}`, especie: "perro", raza_texto: "Poodle", fecha_nacimiento: "2023-01-15", origen: "app", microchip: "NO-SE-COMPARTE" }).select("id").single();
+    if (eM) throw new Error(`mascota nueva: ${eM.message}`);
+    await A.from("mascotas_cartilla").insert({ mascota_id: maNueva.id, tipo: "vacuna", nombre: "Antirrábica", fecha_aplicacion: suma(hoyH, -30), fuente: "manual" });
+    let Dn = suma(hoyH, 620 + Math.floor(Math.random() * 40));
+    while (new Date(`${Dn}T12:00:00Z`).getUTCDay() !== 3) Dn = suma(Dn, 1);
+    const pedirNuevo = (o = {}) => S.rpc("app_pedir_cliente_nuevo", { p_dueno: idNuevo, p_mascota: maNueva.id, p_servicio: guarderia.id, p_entrada: Dn, p_salida: suma(Dn, 1), p_horas: null, p_inicio: null, p_recoleccion: null, p_consentido: true, ...o });
+    const tNuevo = await tokenDe(idNuevo);
+    const cNuevo = enNegocio(tNuevo);
+    const directoJwt = await cNuevo.rpc("app_pedir_cliente_nuevo", { p_dueno: idNuevo, p_mascota: maNueva.id, p_servicio: guarderia.id, p_entrada: Dn, p_salida: suma(Dn, 1), p_horas: null, p_inicio: null, p_recoleccion: null, p_consentido: true });
+    comprobar(Boolean(directoJwt.error), "con su JWT no llama directo a la base: va por el servidor");
+    const anonNuevo = await anonimo.rpc("app_pedir_cliente_nuevo", { p_dueno: idNuevo, p_mascota: maNueva.id, p_servicio: guarderia.id, p_entrada: Dn, p_salida: suma(Dn, 1), p_horas: null, p_inicio: null, p_recoleccion: null, p_consentido: true });
+    comprobar(Boolean(anonNuevo.error), "la llave anónima tampoco");
+    const sinConsentir = await pedirNuevo({ p_consentido: false });
+    comprobar(/datos se comparten/i.test(msg(sinConsentir)), `sin confirmar qué se comparte, no se envía («${msg(sinConsentir).slice(0, 50)}»)`);
+    const ajena = await pedirNuevo({ p_dueno: C2.profile_id });
+    comprobar(ajena.error?.code === "42501", `con la mascota de otro dueño, no (${msg(ajena).slice(0, 40)})`);
+    const yaCliente = await S.rpc("app_pedir_cliente_nuevo", { p_dueno: C1.profile_id, p_mascota: vinculo.mascota_id, p_servicio: guarderia.id, p_entrada: Dn, p_salida: suma(Dn, 1), p_horas: null, p_inicio: null, p_recoleccion: null, p_consentido: true });
+    comprobar(/ya es cliente/i.test(msg(yaCliente)), `mascota ya cliente: no crea solicitud de cliente nuevo («${msg(yaCliente).slice(0, 50)}»)`);
+    // Ajuste apagado.
+    const recepNuevo = enNegocio(await tokenDe(datos.recepcionB));
+    const recepAjuste = await recepNuevo.rpc("negocio_fijar_acepta_clientes_app", { p_acepta: false });
+    comprobar(recepAjuste.error?.code === "42501", "recepción no cambia el ajuste");
+    const apaga = await adm.rpc("negocio_fijar_acepta_clientes_app", { p_acepta: false });
+    comprobar(!apaga.error, `el admin lo apaga ${msg(apaga)}`);
+    const conApagado = await pedirNuevo();
+    comprobar(/por WhatsApp/i.test(msg(conApagado)), `con el ajuste apagado no se envía («${msg(conApagado)}»)`);
+    await adm.rpc("negocio_fijar_acepta_clientes_app", { p_acepta: true });
+
+    // Rechazada.
+    const uno = await pedirNuevo();
+    comprobar(!uno.error && uno.data?.estado === "pendiente", `deja la solicitud ${msg(uno)}`);
+    if (uno.data?.id) creados.solicitudes.push(uno.data.id);
+    const { data: filaUno } = await S.from("solicitudes_reserva").select("cliente_id, perro_id, reserva_id, datos_compartidos, es_cliente_nuevo").eq("id", uno.data?.id).single();
+    comprobar(filaUno?.es_cliente_nuevo && !filaUno.cliente_id && !filaUno.perro_id && !filaUno.reserva_id, "sin cliente, expediente ni reserva hasta aceptar");
+    const claves = Object.keys(filaUno?.datos_compartidos?.mascota ?? {}).sort().join(",");
+    comprobar(claves === "especie,especie_detalle,fecha_nacimiento,foto_path,nombre,raza", `de la mascota solo va lo acordado (${claves})`);
+    comprobar(!JSON.stringify(filaUno?.datos_compartidos).includes("NO-SE-COMPARTE") && filaUno?.datos_compartidos?.cartilla?.length === 1, "ni un dato de más, y con su cartilla");
+    const repetidaN = await pedirNuevo();
+    comprobar(/ya pediste/i.test(msg(repetidaN)), "no se repite con la misma mascota");
+    const { data: tabN } = await adm.rpc("tablero_atencion", { p_grupo: "general" });
+    comprobar((tabN?.solicitudes ?? []).some((s) => s.id === uno.data?.id && s.es_cliente_nuevo && s.perro_nombre === `Nueva ${sufijo}`), "sale en «Necesita atención» como cliente nuevo, con su nombre");
+    const leeNegocio = await cNuevo.from("clientes").select("id").limit(1);
+    comprobar((leeNegocio.data ?? []).length === 0, "quien pide no lee clientes del negocio");
+    const leeSol = await cNuevo.from("solicitudes_reserva").select("id").eq("id", uno.data?.id);
+    comprobar((leeSol.data ?? []).length === 0, "ni la tabla de solicitudes");
+    // Otro negocio y otro dueño.
+    const { data: adminLudo } = await A.from("membresias").select("profile_id").eq("negocio_id", "10000000-0000-4000-8000-000000000001").eq("rol", "admin").is("deleted_at", null).limit(1).single();
+    const ludo = enNegocio(await tokenDe(adminLudo.profile_id), "10000000-0000-4000-8000-000000000001");
+    const { data: veLudo } = await ludo.rpc("solicitudes_del_negocio", { p_solo_pendientes: false });
+    comprobar(!(veLudo ?? []).some((s) => s.id === uno.data?.id), "otro negocio no la ve");
+    const aceptaLudo = await ludo.rpc("solicitud_aceptar", { p_id: uno.data?.id });
+    comprobar(Boolean(aceptaLudo.error), "ni la acepta");
+    const otroDueno = await S.rpc("app_cancelar_cliente_nuevo", { p_id: uno.data?.id, p_dueno: C2.profile_id });
+    comprobar(Boolean(otroDueno.error), "otro dueño no la cancela");
+    const rechazaN = await recepNuevo.rpc("solicitud_rechazar", { p_id: uno.data?.id, p_motivo: "No tenemos lugar para nuevos este mes" });
+    comprobar(!rechazaN.error && rechazaN.data?.estado === "rechazada", `rechazada ${msg(rechazaN)}`);
+    const avisos = async (id) => (await A.from("app_avisos").select("titulo, cuerpo").eq("dueno_id", idNuevo).eq("datos->>origen_id", id)).data ?? [];
+    comprobar((await avisos(uno.data?.id)).some((a) => /no tenemos lugar/i.test(a.cuerpo)), "el dueño recibe el motivo en Avisos");
+    const { count: perrosTras } = await S.from("perros").select("id", { count: "exact", head: true }).eq("nombre", `Nueva ${sufijo}`);
+    comprobar(perrosTras === 0, "rechazada no crea expediente");
+
+    // Caducada.
+    const dos = await pedirNuevo();
+    comprobar(!dos.error, `otra solicitud ${msg(dos)}`);
+    if (dos.data?.id) {
+      creados.solicitudes.push(dos.data.id);
+      await S.from("solicitudes_reserva").update({ expira_at: new Date(Date.now() - 60000).toISOString() }).eq("id", dos.data.id);
+      const cadN = await S.rpc("solicitudes_caducar");
+      comprobar(!cadN.error, `la tarea corre ${msg(cadN)}`);
+      const { data: fD } = await S.from("solicitudes_reserva").select("estado").eq("id", dos.data.id).single();
+      comprobar(fD?.estado === "caducada" && (await avisos(dos.data.id)).some((a) => /caduc/i.test(a.titulo)), "caducada, con aviso al dueño");
+    }
+
+    // Aceptada: sin permiso no entra y no deja nada; con permiso crea todo y no duplica la mascota.
+    const tres = await pedirNuevo();
+    if (tres.data?.id) creados.solicitudes.push(tres.data.id);
+    const sinPermiso = await recepNuevo.rpc("solicitud_aceptar", { p_id: tres.data?.id });
+    if (sinPermiso.error) {
+      comprobar(/evaluaci|requisito|vigente|falta/i.test(msg(sinPermiso)), `sin el permiso, recepción no la acepta si falta algo («${msg(sinPermiso).slice(0, 70)}»)`);
+      const { count: tras } = await S.from("perros").select("id", { count: "exact", head: true }).eq("nombre", `Nueva ${sufijo}`);
+      comprobar(tras === 0, "y no deja un expediente a medias");
+    }
+    const { count: mascotasAntes } = await A.from("mascotas").select("id", { count: "exact", head: true }).eq("dueno_id", idNuevo).is("deleted_at", null);
+    const aceptaN = sinPermiso.error ? await adm.rpc("solicitud_aceptar", { p_id: tres.data?.id, p_tamano: talla?.id, p_pelaje: pelo?.id }) : sinPermiso;
+    comprobar(!aceptaN.error && aceptaN.data?.estado === "aceptada" && aceptaN.data?.estancia_id, `aceptada ${msg(aceptaN)}`);
+    if (aceptaN.data?.estancia_id) { creados.estancias.push(aceptaN.data.estancia_id); creados.reservas.push(aceptaN.data.reserva_id); creados.perros.push(aceptaN.data.perro_id); creados.clientes.push(aceptaN.data.cliente_id); }
+    const { data: cliN } = await S.from("clientes").select("nombre, telefono").eq("id", aceptaN.data?.cliente_id ?? "00000000-0000-0000-0000-000000000000").maybeSingle();
+    comprobar(cliN?.telefono === telNuevo, "crea al cliente con su teléfono");
+    const { data: perroN } = await S.from("perros").select("nombre, raza, raza_id, fecha_nacimiento, tamano_id, microchip").eq("id", aceptaN.data?.perro_id ?? "00000000-0000-0000-0000-000000000000").maybeSingle();
+    comprobar(perroN?.nombre === `Nueva ${sufijo}` && perroN?.fecha_nacimiento === "2023-01-15" && perroN?.tamano_id === talla?.id, "crea el expediente con lo compartido y la talla escogida");
+    comprobar(!perroN?.microchip, "sin lo que no se compartió");
+    const { data: vN, error: eVN } = await S.from("mascotas_vinculos").select("mascota_id").eq("perro_id", aceptaN.data?.perro_id ?? "00000000-0000-0000-0000-000000000000").is("deleted_at", null);
+    comprobar(vN?.length === 1 && vN[0].mascota_id === maNueva.id, `liga la misma mascota de la app ${eVN?.message ?? ""}`);
+    const { count: mascotasDesp } = await A.from("mascotas").select("id", { count: "exact", head: true }).eq("dueno_id", idNuevo).is("deleted_at", null);
+    comprobar(mascotasAntes === 1 && mascotasDesp === 1, `la mascota global no se duplica (${mascotasAntes} → ${mascotasDesp})`);
+    const { data: memN } = await S.from("membresias").select("rol, cliente_id").eq("negocio_id", H).eq("profile_id", idNuevo).is("deleted_at", null);
+    comprobar(memN?.length === 1 && memN[0].rol === "cliente", "queda con su membresía de cliente");
+    const { data: vincN } = await sinNegocio(tNuevo).rpc("app_mis_vinculos");
+    comprobar((vincN ?? []).some((v) => v.mascota_id === maNueva.id && v.negocio_id === H), "y ya lo ve en su app como su negocio");
+    const { data: kN } = await S.from("contratos").select("id, estado").eq("perro_id", aceptaN.data?.perro_id ?? "00000000-0000-0000-0000-000000000000").is("deleted_at", null);
+    comprobar((kN ?? []).some((k) => k.estado === "pendiente_firma"), "con el contrato de alta pendiente");
+    for (const k of kN ?? []) creados.contratos.push(k.id);
+    comprobar((await avisos(tres.data?.id)).some((a) => /aceptaron/i.test(a.titulo)), "el dueño recibe «Aceptaron tu solicitud»");
+    const otraMas = await pedirNuevo({ p_entrada: suma(Dn, 14), p_salida: suma(Dn, 15) });
+    comprobar(/ya es cliente/i.test(msg(otraMas)), "después ya es cliente: no vuelve a pedirlo");
+    const { data: dineroN } = await cNuevo.from("cargos_aplicados").select("id").limit(1);
+    comprobar((dineroN ?? []).length === 0, "sin leer dinero");
+    creados.mascotasNuevas.push(maNueva.id);
+  }
+
   // ── 5. Pagos pendientes y pases ─────────────────────────────────────────────────────────────────────────────
   seccion("5. Pagos pendientes y pases");
   const { data: pagos1 } = await c1.rpc("mis_pagos_pendientes");
@@ -541,6 +660,19 @@ try {
     await S.from("requisitos_sanitarios_aplicados").delete().eq("perro_id", id);
     await S.from("perros_evaluaciones").delete().eq("perro_id", id);
     await S.from("perros").update({ deleted_at: ahora }).eq("id", id);
+  }
+  for (const id of creados.clientes) {
+    await S.from("membresias").delete().eq("negocio_id", H).eq("cliente_id", id);
+    await S.from("clientes").update({ deleted_at: ahora }).eq("id", id);
+  }
+  for (const id of creados.cuentas) {
+    await S.from("membresias").delete().eq("negocio_id", H).eq("profile_id", id);
+    await A.from("app_avisos").delete().eq("dueno_id", id);
+    await S.from("recoleccion_cotizaciones").delete().eq("dueno_id", id);
+    await S.from("solicitudes_reserva").update({ dueno_id: null, mascota_id: null, es_cliente_nuevo: false, deleted_at: ahora, cliente_id: C1.cliente_id, perro_id: creados.perro }).eq("dueno_id", id);
+    await A.from("mascotas").delete().eq("dueno_id", id);
+    await A.from("duenos").delete().eq("id", id);
+    await A.auth.admin.deleteUser(id);
   }
   if (creados.perro) {
     await S.from("requisitos_sanitarios_aplicados").delete().eq("perro_id", creados.perro);

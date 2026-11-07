@@ -72,7 +72,10 @@ export async function geocodificarDireccion(
   }
 
   // Para cobrar por km no basta «en algún lado de la ciudad»: el centro de una colonia o ciudad no es una dirección.
-  if (opciones.exacta && datos.results[0].geometry.location_type === "APPROXIMATE") {
+  // Google marca APPROXIMATE también calles reales; lo que no sirve es que solo haya encontrado la colonia, el código postal o la ciudad.
+  const tipos = (datos.results[0].types ?? []) as string[];
+  const soloZona = tipos.some((t) => /^(locality|sublocality|neighborhood|postal_code|administrative_area|country|political)/.test(t)) && !tipos.some((t) => /^(street_address|route|premise|subpremise|intersection)$/.test(t));
+  if (opciones.exacta && datos.results[0].geometry.location_type === "APPROXIMATE" && soloZona) {
     return { ok: false, error: "Esa dirección está muy general: agrega calle, número y colonia." };
   }
   const ubicacion = datos.results[0].geometry.location;

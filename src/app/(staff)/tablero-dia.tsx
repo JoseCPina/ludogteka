@@ -327,10 +327,10 @@ export async function TableroDia({ compacto = false }: { compacto?: boolean }) {
 
   // «Pedir lugar»: lo que los dueños dejaron pedido porque les falta un requisito.
   const { data: solicitudes } = await previas.solicitudes;
-  for (const s of (solicitudes ?? []) as { id: string; perro_nombre: string; cliente_nombre: string; servicio_nombre: string; motivos: MotivoBase[]; created_at: string }[]) {
+  for (const s of (solicitudes ?? []) as { id: string; perro_nombre: string; cliente_nombre: string; servicio_nombre: string; motivos: MotivoBase[]; created_at: string; es_cliente_nuevo?: boolean }[]) {
     atencion.push({
       clave: `solicitud-${s.id}`,
-      texto: `${s.cliente_nombre} pidió lugar para ${s.perro_nombre}`,
+      texto: s.es_cliente_nuevo ? `${s.cliente_nombre} quiere ser cliente con ${s.perro_nombre}` : `${s.cliente_nombre} pidió lugar para ${s.perro_nombre}`,
       detalle: `${s.servicio_nombre}. Falta: ${s.motivos.map(requisitoParaPersonal).join(", ")}`,
       href: "/solicitudes",
       accion: "Revisar",

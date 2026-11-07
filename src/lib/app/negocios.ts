@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { sesionApp } from "./sesion";
 import { requisitoParaDueno, type MotivoBase } from "./requisitos";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAppEnNegocio } from "./en-negocio";
@@ -373,7 +374,7 @@ export async function resenasDeNegocioApp(negocioId: string): Promise<ResumenRes
 }
 
 /** Lo que la persona pidió con «Pedir lugar», negocio por negocio (mis_solicitudes: sin montos). */
-export type SolicitudApp = { id: string; negocioId: string; negocioNombre: string; tipo: string; perroNombre: string; servicioNombre: string; fechaEntrada: string | null; fechaSalida: string | null; inicio: string | null; estado: string; faltan: string[]; motivoRechazo: string | null; evaluacionAgendada: string | null; expiraAt: string };
+export type SolicitudApp = { id: string; negocioId: string; negocioNombre: string; tipo: string; perroNombre: string; servicioNombre: string; fechaEntrada: string | null; fechaSalida: string | null; inicio: string | null; estado: string; faltan: string[]; motivoRechazo: string | null; evaluacionAgendada: string | null; expiraAt: string; esClienteNuevo?: boolean };
 export const solicitudesApp = cache(async (): Promise<SolicitudApp[]> => {
   const vistos = new Map<string, string>();
   for (const v of await vinculosApp()) vistos.set(v.negocioId, v.negocioNombre);
@@ -387,5 +388,16 @@ export const solicitudesApp = cache(async (): Promise<SolicitudApp[]> => {
       }));
     })
   );
-  return listas.flat();
+  // Las de cliente nuevo son de la persona (todavía no tiene membresía en ese negocio): se leen por dueño, con el servidor.
+  const s = await sesionApp();
+  const nuevas: SolicitudApp[] = [];
+  if (s) {
+    const { data } = await createSupabaseAdminClient().from("solicitudes_reserva")
+      .select("id, negocio_id, tipo, fecha_entrada, fecha_salida, inicio, estado, motivo_rechazo, expira_at, datos_compartidos, servicios(nombre), negocios(nombre)")
+      .eq("dueno_id", s.dueno.id).eq("es_cliente_nuevo", true).is("deleted_at", null).gte("created_at", new Date(Date.now() - 30 * 86400_000).toISOString()).order("created_at", { ascending: false }).limit(30);
+    for (const f of (data ?? []) as unknown as { id: string; negocio_id: string; tipo: string; fecha_entrada: string | null; fecha_salida: string | null; inicio: string | null; estado: string; motivo_rechazo: string | null; expira_at: string; datos_compartidos: { mascota?: { nombre?: string } } | null; servicios: { nombre: string } | null; negocios: { nombre: string } | null }[]) {
+      nuevas.push({ id: f.id, negocioId: f.negocio_id, negocioNombre: f.negocios?.nombre ?? "", tipo: f.tipo, perroNombre: f.datos_compartidos?.mascota?.nombre ?? "", servicioNombre: f.servicios?.nombre ?? "", fechaEntrada: f.fecha_entrada, fechaSalida: f.fecha_salida, inicio: f.inicio, estado: f.estado, faltan: [], motivoRechazo: f.motivo_rechazo, evaluacionAgendada: null, expiraAt: f.expira_at, esClienteNuevo: true });
+    }
+  }
+  return [...nuevas, ...listas.flat()];
 });

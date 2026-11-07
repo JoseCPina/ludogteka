@@ -16,7 +16,7 @@ type Cotizacion = { km: number | null; precio: number | null };
  * confirmar. Los km los calcula el servidor por esa dirección; la ubicación del celular solo propone una dirección que la
  * persona confirma. Lo pide el dueño; el negocio lo ve en su tablero del día y entra a su cuenta.
  */
-export function RecoleccionPedir({ negocioId, mascotaId, alCambiar, alPendiente }: { negocioId: string; mascotaId: string; alCambiar: (r: RecoleccionPedida | null) => void; alPendiente?: (pendiente: boolean) => void }) {
+export function RecoleccionPedir({ negocioId, mascotaId, clienteNuevo, alCambiar, alPendiente }: { negocioId: string; mascotaId?: string; clienteNuevo?: boolean; alCambiar: (r: RecoleccionPedida | null) => void; alPendiente?: (pendiente: boolean) => void }) {
   const c = useColores();
   const [activa, setActiva] = useState(false);
   const [direccion, setDireccion] = useState("");
@@ -37,7 +37,7 @@ export function RecoleccionPedir({ negocioId, mascotaId, alCambiar, alPendiente 
     const nueva = !activa;
     setActiva(nueva);
     invalidar();
-    if (nueva && !direccion) {
+    if (nueva && !direccion && !clienteNuevo) {
       llamar<{ direccion?: string | null }>("direccionGuardada", [negocioId, mascotaId])
         .then((r) => {
           if (r.direccion) setDireccion(r.direccion);
@@ -49,7 +49,7 @@ export function RecoleccionPedir({ negocioId, mascotaId, alCambiar, alPendiente 
     ubicando.ejecutar(async () => {
       const u = await miUbicacion({ precisa: true, avisar: true });
       if (!u) return { error: "No pudimos saber dónde estás. Escribe la dirección." };
-      const r = await llamar<{ direccion?: string }>("direccionDeMiUbicacion", [negocioId, mascotaId, u.lat, u.lng]);
+      const r = await llamar<{ direccion?: string }>(clienteNuevo ? "direccionDeUbicacionNuevo" : "direccionDeMiUbicacion", clienteNuevo ? [negocioId, u.lat, u.lng] : [negocioId, mascotaId, u.lat, u.lng]);
       if (r.direccion) {
         setDireccion(r.direccion);
         invalidar();
@@ -58,7 +58,7 @@ export function RecoleccionPedir({ negocioId, mascotaId, alCambiar, alPendiente 
     });
   const cotizar = () =>
     accion.ejecutar(async () => {
-      const r = await llamar<{ datos?: Cotizacion; lat?: number | null; lng?: number | null }>("cotizarRecoleccion", [negocioId, mascotaId, direccion, null, null, "negocio"]);
+      const r = await llamar<{ datos?: Cotizacion; lat?: number | null; lng?: number | null }>(clienteNuevo ? "cotizarRecoleccionNuevo" : "cotizarRecoleccion", clienteNuevo ? [negocioId, direccion] : [negocioId, mascotaId, direccion, null, null, "negocio"]);
       if (r.error) return r;
       const q = r.datos;
       if (q?.km == null || q.precio == null) return { error: "No pudimos calcular la distancia. Pregúntale al negocio." };
