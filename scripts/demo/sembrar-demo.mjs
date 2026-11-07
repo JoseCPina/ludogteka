@@ -631,7 +631,8 @@ for (let n = -HISTORIA; n <= 0; n++) {
     const id = await estancia(reserva, p, porHora ? "guarderia_hora" : "guarderia_dia", fecha, dia(1, fecha), porHora ? { horas: 4 } : {});
     const tieneBono = p.bono && bonoVendido[p.nombre] && bonoVendido[p.nombre] <= fecha;
     if (tieneBono) await aplicarBono(id, fecha, "08:50");
-    const llega = hhmm(510 + i * 9);
+    // El sábado el demo abre a las 10:00: una llegada antes de la hora la rechaza el disparador de horario (sin «confirmado»).
+    const llega = hhmm((dow(fecha) === 6 ? 610 : 510) + i * 9);
     const cosas = n >= -7 && i % 3 === 0 ? [elegir(["Correa roja", "Juguete de cuerda", "Arnés negro", "Pelota de tenis"])] : [];
     if (hoy) {
       if (i < roster.length - 2 || roster.length < 4) await checkin(id, p, fecha, llega, cosas.length ? cosas : ["Correa roja"]);
