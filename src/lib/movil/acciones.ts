@@ -1,5 +1,6 @@
 import { pedirEntrada, estadoEntrada, canjearEntrada, entrarConContrasena, renovarSesionMovil } from "@/lib/app/entrada";
 import { pedirCodigoEntrada, verificarCodigoEntrada } from "@/lib/app/entrada-codigo";
+import { registrarErroresApp } from "@/lib/movil/errores";
 import { sesionApp } from "@/lib/app/sesion";
 import { leerFotoDeCartilla } from "@/lib/app/cartilla-foto";
 import { registrarDispositivo, quitarDispositivo } from "@/lib/movil/push";
@@ -24,7 +25,7 @@ import * as atenciones from "@/app/app/(sesion)/mascotas/[id]/acciones-atencione
  * Lo que la app nativa (apps/duenos-movil) puede pedir por /api/movil/<accion>. Una lista cerrada: el nombre de la
  * acción es la llave y nada fuera de aquí se puede invocar. Cada función es la MISMA que usa la web (sus acciones del
  * servidor y sus cargadores), con la sesión del celular (src/lib/movil/contexto.ts): comprueban la sesión y la base
- * vuelve a comprobar con la RLS. Las «publicas» son solo las de entrar (todavía no hay sesión).
+ * vuelve a comprobar con la RLS. Las «publicas» son las de entrar (todavía no hay sesión) y los cierres de la app (pueden pasar antes de entrar).
  *
  * `form`: la acción recibe un FormData (fotos). El celular manda multipart con `args` (JSON) y los archivos; donde un
  * argumento vale "$form" va el FormData completo.
@@ -35,6 +36,7 @@ const origenMovil = { ip: null, userAgent: "PeluDesk app nativa" };
 
 export const ACCIONES: Record<string, Accion> = {
   // ── Entrar (sin sesión) ──
+  errores: { publica: true, fn: registrarErroresApp as Accion["fn"] },
   pedirCodigoEntrada: { publica: true, fn: (async (telefono: string, canal?: "whatsapp" | "sms") => pedirCodigoEntrada({ telefono, canal, ip: null })) as Accion["fn"] },
   verificarCodigoEntrada: { publica: true, fn: (async (telefono: string, codigo: string) => verificarCodigoEntrada({ telefono, codigo, destino: "tokens" })) as Accion["fn"] },
   // Las tres de abajo son del flujo anterior: las sigue usando el APK ya instalado hasta que se actualice.

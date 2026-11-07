@@ -121,6 +121,23 @@ try {
   const yo = await api("yo", [], token);
   revisa(yo.json?.dueno?.id === C1.profile_id, "«yo» es la persona del token");
 
+  console.log("3a. Cierres de la app");
+  {
+    const marca = `PRUEBA cierre ${Date.now()}`;
+    const manda = await api("errores", [[{ mensaje: `${marca} a x@y.mx y 4421234567`, pantalla: "/pases", version: "1.0.0 (1)", modelo: "Prueba", sistema: "android 15", fatal: true, ocurrido_at: new Date().toISOString() }]]);
+    revisa(manda.status === 200 && manda.json?.guardados === 1, `/api/movil/errores lo guarda sin sesión ${manda.json?.error ?? ""}`);
+    const { data: fila } = await A.from("app_errores").select("id, mensaje, pantalla, version").like("mensaje", `${marca}%`).maybeSingle();
+    revisa(fila && !/x@y|4421234567/.test(fila.mensaje), `llega limpio de correos y teléfonos («${fila?.mensaje}»)`);
+    const malo = await api("errores", ["no es lista"]);
+    revisa(Boolean(malo.json?.error), "lo que no es una lista se rechaza");
+    const largo = await api("errores", [Array.from({ length: 30 }, () => ({ mensaje: "x".repeat(5000), version: "1" }))]);
+    revisa(largo.json?.guardados === 10, `máximo 10 por envío y cortados (${largo.json?.guardados})`);
+    const anon = createClient(URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+    const { data: veAnon } = await anon.from("app_errores").select("id").limit(1);
+    revisa((veAnon ?? []).length === 0, "la llave anónima no los lee");
+    await A.from("app_errores").delete().or(`mensaje.like.${marca}%,mensaje.like.xxxxxxxx%`);
+  }
+
   console.log("3b. Pedir lugar");
   {
     const conVinculo = ids.length ? ids : [];
