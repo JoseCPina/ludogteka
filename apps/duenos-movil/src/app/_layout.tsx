@@ -7,14 +7,15 @@ import { StatusBar } from "expo-status-bar";
 import { useFonts, Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold } from "@expo-google-fonts/outfit";
 import { ProveedorSesion, useSesion } from "@/lib/sesion";
 import { rutaDeAviso, useUltimaNotificacion } from "@/lib/push";
-import { atraparErroresGlobales, iniciarReporte, marcarPantalla } from "@/lib/errores";
+import { ObserveRoot } from "expo-observe";
+import { atraparErroresGlobales, enviarCierresPendientes, marcarPantalla } from "@/lib/errores";
 import { FallaGlobal } from "@/componentes/limite-error";
 import { fuentes, useColores, useEsOscuro } from "@/tema";
 
 export { ErrorBoundary } from "@/componentes/limite-error";
 
-iniciarReporte();
 atraparErroresGlobales();
+enviarCierresPendientes();
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function Pilas() {
@@ -80,7 +81,7 @@ function Pilas() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   // Si las fuentes no cargan, la app sigue con las del sistema: nunca se queda en la pantalla de inicio.
   const [listas, errorFuentes] = useFonts({ Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold, Outfit_700Bold });
   if (!listas && !errorFuentes) return null;
@@ -94,3 +95,5 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+export default ObserveRoot.wrap(RootLayout);

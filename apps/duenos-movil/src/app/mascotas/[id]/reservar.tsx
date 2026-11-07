@@ -35,6 +35,7 @@ export default function Reservar() {
   const [recoleccion, setRecoleccion] = useState<RecoleccionPedida | null>(null);
   const [revision, setRevision] = useState<Revision | null>(null);
   const [pedido, setPedido] = useState(false);
+  const [recoPendiente, setRecoPendiente] = useState(false);
   const ver = useAccion();
   const reservar = useAccion();
   const d = p.datos;
@@ -107,7 +108,7 @@ export default function Reservar() {
       cargando={p.cargando}
       error={p.error}
       alReintentar={p.refrescar}
-      pie={listo ? (cupo && faltan ? (revision?.puedePedirLugar ? <Boton titulo="Pedir lugar" alTocar={pedirLugar} cargando={reservar.ocupado} /> : undefined) : cupo?.hayCupo ? <Boton titulo="Reservar" alTocar={confirmar} cargando={reservar.ocupado} /> : <Boton titulo="Ver si hay lugar" variante={cupo ? "secundario" : "primario"} alTocar={verCupo} cargando={ver.ocupado} />) : undefined}
+      pie={listo ? (cupo && faltan ? (revision?.puedePedirLugar ? <Boton titulo="Pedir lugar" alTocar={pedirLugar} cargando={reservar.ocupado} deshabilitado={recoPendiente} /> : undefined) : cupo?.hayCupo ? <Boton titulo="Reservar" alTocar={confirmar} cargando={reservar.ocupado} deshabilitado={recoPendiente} /> : <Boton titulo="Ver si hay lugar" variante={cupo ? "secundario" : "primario"} alTocar={verCupo} cargando={ver.ocupado} />) : undefined}
     >
       {d ? (
         d.negocios.length === 0 ? (
@@ -141,7 +142,7 @@ export default function Reservar() {
               </Grupo>
             ) : null}
             {cupo && revision && faltan && negocio ? <Requisitos revision={revision} negocioId={negocio.id} mascotaId={id} /> : null}
-            {servicio && negocio?.recoleccion ? <RecoleccionPedir negocioId={negocio.id} mascotaId={id} alCambiar={setRecoleccion} /> : null}
+            {servicio && negocio?.recoleccion ? <RecoleccionPedir negocioId={negocio.id} mascotaId={id} alCambiar={setRecoleccion} alPendiente={setRecoPendiente} /> : null}
             <Mensaje texto={ver.error ?? reservar.error} />
           </>
         )
