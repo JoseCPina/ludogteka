@@ -57,6 +57,8 @@ const OPC = {
   prod: flag("--prod"),
   sinPublicar: flag("--sin-publicar"),
   listar: flag("--listar"),
+  // Los que el despliegue dejó «por actualizar» (tabla `tutoriales`): se regraban en la siguiente tanda.
+  marcados: flag("--marcados"),
   limite: Number(val("--limite") ?? 0) || null,
   intentos: Number(val("--intentos") ?? 3),
   base: (val("--base") ?? `http://${SLUG_DEMO}.localhost:3001`).replace(/\/$/, ""),
@@ -317,6 +319,19 @@ async function main() {
     return;
   }
 
+  if (OPC.marcados) {
+    // La tanda que sigue a los despliegues: todo lo que quedó «por actualizar» (en desarrollo y, con --prod, también
+    // lo marcado en producción) se vuelve a grabar; publicar con éxito limpia la marca.
+    const marcados = new Set();
+    for (const cx of [c, ...(ctx.cprod ? [ctx.cprod] : [])]) {
+      const { data } = await cx.cliente.from("tutoriales").select("numero").not("por_actualizar_desde", "is", null).is("deleted_at", null);
+      for (const t of data ?? []) marcados.add(t.numero);
+    }
+    OPC.videos = [...marcados].filter((n) => !OPC.videos || OPC.videos.includes(n));
+    OPC.regrabar = true;
+    console.log(marcados.size ? `Por actualizar: ${[...marcados].sort().join(", ")}` : "No hay videos «por actualizar».");
+    if (!marcados.size) return;
+  }
   let cola = [...VIDEOS].filter((v) => !OPC.videos || OPC.videos.includes(v.id)).filter((v) => !OPC.area || v.area === OPC.area).sort((a, b) => ordenCola(a) - ordenCola(b));
   const hechos = [], saltados = [], errores = [];
   let listosEnTanda = 0, erroresSeguidos = 0;

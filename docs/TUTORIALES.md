@@ -2,7 +2,7 @@
 
 Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scripts/tutoriales/catalogo.mjs` y de lo que la app tiene hoy (código). No se edita a mano: se cambia el catálogo.
 
-**96 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
+**102 videos** (el 00 es el avance) en 10 áreas. Cada pantalla, entrada del menú, módulo, permiso, artículo de ayuda y aviso de «Necesita atención» aparece en al menos un video o está excluido con su motivo.
 
 ## Catálogo
 
@@ -17,13 +17,13 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 06 | Empieza aquí | Módulos y plan: prende solo lo que usas | admin | 2.5 min | — | — |
 | 07 | Empieza aquí | Configura tu horario, cupo y datos del negocio | admin | 2.5 min | — | configuracion_negocio |
 | 08 | Empieza aquí | Invita a tu equipo y entiende los roles | admin | 2.5 min | — | personal |
-| 09 | Empieza aquí | Dale permisos extra a una persona de recepción | admin | 2.5 min | — | inventario_costos, tarifas, reportes_financieros, personal, configuracion_negocio, excepciones_reserva, descuentos_sin_tope, plantillas_contrato, nomina, gastos, reportes_guarderia, corregir_estilista, corregir_servicio, tarjeta_manual |
+| 09 | Empieza aquí | Dale permisos extra a una persona de recepción | admin | 2.5 min | — | inventario_costos, tarifas, reportes_financieros, personal, configuracion_negocio, excepciones_reserva, descuentos_sin_tope, plantillas_contrato, nomina, gastos, reportes_guarderia, corregir_estilista, corregir_servicio, tarjeta_manual, revertir_operaciones, extender_pases, plantilla_reporte_guarderia, designar_medicos, ver_lecturas_expediente, quitar_evaluacion, devoluciones, revisar_tarjetas_manuales, conciliacion, cortesias, categorias_gasto, areas_inventario, asistencia_ausencias, servicios, revisar_alertas |
 | 10 | Clientes y perros | Captura a un cliente y a su perro en el mostrador | recepcion | 2.5 min | — | — |
 | 11 | Clientes y perros | Da de alta a un cliente con un link de WhatsApp | recepcion | 2.5 min | portal | — |
 | 12 | Clientes y perros | Vacunas, alertas y datos del perro en su expediente | recepcion | 2.5 min | — | — |
 | 13 | Clientes y perros | Revisa los comprobantes de vacunas que mandan los dueños | recepcion | 2.5 min | portal | — |
 | 14 | Clientes y perros | Qué hacer cuando una raza no aparece en el catálogo | recepcion | 2.5 min | — | tarifas |
-| 15 | Clientes y perros | El portal del dueño: qué ve y cómo lo invitas | recepcion | 2.5 min | portal | — |
+| 15 | Clientes y perros | El portal del dueño: qué ve y cómo lo invitas | recepcion | 2.5 min | portal | responder_resenas |
 | 16 | Contratos | Crea y publica tus plantillas de contrato | admin | 2.5 min | contratos | plantillas_contrato |
 | 17 | Contratos | Manda a firmar un contrato y da seguimiento | recepcion | 2.5 min | contratos | — |
 | 18 | Contratos | Así firma el dueño su contrato desde el celular | cliente | 2.5 min | contratos, portal | — |
@@ -104,6 +104,12 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | 67 | Tu negocio | Ver el historial de importaciones y deshacer una | admin | 2.5 min | — | importar_datos |
 | 68 | Empieza aquí | Recupera lo que estabas escribiendo: borradores | recepcion | 2.5 min | — | — |
 | 69 | Empieza aquí | Instala la app y consulta la agenda sin conexión | recepcion | 2.5 min | — | — |
+| 96 | Estética | Cambiar o corregir la estilista de una cita | admin | 1.7 min | estetica | corregir_estilista |
+| 97 | Caja y cobros | Cobro con terminal mal marcado y la conciliación con Mercado Pago | admin | 1.7 min | — | — |
+| 98 | Caja y cobros | La factura global al público en general | admin | 1.6 min | — | facturar |
+| 99 | Tu negocio | IVA y claves del SAT de lo que vendes | admin | 1.6 min | — | editar_datos_fiscales |
+| 101 | Guardería y hotel | Solicitudes de lugar: lo que piden los dueños desde su app | admin | 2.5 min | guarderia, hotel, estetica | excepciones_reserva |
+| 102 | Caja y cobros | Cómo deshacer o corregir una operación | admin | 2.5 min | — | revertir_operaciones |
 
 ## Pantallas → videos
 
@@ -114,7 +120,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/adentro` | 31 |  |
 | `/admin` | 01, 07, 08 |  |
 | `/admin/configuracion` | 07 |  |
-| `/admin/facturacion` | 65 |  |
+| `/admin/facturacion` | 65, 98, 99 |  |
 | `/admin/hotel` | 30 |  |
 | `/admin/importar` | 66 |  |
 | `/admin/importar/[id]` | 67 |  |
@@ -128,6 +134,29 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/admin/reporte-guarderia` | 31 |  |
 | `/admin/tarifa-guarderia` | 64 |  |
 | `/alta/[token]` | 11 |  |
+| `/app` | — | App para dueños (app.peludesk.mx): pendiente de grabar con una cuenta de dueño del demo cuando la grabación se retome. |
+| `/app/alertas/[id]` | — | App para dueños (Fase 5): el detalle de una alerta de la calle; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/avisos` | — | App para dueños: Avisos y notificaciones; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/cerca` | — | App para dueños: Cerca de mí; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/contratos` | — | App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/contratos/[negocio]/[id]` | — | App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/entrar` | — | App para dueños: entrar por código de WhatsApp; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/m/[token]` | — | App para dueños (Fase 1): el perfil público del QR de la placa, lo ve quien encuentra a la mascota; no es una tarea del negocio. |
+| `/app/m/[token]/registrar` | — | App para dueños (Fase 2): el formulario público con el que un negocio SIN PeluDesk registra una atención desde el QR; no es una pantalla del panel. |
+| `/app/mascotas/[id]` | — | App para dueños: la ficha de la mascota; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/mascotas/[id]/cartilla` | — | App para dueños (Fase 1): la cartilla; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/mascotas/[id]/cartilla/leer` | — | App para dueños (Fase 1): leer la cartilla con foto; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/mascotas/[id]/cita` | — | App para dueños (Fase 1): pedir cita; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/mascotas/[id]/negocio/[negocio]` | — | App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/mascotas/[id]/perdida` | — | App para dueños (Fase 1): mascota perdida; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/mascotas/[id]/qr` | — | App para dueños (Fase 1): el QR de la placa; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/mascotas/[id]/reservar` | — | App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/mascotas/[id]/seguimiento` | — | App para dueños (Fase 1): peso, medicinas y gastos; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/mascotas/nueva` | — | App para dueños (Fase 1): alta de mascota; pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/pagos` | — | App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/pases` | — | App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/visitas` | — | App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo. |
+| `/app/yo` | — | App para dueños: Mi cuenta; pendiente de grabar con una cuenta de dueño del demo. |
 | `/auth/nueva-password` | 03 |  |
 | `/ayuda` | 53 |  |
 | `/ayuda/[slug]` | 53 |  |
@@ -146,8 +175,9 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/caja/cargo` | 36 |  |
 | `/caja/cobrar-junto` | 57 |  |
 | `/caja/cobrar/[reservaId]` | 33, 34, 37 |  |
-| `/caja/conciliacion` | 38 |  |
-| `/caja/facturas` | 65 |  |
+| `/caja/conciliacion` | 38, 97 |  |
+| `/caja/facturas` | 65, 98 |  |
+| `/caja/historial` | 32 |  |
 | `/caja/pases` | 39 |  |
 | `/caja/recibo-junto/[grupoId]` | 57 |  |
 | `/caja/reembolsos` | 38 |  |
@@ -168,7 +198,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/empleados/nomina/[empleadoId]` | 46 |  |
 | `/empleados/nuevo` | 44 |  |
 | `/estetica` | 01, 21 |  |
-| `/estetica/[citaId]` | 22, 23, 55 |  |
+| `/estetica/[citaId]` | 22, 23, 55, 96 |  |
 | `/estetica/nueva` | 21, 23 |  |
 | `/extras` | 89 |  |
 | `/extras/catalogo` | 89 |  |
@@ -221,9 +251,11 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/recepcion/comprobantes` | 13 |  |
 | `/recepcion/contratos` | 17, 19 |  |
 | `/recepcion/saldos` | 05 |  |
+| `/recolecciones` | 54 |  |
 | `/recordatorios` | — | Pendiente de grabar (folio 100, recordatorios automáticos por WhatsApp): se graba con un negocio de prueba, el demo no manda mensajes. |
 | `/reportes` | 49 |  |
 | `/reportes/desglose` | 49 |  |
+| `/resenas` | 15 |  |
 | `/reservas` | 25 |  |
 | `/reservas/[id]` | 25 |  |
 | `/reservas/[id]/cobrar` | 30 |  |
@@ -240,6 +272,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | `/servicios/nuevo` | 20 |  |
 | `/sin-acceso` | 01 |  |
 | `/sin-conexion` | 69 |  |
+| `/solicitudes` | 101 |  |
 | `/t/[token]` | 92 |  |
 | `/veterinaria` | 70 |  |
 | `/veterinaria/agenda` | 79 |  |
@@ -284,21 +317,23 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | --- | --- | --- |
 | Guardería | `/guarderia` | 25, 27, 28, 29, 30, 31, 39, 95 |
 | Hotel | `/hotel` | 26, 27, 28, 29, 30, 95 |
+| Solicitudes | `/solicitudes` | 101 |
 | Calendario | `/reservas/calendario` | 94 |
 | Adentro ahora | `/adentro` | 31 |
-| Estética | `/estetica` | 01, 21, 22, 23, 55 |
+| Estética | `/estetica` | 01, 21, 22, 23, 55, 96 |
 | Servicios | `/servicios` | 20, 24 |
 | Clientes | `/clientes` | 10, 11 |
 | Recordatorios | `/recordatorios` | pendiente de grabar: folio 100 |
 | Vinculación | `/vinculacion` | 15 |
-| Caja | `/caja` | 32, 33, 34, 35, 36, 37, 38, 39, 43, 55, 57, 65 |
+| Reseñas | `/resenas` | 15 |
+| Caja | `/caja` | 32, 33, 34, 35, 36, 37, 38, 39, 43, 55, 57, 65, 97, 98 |
 | Contratos | `/contratos` | 16, 19 |
 | Inventario | `/inventario` | 40, 41, 42, 43 |
 | Reportes | `/reportes` | 49 |
 | Empleados | `/empleados` | 44, 45, 46 |
 | Gastos | `/gastos` | 47, 48 |
 | Mi asistencia | `/mi-trabajo` | 44 |
-| Administración | `/admin` | 01, 06, 07, 08, 09, 30, 31, 50, 51, 52, 64, 65, 66, 67 |
+| Administración | `/admin` | 01, 06, 07, 08, 09, 30, 31, 50, 51, 52, 64, 65, 66, 67, 98, 99 |
 | Permisos | `/admin/permisos` | 09 |
 | Configuración | `/admin/configuracion` | 07 |
 | Perfil y página web | `/admin/perfil` | 52 |
@@ -310,19 +345,20 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Módulos y plan | `/admin/modulos` | 06 |
 | Cobro con terminal | `/admin/pagos` | 50 |
 | Veterinaria | `/veterinaria` | 70, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 90, 91, 93 |
-| Facturación | `/admin/facturacion` | 65 |
-| Facturas | `/caja/facturas` | 65 |
+| Facturación | `/admin/facturacion` | 65, 98, 99 |
+| Facturas | `/caja/facturas` | 65, 98 |
 | Importar | `/admin/importar` | 66, 67 |
 | Ayuda | `/ayuda` | 53 |
 | Servicios extra | `/extras` | 89 |
+| Recolecciones | `/recolecciones` | 54 |
 
 ## Módulos → videos
 
 | Módulo | Videos |
 | --- | --- |
-| guarderia | 25, 27, 28, 29, 30, 31, 89, 94, 95 |
-| hotel | 26, 27, 28, 29, 30, 31, 89, 94, 95 |
-| estetica | 20, 21, 22, 23, 24, 55, 58, 63, 64 |
+| guarderia | 25, 27, 28, 29, 30, 31, 89, 94, 95, 101 |
+| hotel | 26, 27, 28, 29, 30, 31, 89, 94, 95, 101 |
+| estetica | 20, 21, 22, 23, 24, 55, 58, 63, 64, 96, 101 |
 | veterinaria | 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 90, 91, 92, 93 |
 | bonos | 39, 60 |
 | recoleccion | 54 |
@@ -343,16 +379,17 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Reportes financieros (`reportes_financieros`) | 09, 49 |
 | Personal (`personal`) | 08, 09 |
 | Configuración del negocio (`configuracion_negocio`) | 07, 09, 51, 52 |
-| Excepciones al reservar (`excepciones_reserva`) | 09, 23, 58, 95 |
+| Excepciones al reservar (`excepciones_reserva`) | 09, 23, 58, 95, 101 |
 | Descuentos sin tope (`descuentos_sin_tope`) | 09, 37 |
 | Plantillas de contrato (`plantillas_contrato`) | 09, 16 |
 | Nómina (`nomina`) | 09, 46 |
 | Gastos del local (`gastos`) | 09, 47, 48 |
 | Reportes de guardería (`reportes_guarderia`) | 09, 31 |
-| Corregir estilista de servicios cerrados (`corregir_estilista`) | 09, 23 |
+| Corregir estilista de servicios cerrados (`corregir_estilista`) | 09, 23, 96 |
 | Corregir servicio de citas (`corregir_servicio`) | 09, 55 |
 | Registrar tarjeta manual (`tarjeta_manual`) | 09, 56 |
 | Ajustar días de pases (`ajustar_pases`) | 60 |
+| Deshacer operaciones (`revertir_operaciones`) | 09, 102 |
 | Anular cobros (`anular_cobros`) | 61 |
 | Editar monto de cobros (`editar_monto_cobros`) | 61 |
 | Corregir cobros de turnos cerrados (`corregir_turnos_cerrados`) | 61 |
@@ -361,9 +398,9 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Administrar módulos (`administrar_modulos`) | 70 |
 | Editar ficha clínica (`editar_ficha_clinica`) | 71 |
 | Administrar lotes e inventario clínico (`lotes_clinicos`) | 72 |
-| Facturar (`facturar`) | 65 |
+| Facturar (`facturar`) | 65, 98 |
 | Cancelar facturas (`cancelar_facturas`) | 65 |
-| Editar datos fiscales (`editar_datos_fiscales`) | 65 |
+| Editar datos fiscales (`editar_datos_fiscales`) | 65, 99 |
 | Registrar vacunas y desparasitaciones (`registrar_vacunas`) | 74 |
 | Emitir certificados (`emitir_certificados`) | 76 |
 | Hospitalizar y medicar (`hospitalizar`) | 77 |
@@ -379,6 +416,21 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Agregar servicios extra (`agregar_servicios_extra`) | 89 |
 | Editar catálogo de servicios extra (`editar_catalogo_extras`) | 89 |
 | Cancelar cuentas (`cancelar_cuentas`) | 94 |
+| Responder y esconder reseñas (`responder_resenas`) | 15 |
+| Extender la vigencia de pases (`extender_pases`) | 09 |
+| Plantilla del reporte de guardería (`plantilla_reporte_guarderia`) | 09 |
+| Designar médicos veterinarios (`designar_medicos`) | 09 |
+| Ver quién abrió un expediente (`ver_lecturas_expediente`) | 09 |
+| Quitar una evaluación de comportamiento (`quitar_evaluacion`) | 09 |
+| Registrar devoluciones (`devoluciones`) | 09 |
+| Revisar tarjetas manuales (`revisar_tarjetas_manuales`) | 09 |
+| Conciliación con el proveedor de cobro (`conciliacion`) | 09 |
+| Cortesías sobre servicios realizados (`cortesias`) | 09 |
+| Categorías de gastos (`categorias_gasto`) | 09 |
+| Áreas de inventario (`areas_inventario`) | 09 |
+| Asistencia, ausencias y vacaciones (`asistencia_ausencias`) | 09 |
+| Crear y editar servicios (`servicios`) | 09 |
+| Dar por revisadas alertas en lote (`revisar_alertas`) | 09 |
 
 ## Artículos de ayuda → videos
 
@@ -403,13 +455,17 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | perfil-y-pagina-web | 02, 52 |
 | pedir-ayuda | 01, 53 |
 | ausencias-y-vacaciones-de-empleados | 45 |
+| app-peludesk-para-duenos | — |
+| resenas-de-tus-clientes | 15 |
+| pacientes-del-qr | — |
 | primeros-pasos-para-operar | — |
 | requisitos-para-hospedar | — |
+| deshacer-o-corregir-una-operacion | 102 |
 | cobrar-una-cuenta | 33, 94 |
 | cobrar-varios-servicios-juntos | 57 |
 | cobrar-con-terminal | 34, 59 |
 | terminal-no-recibe-el-cobro | 34, 59 |
-| corregir-un-cobro-con-terminal-mal-marcado | 38 |
+| corregir-un-cobro-con-terminal-mal-marcado | 38, 97 |
 | tarjeta-registro-manual | 56 |
 | revisar-tarjetas-manuales | 56 |
 | link-de-pago-whatsapp | 34 |
@@ -424,7 +480,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | precio-de-estetica-mestizo | 58 |
 | que-hacer-sin-precio-estetica | 23, 58 |
 | agendar-cita-estetica | 21, 23 |
-| cambiar-estilista-cita-estetica | — |
+| cambiar-estilista-cita-estetica | 23, 96 |
 | corregir-servicio-de-una-cita | 55 |
 | atender-cita-estetica | 22 |
 | anular-o-corregir-un-cobro | 61 |
@@ -449,15 +505,17 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | vender-day-pass-o-mensualidad | 39 |
 | ajustar-dias-usados-de-un-pase | 60 |
 | cotizar-y-cobrar-recoleccion | 54 |
+| solicitudes-de-lugar | 05, 101 |
+| botones-y-enlaces | — |
 | alguien-mas-cambio-lo-que-editabas | — |
 | configurar-la-facturacion | 65 |
 | datos-fiscales-de-un-cliente | 65 |
 | facturar-un-cobro | 65 |
 | facturar-un-cobro-junto | 57, 65 |
-| factura-global-publico-en-general | — |
+| factura-global-publico-en-general | 98 |
 | cancelar-o-sustituir-una-factura | 65 |
 | mandar-una-factura-al-cliente | 65 |
-| iva-y-claves-sat-de-productos-y-servicios | — |
+| iva-y-claves-sat-de-productos-y-servicios | 99 |
 | ver-mis-facturas | — |
 | importar-clientes-y-mascotas | 66 |
 | deshacer-una-importacion | 67 |
@@ -500,6 +558,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | Aviso | Videos |
 | --- | --- |
 | ajustes-servicio | 05, 55 |
+| baja | — |
 | carnet-recordatorios | 75 |
 | citas-en-ausencia | 45 |
 | clinico-bajo-minimo | 72 |
@@ -508,7 +567,7 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | cobro | 05, 33 |
 | comprobantes | 05 |
 | con | 05, 29 |
-| conciliacion | 05 |
+| conciliacion | 05, 97 |
 | consentimientos-pendientes | 78 |
 | consultas-sin-firmar | 80 |
 | contratos-firmar | 05, 17 |
@@ -521,15 +580,19 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 | gastos-vencidos | 05, 47 |
 | hospitalizacion-dosis-atrasadas | 77 |
 | hotel | 05, 29 |
+| maps-tope | — |
 | por-confirmar | 05, 59 |
 | razas-sin-grupo | 05, 14 |
 | recordatorios-pausados | — |
 | recordatorios-respuestas | — |
 | reembolsos | 05, 38 |
+| saldo-a-favor | 05 |
 | saldos | 05 |
+| saldos-a-favor-mas | 05 |
 | san | 05, 29 |
 | sitpv-folios-bajos | 85 |
 | sitpv-reporte-mensual | 88 |
+| solicitud | 05, 101 |
 | tarjetas-manuales | 38, 56 |
 | tarjetas-manuales-patron | 38 |
 | tarjetas-manuales-tope | 38 |
@@ -544,6 +607,29 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 ## Excluidos
 
 - Pantalla `/`: Es la landing o la página pública del negocio; se enseña en el video 52 solo como resultado.
+- Pantalla `/app`: App para dueños (app.peludesk.mx): pendiente de grabar con una cuenta de dueño del demo cuando la grabación se retome.
+- Pantalla `/app/entrar`: App para dueños: entrar por código de WhatsApp; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/mascotas/[id]`: App para dueños: la ficha de la mascota; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/avisos`: App para dueños: Avisos y notificaciones; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/cerca`: App para dueños: Cerca de mí; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/yo`: App para dueños: Mi cuenta; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/mascotas/nueva`: App para dueños (Fase 1): alta de mascota; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/mascotas/[id]/cartilla`: App para dueños (Fase 1): la cartilla; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/mascotas/[id]/cartilla/leer`: App para dueños (Fase 1): leer la cartilla con foto; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/mascotas/[id]/seguimiento`: App para dueños (Fase 1): peso, medicinas y gastos; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/mascotas/[id]/qr`: App para dueños (Fase 1): el QR de la placa; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/mascotas/[id]/perdida`: App para dueños (Fase 1): mascota perdida; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/mascotas/[id]/cita`: App para dueños (Fase 1): pedir cita; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/alertas/[id]`: App para dueños (Fase 5): el detalle de una alerta de la calle; pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/contratos`: App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/contratos/[negocio]/[id]`: App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/mascotas/[id]/negocio/[negocio]`: App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/mascotas/[id]/reservar`: App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/pagos`: App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/pases`: App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/visitas`: App para dueños (Fase 3): pendiente de grabar con una cuenta de dueño del demo.
+- Pantalla `/app/m/[token]`: App para dueños (Fase 1): el perfil público del QR de la placa, lo ve quien encuentra a la mascota; no es una tarea del negocio.
+- Pantalla `/app/m/[token]/registrar`: App para dueños (Fase 2): el formulario público con el que un negocio SIN PeluDesk registra una atención desde el QR; no es una pantalla del panel.
 - Pantalla `/negocio-no-encontrado`: Pantalla de error técnica (dominio sin negocio); no es una tarea del usuario.
 - Pantalla `/pagina-no-encontrada`: Pantalla de error técnica (404); no es una tarea del usuario.
 - Pantalla `/fac/[token]`: Enlace público de una factura para el cliente; se enseña solo como resultado en el video 65.
@@ -551,6 +637,8 @@ Generado por `node scripts/tutoriales/cobertura.mjs --escribir` a partir de `scr
 - Pantalla `/recordatorios`: Pendiente de grabar (folio 100, recordatorios automáticos por WhatsApp): se graba con un negocio de prueba, el demo no manda mensajes.
 - Pantalla `/reservas/estancias/[estanciaId]`: No es una pantalla: solo redirige al detalle de su reserva (/reservas/[id]), que se enseña en el video 25. Existe para que un enlace de estancia sin «/checkout» no dé 404 (QA S27).
 - Aviso recordatorios-respuestas: Pendiente de grabar (folio 100): necesita la respuesta de un cliente real a un recordatorio.
+- Aviso baja: Pendiente de grabar: la solicitud de baja de una mascota la manda el dueño desde su portal o su app; se graba con una cuenta de dueño del demo (docs/baja-de-mascotas.md).
+- Aviso maps-tope: Solo sale cuando el negocio agotó sus consultas de Google Maps del mes; el video 54 explica que los km se escriben a mano mientras tanto.
 - Aviso recordatorios-pausados: Pendiente de grabar (folio 100): necesita un negocio que haya llegado a sus recordatorios gratis del mes.
 
 Fuera de la serie por diseño (no son del personal del negocio): la administración de la plataforma (`/plataforma`), el sitio público de peludesk.mx y el negocio de demostración.

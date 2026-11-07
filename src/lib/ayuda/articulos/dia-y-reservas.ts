@@ -561,18 +561,6 @@ Toca **Ver historial de ajustes** en el pase: cada renglón dice antes y despué
 2. En **Dirección y distancia de recolección**, escribe la **Dirección** y toca **Guardar y calcular**.
 3. Si la distancia no cuadra, toca **Ajustar distancia a mano**, escribe la **Distancia correcta (km)** y toca **Guardar ajuste**.
 
-## Solicitudes de lugar
-
-Cuando un dueño quiere reservar o pedir cita desde su cuenta y le falta un requisito, deja una solicitud: no cobra ni ocupa cupo. Te llega a **Solicitudes**, a «Necesita atención», a tu agenda de Estética, Hotel o Guardería y, a los admins, por WhatsApp. En cada una:
-
-- **Aceptar**: si ya se resolvió lo que faltaba, se convierte en reserva o cita normal.
-- **Aceptar con excepción**: con un motivo, igual que la excepción al reservar. Es de un admin o de quien tenga el permiso «Excepciones al reservar». El celo, la gestación y las alertas que bloquean no admiten excepción, y sin cupo tampoco se puede aceptar: resuélvelo primero.
-- **Agendar evaluación**: cuando falta la evaluación de comportamiento. El dueño recibe el día y la hora, y la solicitud sigue viva hasta 3 días después de esa fecha. La evaluación se marca en su expediente.
-- **Contactar**: abre WhatsApp con el dueño.
-- **Rechazar**: con un motivo que el dueño lee.
-
-Al aceptar o rechazar, el dueño recibe el aviso en su app. Sin respuesta en 3 días, la solicitud caduca sola y también se le avisa.
-
 ## Incluirla al reservar o agendar
 
 1. En **Nueva reserva** (Guardería u Hotel) o en **Agendar cita** (Estética), prende **Incluir recolección**.
@@ -602,6 +590,25 @@ Si la reserva o la cita se mueve de fecha, la recolección se mueve; si se cance
 - La ruta sale de la dirección del negocio. Si la camioneta sale de otro lado, el admin escribe ese **Punto de salida de recolección (solo si es distinto a la dirección del negocio)** en Ubicación para recolección.
 - «Tu negocio ya usó las … consultas de Google Maps de este mes.»: los km salen en línea recta × 1.3 hasta el mes que entra, también en lo que pidan tus clientes desde la app, y te lo avisa Necesita atención. Revísalos antes de cobrar o escríbelos a mano.
 - Cuando un cliente la pide desde la app: escribe la dirección o usa su dirección guardada, y los km se calculan por esa dirección, nunca por dónde está su celular. No puede cambiar los km, y más de 60 km no se aceptan.`,
+  },
+  {
+    slug: "solicitudes-de-lugar",
+    titulo: "Solicitudes de lugar: lo que piden los dueños desde su app",
+    resumen: "Cuando a una mascota le falta un requisito, el dueño deja una solicitud: la aceptas, agendas la evaluación, contactas, rechazas con motivo o aceptas con excepción.",
+    grupo: "inicio",
+    modulo: ["guarderia", "hotel", "estetica"],
+    roles: ["admin", "recepcion"],
+    rutas: ["/solicitudes"],
+    palabras: ["solicitud", "pedir lugar", "pidió lugar", "sin evaluación", "aceptar con excepción", "agendar evaluación", "caducó", "app para dueños"],
+    cuerpo: `Cuando un dueño quiere reservar o pedir cita desde su cuenta y le falta un requisito, deja una solicitud: no cobra ni ocupa cupo. Te llega a **Solicitudes**, a «Necesita atención», a tu agenda de Estética, Hotel o Guardería y, a los admins, por WhatsApp. En cada una:
+
+- **Aceptar**: si ya se resolvió lo que faltaba, se convierte en reserva o cita normal.
+- **Aceptar con excepción**: con un motivo, igual que la excepción al reservar. Es de un admin o de quien tenga el permiso «Excepciones al reservar». El celo, la gestación y las alertas que bloquean no admiten excepción, y sin cupo tampoco se puede aceptar: resuélvelo primero.
+- **Agendar evaluación**: cuando falta la evaluación de comportamiento. El dueño recibe el día y la hora, y la solicitud sigue viva hasta 3 días después de esa fecha. La evaluación se marca en su expediente.
+- **Contactar**: abre WhatsApp con el dueño.
+- **Rechazar**: con un motivo que el dueño lee.
+
+Al aceptar o rechazar, el dueño recibe el aviso en su app. Sin respuesta en 3 días, la solicitud caduca sola y también se le avisa.`,
   },
   {
     slug: "botones-y-enlaces",

@@ -38,7 +38,7 @@ export const TEXTO_SIN_DOCUMENTACION =
   "Eso no lo tengo en la documentación, y prefiero no adivinar. ¿Creamos un ticket con lo que ya me contaste? Te contesta alguien de PeluDesk.";
 
 const MARCA_ARTICULO = /\[\[articulo:([a-z0-9-]+)\]\]/g;
-const MARCA_VIDEO = /\[\[video:([0-9]{2})\]\]/g;
+const MARCA_VIDEO = /\[\[video:([0-9]{2,3})\]\]/g;
 
 export type ContextoAsistente = {
   negocio: string;
