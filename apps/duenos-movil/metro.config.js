@@ -1,4 +1,4 @@
-// Metro de Expo con los ids que Sentry usa para leer los errores de JavaScript con su línea original.
-const { getSentryExpoConfig } = require("@sentry/react-native/metro");
+// Metro de Expo, sin configuración propia.
+const { getDefaultConfig } = require("expo/metro-config");
 
-module.exports = getSentryExpoConfig(__dirname);
+module.exports = getDefaultConfig(__dirname);

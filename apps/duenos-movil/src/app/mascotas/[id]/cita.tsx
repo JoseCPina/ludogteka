@@ -37,6 +37,7 @@ export default function Cita() {
   const [hecha, setHecha] = useState<{ atiende: string | null; total: number | null } | null>(null);
   const [revision, setRevision] = useState<Revision | null>(null);
   const [pedido, setPedido] = useState(false);
+  const [recoPendiente, setRecoPendiente] = useState(false);
   const cargaHoras = useAccion();
   const pedir = useAccion();
 
@@ -91,7 +92,7 @@ export default function Cita() {
   }
 
   return (
-    <Pantalla cargando={p.cargando} error={p.error} alReintentar={p.refrescar} pie={negocio && hora ? (revision?.faltan.length ? (revision.puedePedirLugar ? <Boton titulo="Pedir lugar" alTocar={pedirLugar} cargando={pedir.ocupado} /> : undefined) : <Boton titulo={`Pedir la cita · ${hora.hora}`} alTocar={confirmar} cargando={pedir.ocupado} />) : undefined}>
+    <Pantalla cargando={p.cargando} error={p.error} alReintentar={p.refrescar} pie={negocio && hora ? (revision?.faltan.length ? (revision.puedePedirLugar ? <Boton titulo="Pedir lugar" alTocar={pedirLugar} cargando={pedir.ocupado} deshabilitado={recoPendiente} /> : undefined) : <Boton titulo={`Pedir la cita · ${hora.hora}`} alTocar={confirmar} cargando={pedir.ocupado} deshabilitado={recoPendiente} />) : undefined}>
       {d ? (
         <>
           {d.toca.length ? <Mensaje tono="info" texto={`Le toca: ${d.toca.map((t) => t.nombre).join(", ")}.`} /> : null}
@@ -145,7 +146,7 @@ export default function Cita() {
                     })}
                   </View>
                   {revision?.faltan.length && negocio ? <Requisitos revision={revision} negocioId={negocio.id} mascotaId={id} /> : null}
-                  {negocio?.recoleccion && hora ? <RecoleccionPedir negocioId={negocio.id} mascotaId={id} alCambiar={setRecoleccion} /> : null}
+                  {negocio?.recoleccion && hora ? <RecoleccionPedir negocioId={negocio.id} mascotaId={id} alCambiar={setRecoleccion} alPendiente={setRecoPendiente} /> : null}
                   <Mensaje texto={cargaHoras.error ?? pedir.error} />
                 </View>
               ) : null}

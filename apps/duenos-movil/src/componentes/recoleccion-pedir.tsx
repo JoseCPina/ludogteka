@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pressable, View } from "react-native";
 import { llamar } from "@/lib/api";
 import { useAccion } from "@/lib/datos";
@@ -16,13 +16,18 @@ type Cotizacion = { km: number | null; precio: number | null };
  * confirmar. Los km los calcula el servidor por esa dirección; la ubicación del celular solo propone una dirección que la
  * persona confirma. Lo pide el dueño; el negocio lo ve en su tablero del día y entra a su cuenta.
  */
-export function RecoleccionPedir({ negocioId, mascotaId, alCambiar }: { negocioId: string; mascotaId: string; alCambiar: (r: RecoleccionPedida | null) => void }) {
+export function RecoleccionPedir({ negocioId, mascotaId, alCambiar, alPendiente }: { negocioId: string; mascotaId: string; alCambiar: (r: RecoleccionPedida | null) => void; alPendiente?: (pendiente: boolean) => void }) {
   const c = useColores();
   const [activa, setActiva] = useState(false);
   const [direccion, setDireccion] = useState("");
   const [cotizada, setCotizada] = useState<{ km: number; precio: number } | null>(null);
   const accion = useAccion();
   const ubicando = useAccion();
+  // Prendida y sin cotizar: quien confirma no puede seguir, o se iría sin la recolección que pidió.
+  const pendiente = activa && !cotizada;
+  useEffect(() => {
+    alPendiente?.(pendiente);
+  }, [pendiente, alPendiente]);
 
   const invalidar = () => {
     setCotizada(null);
@@ -84,6 +89,7 @@ export function RecoleccionPedir({ negocioId, mascotaId, alCambiar }: { negocioI
           <Campo etiqueta="¿Dónde pasan por ella?" value={direccion} onChangeText={(t) => { setDireccion(t); invalidar(); }} placeholder="Calle, número y colonia" />
           <Boton compacto ancho={false} variante="texto" titulo="¿Usar donde estás ahora?" alTocar={usarUbicacion} cargando={ubicando.ocupado} />
           <Mensaje texto={accion.error ?? ubicando.error} />
+          {pendiente && !accion.error && !ubicando.error ? <Mensaje tono="info" texto="Toca «Ver cuánto cuesta» para seguir, o apaga la recolección." /> : null}
           {cotizada ? (
             <Texto v="cuerpoFuerte" color={c.exito}>{cotizada.km < 1 ? "Menos de 1 km" : `${cotizada.km} km`} · {pesos(cotizada.precio)}. Entra a tu cuenta al confirmar.</Texto>
           ) : (
